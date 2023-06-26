@@ -3,6 +3,7 @@ import { CSpinner } from '@coreui/react'
 import { Navigate } from 'react-router-dom'
 import { useLoadClientPrincipalQuery } from 'src/store/api/auth'
 import { FullScreenLoading } from 'src/components/utilities'
+import pleinsudlogo from 'src/assets/images/psgroupe-logo.svg'
 
 const Logout = () => {
   const { data: profile, isFetching, error } = useLoadClientPrincipalQuery()

@@ -16,7 +16,6 @@ import { AppHeaderDropdown, AppHeaderSearch } from 'src/components/header'
 import { TenantSelector } from '../utilities'
 import cyberdrainlogolight from 'src/assets/images/CIPP.png'
 import cyberdrainlogodark from 'src/assets/images/CIPP_Dark.png'
-import pleinsudlogo from 'src/assets/images/psgroupe-logo.svg'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCaretSquareLeft, faCaretSquareRight } from '@fortawesome/free-solid-svg-icons'
@@ -70,13 +69,7 @@ const AppHeader = () => {
             <AppHeaderDropdown />
           </CNavItem>
           <CNavItem>
-          <CImage
-            className="me-2"
-            src={
-              pleinsudlogo
-            }
-            height={40}
-          />  
+          <CImage className="me-2" src="src/assets/images/psgroupe-logo.svg" height={40}/>  
           </CNavItem>
         </CHeaderNav>
       </CHeader>

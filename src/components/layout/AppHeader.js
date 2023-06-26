@@ -69,11 +69,7 @@ const AppHeader = () => {
             <AppHeaderDropdown />
           </CNavItem>
           <CNavItem>
-            <CImage 
-              className="me-2" 
-              src="src/assets/images/psgroupe-logo.svg" 
-              height={40}
-            />  
+            <CImage className="me-2" src="src/assets/images/psgroupe-logo.svg" height={40} />
           </CNavItem>
         </CHeaderNav>
       </CHeader>

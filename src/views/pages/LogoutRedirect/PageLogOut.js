@@ -1,7 +1,8 @@
 import React from 'react'
-import { CButton, CCol, CContainer, CRow } from '@coreui/react'
+import { CButton, CCol, CContainer, CImage, CRow } from '@coreui/react'
 import { Helmet } from 'react-helmet'
 import { useSearchParams } from 'react-router-dom'
+import pleinsudlogo from 'src/assets/images/psgroupe-logo.svg'
 
 const Page401 = () => {
   const [getSearchParam] = useSearchParams()
@@ -17,6 +18,7 @@ const Page401 = () => {
       </Helmet>
       <CContainer>
         <CRow className="justify-content-center">
+          <CImage className="me-2" src={pleinsudlogo} height={150} />
           <CCol md={6}>
             <div className="clearfix">
               <h1 className="float-start display-3 me-4">401</h1>

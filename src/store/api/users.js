@@ -59,11 +59,7 @@ export const usersApi = baseApi.injectEndpoints({
       queryFn: async (_args, _baseQueryApi, _options, baseQuery) => {
         const startRequest = await baseQuery({
           path: '/api/execBECCheck',
-          params: {
-            userId: _args.userId,
-            tenantFilter: _args.tenantFilter,
-            userName: _args.userName,
-          },
+          params: { userId: _args.userId, tenantFilter: _args.tenantFilter },
         })
         if (startRequest.error) {
           return { error: startRequest.error }

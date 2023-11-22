@@ -17,7 +17,7 @@ export const errorMiddleware =
         action.payload.data =
           'The Azure Function has taken too long to respond. Try selecting a different report or a single tenant instead'
       }
-      let message = action.payload?.data || 'A generic error has occurred.'
+      const message = action.payload?.data || 'A generic error has occurred.'
       if (message.length > 240) {
         message = message.substring(0, 240) + '...'
       }

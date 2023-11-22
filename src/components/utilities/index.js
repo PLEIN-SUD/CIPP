@@ -1,5 +1,4 @@
 import CippActionsOffcanvas from 'src/components/utilities/CippActionsOffcanvas'
-import CippCodeOffCanvas from 'src/components/utilities/CippCodeOffcanvas.jsx'
 import CippCodeBlock from 'src/components/utilities/CippCodeBlock'
 import CippOffcanvas from 'src/components/utilities/CippOffcanvas'
 import CippProfile from 'src/components/utilities/CippProfile'
@@ -20,7 +19,6 @@ import UsageLocation from 'src/components/utilities/UsageLocation'
 export {
   CippActionsOffcanvas,
   CippCodeBlock,
-  CippCodeOffCanvas,
   CippOffcanvas,
   CippProfile,
   ErrorBoundary,

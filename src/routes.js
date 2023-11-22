@@ -23,7 +23,6 @@ const DeployGroupTemplates = React.lazy(() =>
 const GeoIPLookup = React.lazy(() => import('src/views/tenant/administration/GeoIPLookup'))
 
 const TenantLookup = React.lazy(() => import('src/views/tenant/administration/TenantLookup'))
-
 const GroupTemplates = React.lazy(() => import('src/views/identity/administration/GroupTemplates'))
 
 const EditGroup = React.lazy(() => import('src/views/identity/administration/EditGroup'))

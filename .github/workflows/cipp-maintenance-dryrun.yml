@@ -1,0 +1,183 @@
+name: CIPP Maintenance - Dry Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Rétention Durable History (jours)'
+        required: false
+        default: '30'
+      logs_retention_days:
+        description: 'Rétention CippLogs (jours)'
+        required: false
+        default: '90'
+      diagnostic_months_kept:
+        description: 'Mois de AzureFunctionsDiagnosticEvents à garder'
+        required: false
+        default: '3'
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: cipp-maintenance-dryrun
+  cancel-in-progress: false
+
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AZURE_RG: ${{ vars.AZURE_RG }}
+      STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      RETENTION_DAYS: ${{ github.event.inputs.retention_days || '30' }}
+      LOGS_RETENTION_DAYS: ${{ github.event.inputs.logs_retention_days || '90' }}
+      DIAG_MONTHS_KEPT: ${{ github.event.inputs.diagnostic_months_kept || '3' }}
+
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Count Durable Functions to purge
+        uses: azure/powershell@v2
+        with:
+          azPSVersion: 'latest'
+          inlineScript: |
+            $ErrorActionPreference = 'Stop'
+            $funcApps = @(
+              'cippkuetn','cippkuetn-proc','cippkuetn-standards',
+              'cippkuetn-usertasks','cippkuetn-auditlog'
+            )
+            $cutoff = (Get-Date).ToUniversalTime().AddDays(-[int]$env:RETENTION_DAYS).ToString('yyyy-MM-ddTHH:mm:ssZ')
+            $sub    = $env:AZURE_SUBSCRIPTION_ID
+            $rows   = @()
+
+            foreach ($fa in $funcApps) {
+              try {
+                $keys = Invoke-AzRestMethod -Method POST `
+                  -Path "/subscriptions/$sub/resourceGroups/$env:AZURE_RG/providers/Microsoft.Web/sites/$fa/host/default/listKeys?api-version=2022-03-01"
+                $masterKey = ($keys.Content | ConvertFrom-Json).masterKey
+
+                $baseUri = "https://$fa.azurewebsites.net/runtime/webhooks/durabletask/instances" +
+                           "?createdTimeFrom=2020-01-01T00:00:00Z" +
+                           "&createdTimeTo=$cutoff" +
+                           "&runtimeStatus=Completed,Failed,Terminated" +
+                           "&top=100" +
+                           "&code=$masterKey"
+
+                $count = 0
+                $next  = $baseUri
+                do {
+                  $resp = Invoke-WebRequest -Uri $next -Method GET -TimeoutSec 120
+                  $body = $resp.Content | ConvertFrom-Json
+                  $count += @($body).Count
+                  $token = $resp.Headers['x-ms-continuation-token']
+                  if ($token) { $next = "$baseUri&continuationToken=$(:EscapeDataString($token))" } else { $next = $null }
+                } while ($next)
+
+                $rows += [PSCustomObject]@{ FunctionApp = $fa; Orchestrations = $count }
+                Write-Host "::notice title=Durable dryrun::${fa} : $count orchestrations candidates"
+              } catch {
+                Write-Host "::warning title=Durable dryrun failed::${fa} : $($_.Exception.Message)"
+                $rows += [PSCustomObject]@{ FunctionApp = $fa; Orchestrations = 'ERROR' }
+              }
+            }
+
+            $total = ($rows | Where-Object { $_.Orchestrations -is [int] } | Measure-Object Orchestrations -Sum).Sum
+            "## Durable Functions" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "Cutoff: $cutoff | Rétention: $env:RETENTION_DAYS j" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "| Function App | Orchestrations à purger |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "|---|---|" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            $rows | ForEach-Object { "| $($_.FunctionApp) | $($_.Orchestrations) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY }
+            "" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "**Total : $total**" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: List AzureFunctionsDiagnosticEvents tables to drop
+        uses: azure/powershell@v2
+        with:
+          azPSVersion: 'latest'
+          inlineScript: |
+            $ErrorActionPreference = 'Stop'
+            $sa  = Get-AzStorageAccount -ResourceGroupName $env:AZURE_RG -Name $env:STORAGE_ACCOUNT
+            $ctx = $sa.Context
+
+            $monthsToKeep = 0..([int]$env:DIAG_MONTHS_KEPT - 1) |
+              ForEach-Object { (Get-Date).AddMonths(-$_).ToString('yyyyMM') }
+
+            $drop = Get-AzStorageTable -Context $ctx |
+              Where-Object { $_.Name -match '^AzureFunctionsDiagnosticEvents(\d{6})$' } |
+              Where-Object {
+                $mois = ($_.Name -replace '^AzureFunctionsDiagnosticEvents','')
+                $mois -notin $monthsToKeep
+              } |
+              Select-Object -ExpandProperty Name
+
+            "## Diagnostic tables" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "Mois conservés : $($monthsToKeep -join ', ')" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            if ($drop) {
+              "Tables candidates à la suppression : **$($drop.Count)**" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+              $drop | ForEach-Object { "- $_" | Out-File -Append $env:GITHUB_STEP_SUMMARY }
+            } else {
+              "Aucune table à supprimer." | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            }
+
+      - name: Count CippLogs rows to purge
+        uses: azure/powershell@v2
+        with:
+          azPSVersion: 'latest'
+          inlineScript: |
+            $ErrorActionPreference = 'Stop'
+            $sa    = Get-AzStorageAccount -ResourceGroupName $env:AZURE_RG -Name $env:STORAGE_ACCOUNT
+            $ctx   = $sa.Context
+            $table = (Get-AzStorageTable -Context $ctx -Name CippLogs -ErrorAction SilentlyContinue).CloudTable
+
+            "## CippLogs" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            if (-not $table) {
+              "Table CippLogs introuvable." | Out-File -Append $env:GITHUB_STEP_SUMMARY
+              return
+            }
+
+            $cutoff = (Get-Date).ToUniversalTime().AddDays(-[int]$env:LOGS_RETENTION_DAYS)
+            $filter = "Timestamp lt datetime'$($cutoff.ToString('yyyy-MM-ddTHH:mm:ssZ'))'"
+
+            # Projection PartitionKey uniquement pour minimiser le coût de lecture
+            $query = [Microsoft.Azure.Cosmos.Table.TableQuery]::new()
+            $query = $query.Where($filter).Select(@('PartitionKey'))
+
+            $count = 0
+            foreach ($e in $table.ExecuteQuery($query)) { $count++ }
+
+            "Cutoff : $($cutoff.ToString('yyyy-MM-ddTHH:mm:ssZ')) | Rétention : $env:LOGS_RETENTION_DAYS j" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "Lignes candidates à la purge : **$count**" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: Storage account current volume
+        uses: azure/powershell@v2
+        with:
+          azPSVersion: 'latest'
+          inlineScript: |
+            $ErrorActionPreference = 'Stop'
+            $sa = Get-AzStorageAccount -ResourceGroupName $env:AZURE_RG -Name $env:STORAGE_ACCOUNT
+
+            $end   = (Get-Date).ToUniversalTime()
+            $start = $end.AddHours(-2)
+
+            $metric = Get-AzMetric -ResourceId $sa.Id `
+              -MetricName 'UsedCapacity' `
+              -TimeGrain 01:00:00 `
+              -StartTime $start -EndTime $end `
+              -WarningAction SilentlyContinue
+
+            $bytes = ($metric.Data | Where-Object Average -ne $null | Select-Object -Last 1).Average
+            $gb    = if ($bytes) { :Round($bytes / 1GB, 2) } else { 'N/A' }
+
+            "## Storage account" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            "Volume actuel `$($env:STORAGE_ACCOUNT)` : **$gb GB**" | Out-File -Append $env:GITHUB_STEP_SUMMARY

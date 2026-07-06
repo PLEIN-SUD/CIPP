@@ -1,0 +1,47 @@
+name: CIPP Task Hub Purge
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # Dimanche 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    environment: ops
+    steps:
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Purge Durable Task Hub instances older than 7 days
+        shell: pwsh
+        run: |
+          $sub = '${{ secrets.AZURE_SUBSCRIPTION_ID }}'
+          $rg  = 'rg_cipp'
+          $funcApps = @('cippkuetn-proc','cippkuetn-standards','cippkuetn-usertasks','cippkuetn-auditlog')
+          $before = (Get-Date).AddDays(-7).ToString('yyyy-MM-ddTHH:mm:ssZ')
+
+          foreach ($fa in $funcApps) {
+            $keys = az rest --method post `
+              --uri "https://management.azure.com/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.Web/sites/$fa/host/default/listKeys?api-version=2022-03-01" | ConvertFrom-Json
+            $master = $keys.masterKey
+
+            $uri = "https://$fa.azurewebsites.net/runtime/webhooks/durabletask/instances?code=$master&createdTimeFrom=2020-01-01T00:00:00Z&createdTimeTo=$before&runtimeStatus=Completed,Terminated,Failed"
+
+            try {
+              $r = Invoke-RestMethod -Uri $uri -Method DELETE -ErrorAction Stop
+              Write-Host "✅ $fa : $($r.instancesDeleted) instances purged"
+            } catch {
+              Write-Host "❌ $fa : $($_.Exception.Message)"
+              exit 1
+            }
+          }
+``

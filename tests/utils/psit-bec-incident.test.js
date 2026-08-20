@@ -204,6 +204,25 @@ describe('buildExposure', () => {
     expect(exposure.accessBasis[0]).toContain('203.0.113.42')
   })
 
+  it('offers a measurable floor for the number of persons, never presented as the estimate', () => {
+    const becData = {
+      SentMessages: [
+        sentMessage({ RecipientAddress: 'buyer@client.test' }),
+        sentMessage({ RecipientAddress: 'BUYER@client.test' }),
+        sentMessage({ RecipientAddress: 'ceo@partner.test' }),
+        sentMessage({ RecipientAddress: 'colleague@contoso.test', Internal: true }),
+        sentMessage({ RecipientAddress: 'noreply@service.test', SystemGenerated: true }),
+      ],
+      SentMessageAnalysis: { TotalRecipients: 241, RepeatedSubjects: [], Bursts: [] },
+    }
+    const exposure = buildExposure(becData, [], [], userData)
+
+    // Case-insensitive, external, human-sent only.
+    expect(exposure.correspondentFloor.distinct).toBe(2)
+    expect(exposure.correspondentFloor.truncated).toBe(true)
+    expect(exposure.correspondentFloor.declaredRecipients).toBe(241)
+  })
+
   it('offers a closed list of data categories for the analyst to pick from', () => {
     expect(DATA_CATEGORIES).toContain('Données de santé')
     expect(DATA_CATEGORIES).toContain('Données bancaires ou financières')

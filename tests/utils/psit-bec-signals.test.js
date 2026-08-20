@@ -253,6 +253,27 @@ describe('getAnalysisWindow', () => {
     expect(window.endUtc).toBe('2026-08-20T10:00:00Z')
     expect(window.startUtc).toBe('2026-08-13T10:00:00Z')
     expect(window.days).toBe(7)
+    // The 7 was assumed, not read: both reports print the window as a fact, so they need to know.
+    expect(window.daysDeclared).toBe(false)
+  })
+
+  it('reads the length from the collection rather than assuming seven days', () => {
+    const window = getAnalysisWindow({
+      ExtractedAt: '2026-08-20T10:00:00Z',
+      AnalysisWindowDays: 30,
+    })
+    expect(window.days).toBe(30)
+    expect(window.daysDeclared).toBe(true)
+    expect(window.startUtc).toBe('2026-07-21T10:00:00Z')
+  })
+
+  it('ignores a nonsensical declared length instead of inverting the window', () => {
+    expect(
+      getAnalysisWindow({ ExtractedAt: '2026-08-20T10:00:00Z', AnalysisWindowDays: 0 }).days
+    ).toBe(7)
+    expect(
+      getAnalysisWindow({ ExtractedAt: '2026-08-20T10:00:00Z', AnalysisWindowDays: 'six' }).days
+    ).toBe(7)
   })
 })
 

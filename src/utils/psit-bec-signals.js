@@ -55,16 +55,25 @@ const domainOf = (address) =>
     .toLowerCase()
 
 /**
- * The analysis window. The upstream collection is fixed at 7 days ending at ExtractedAt, and the
- * chronology has to be bounded by it: without this, an MFA method registered in 2021 lands in the
- * timeline of a 7-day investigation and, worse, gets read as the first unauthorised access.
+ * The analysis window, ending at ExtractedAt. The chronology has to be bounded by it: without this,
+ * an MFA method registered in 2021 lands in the timeline of a 7-day investigation and, worse, gets
+ * read as the first unauthorised access.
+ *
+ * The length is read from the collection (AnalysisWindowDays), not assumed: both reports print the
+ * window as a fact, and if upstream ever changes the depth of the collection a hardcoded 7 would
+ * make every report state a window that was never analysed. The fallback stays 7, which is what
+ * the collection has always used.
  */
-export const getAnalysisWindow = (becData = {}, days = 7) => {
+export const getAnalysisWindow = (becData = {}, days = null) => {
+  const declared = Number(becData?.AnalysisWindowDays)
+  const span = days ?? (Number.isFinite(declared) && declared > 0 ? declared : 7)
   const end = toUtc(becData?.ExtractedAt) || toUtc(new Date().toISOString())
   const endMs = new Date(end).getTime()
   return {
-    days,
-    startUtc: `${new Date(endMs - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19)}Z`,
+    days: span,
+    // Disclosed so a report can say whether the window is the collection's own or an assumption.
+    daysDeclared: Number.isFinite(declared) && declared > 0,
+    startUtc: `${new Date(endMs - span * 24 * 60 * 60 * 1000).toISOString().slice(0, 19)}Z`,
     endUtc: end,
   }
 }

@@ -239,6 +239,9 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
                     label="Nombre approximatif de personnes"
                     size="small"
                     fullWidth
+                    helperText={`Repère : ${exposure.correspondentFloor.distinct} correspondant(s) externe(s) distinct(s) sur la fenêtre${
+                      exposure.correspondentFloor.truncated ? ', suivi partiel' : ''
+                    } — plancher observé, pas une estimation.`}
                     value={value('AffectedPersonsEstimate')}
                     onChange={(event) => set('AffectedPersonsEstimate', event.target.value)}
                   />

@@ -207,9 +207,30 @@ export const buildExposure = (becData = {}, signals = [], triage = [], userData 
     })
   }
 
+  // A measurable floor for the article 33.3 question "approximate number of data subjects". It is
+  // NOT that number - the mailbox contents are never read, so who is in it is unknown - but an
+  // analyst asked to write "environ 1 200" with nothing to lean on will either guess or leave the
+  // field empty, and a DPO cannot defend either. Distinct external correspondents over the window
+  // is a fact, and the report labels it as the narrow thing it is.
+  const correspondents = new Set(
+    mail.humanExternal
+      .map((message) => String(message?.RecipientAddress || '').toLowerCase())
+      .filter(Boolean)
+  )
+  const analysis = becData?.SentMessageAnalysis || {}
+  const collectedRecipients = mail.counts.collected
+  const declaredRecipients = analysis.TotalRecipients ?? collectedRecipients
+
   return {
     accessEstablished: accessBasis.length > 0,
     accessBasis,
+    correspondentFloor: {
+      distinct: correspondents.size,
+      // True when the trace is a sample: the floor is then itself understated.
+      truncated: declaredRecipients > collectedRecipients,
+      collectedRecipients,
+      declaredRecipients,
+    },
     // No MailItemsAccessed in this collection, so reading is never asserted from here.
     mailReadSuggested: MAIL_READ_STATUS.NOT_PROVABLE,
     mailReadNote:

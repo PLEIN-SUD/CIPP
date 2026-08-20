@@ -342,6 +342,18 @@ export const PsitBecIncidentReportDocument = ({
             {incident?.AffectedPersonsBasis &&
               `\nBase d'estimation : ${incident.AffectedPersonsBasis}`}
           </InfoBox>
+          {/* A measurable floor, labelled as the narrow thing it is: the estimate above is the
+              analyst's and the controller's, this is only what the trace shows. */}
+          <Note>
+            Repère mesurable : {exposure.correspondentFloor.distinct} correspondant(s) externe(s)
+            distinct(s) ont échangé avec cette boîte pendant la fenêtre analysée
+            {exposure.correspondentFloor.truncated
+              ? `, sur un suivi partiel (${exposure.correspondentFloor.collectedRecipients} lignes collectées pour ${exposure.correspondentFloor.declaredRecipients} destinataires annoncés)`
+              : ''}
+            . Ce nombre ne dit rien du contenu de la boîte : il ne mesure pas les personnes dont les
+            données y figurent, seulement les correspondants observés sur la fenêtre. Il constitue
+            un plancher, pas une estimation.
+          </Note>
         </Section>
 
         <Section title="Données concernées">

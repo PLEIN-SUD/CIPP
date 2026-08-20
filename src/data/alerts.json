@@ -73,6 +73,11 @@
         "inputType": "switch",
         "inputLabel": "Include users who have never signed in (e.g. sign-in blocked)?",
         "inputName": "IncludeNeverSignedIn"
+      },
+      {
+        "inputType": "switch",
+        "inputLabel": "Exclude shared and resource mailboxes?",
+        "inputName": "ExcludeSharedMailboxes"
       }
     ]
   },
@@ -111,6 +116,11 @@
         "inputType": "switch",
         "inputLabel": "Exclude disabled users?",
         "inputName": "ExcludeDisabled"
+      },
+      {
+        "inputType": "switch",
+        "inputLabel": "Exclude shared and resource mailboxes?",
+        "inputName": "ExcludeSharedMailboxes"
       }
     ]
   },

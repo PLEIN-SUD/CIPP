@@ -536,28 +536,42 @@ const Page = () => {
           <Grid container spacing={2}>
             {/* Remediation Card */}
             <Grid size={5}>
-              <CippRemediationCard
-                userPrincipalName={userRequest.data[0].userPrincipalName}
-                userId={userRequest.data[0].id}
-                tenantFilter={userSettingsDefaults.currentTenant}
-                isFetching={false}
-                restartProcess={restartProcess}
-              />
+              {/* PSIT-CUSTOM-BEGIN: decision rail. Qualifying a signal means going back and forth
+                  between a question and the check that answers it, so the two have to be readable
+                  at the same time - stacked, one of them is always off screen. The rail scrolls on
+                  its own and sticks beside the checks on a wide viewport; on a narrow one the grid
+                  stacks and this is a plain column again. */}
+              <Box
+                sx={{
+                  position: { xs: 'static', lg: 'sticky' },
+                  top: { lg: 16 },
+                  maxHeight: { lg: 'calc(100vh - 32px)' },
+                  overflowY: { lg: 'auto' },
+                  pr: { lg: 1 },
+                }}
+              >
+                <Stack spacing={3}>
+                  <CippRemediationCard
+                    userPrincipalName={userRequest.data[0].userPrincipalName}
+                    userId={userRequest.data[0].id}
+                    tenantFilter={userSettingsDefaults.currentTenant}
+                    isFetching={false}
+                    restartProcess={restartProcess}
+                  />
+                  <PsitBecDecisionPanel
+                    userData={userRequest.data[0]}
+                    becData={becPollingCall.data}
+                    tenantFilter={userSettingsDefaults.currentTenant}
+                    triage={psitTriage}
+                    onRestart={restartProcess}
+                  />
+                </Stack>
+              </Box>
+              {/* PSIT-CUSTOM-END */}
             </Grid>
             {/* All Steps */}
             <Grid size={7}>
               <Stack spacing={3}>
-                {/* PSIT-CUSTOM-BEGIN: the decision comes before the material it is based on. This
-                    block used to sit inside the "Report" accordion at the bottom of the eleven
-                    checks, which is where an analyst stops scrolling. */}
-                <PsitBecDecisionPanel
-                  userData={userRequest.data[0]}
-                  becData={becPollingCall.data}
-                  tenantFilter={userSettingsDefaults.currentTenant}
-                  triage={psitTriage}
-                  onRestart={restartProcess}
-                />
-                {/* PSIT-CUSTOM-END */}
                 <BecCheckCard title="Log information">
                   <Typography variant="body2" gutterBottom>
                     {becPollingCall.data?.ExtractResult}. The data of this log was extracted at{' '}

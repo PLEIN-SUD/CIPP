@@ -72,7 +72,7 @@ describe('PsitBecDecisionPanel', () => {
     }))
   })
 
-  it('leads with the verdict and the reports, above the checks', () => {
+  it('gathers the verdict, the reports and both panels in one place', () => {
     renderWithProviders(
       <PsitBecDecisionPanel
         userData={userData}
@@ -91,6 +91,45 @@ describe('PsitBecDecisionPanel', () => {
     // Both panels are rendered inside it, so the whole decision is in one place.
     expect(screen.getByText('Qualification avant diffusion')).toBeInTheDocument()
     expect(screen.getByText('Fiche de dossier')).toBeInTheDocument()
+  })
+
+  it('opens the panel for the phase the case is in, and lets the other be reopened', async () => {
+    renderWithProviders(
+      <PsitBecDecisionPanel
+        userData={userData}
+        becData={becData}
+        tenantFilter="contoso.test"
+        triage={[]}
+      />
+    )
+
+    // Questions pending: the analyst is answering them, so the case file starts folded. Folded,
+    // not unmounted - collapsing must not throw away what was typed.
+    expect(screen.getByText(/Les signaux que la donnée ne peut pas trancher seule/)).toBeVisible()
+    expect(screen.getByLabelText('Ticket Autotask')).not.toBeVisible()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Déplier la fiche de dossier' }))
+    expect(screen.getByLabelText('Ticket Autotask')).toBeVisible()
+  })
+
+  it('starts on the case file once every question is answered', () => {
+    renderWithProviders(
+      <PsitBecDecisionPanel
+        userData={userData}
+        becData={becData}
+        tenantFilter="contoso.test"
+        triage={[
+          {
+            SignalId: 'rule-filing:classement',
+            Verdict: 'expected',
+            Analyst: 's.miro',
+            DecidedUtc: new Date().toISOString(),
+          },
+        ]}
+      />
+    )
+
+    expect(screen.getByLabelText('Ticket Autotask')).toBeVisible()
   })
 
   it('offers the re-run where the collection state is shown', async () => {

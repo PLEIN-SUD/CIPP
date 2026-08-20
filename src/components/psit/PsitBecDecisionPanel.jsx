@@ -40,6 +40,10 @@ export const PsitBecDecisionPanel = ({
   const { current: liveTriage } = partitionDeterminations(triage, becData)
   const verdict = buildVerdict(signals, liveTriage)
   const openQuestions = verdict.openQuestions.length
+  // Whichever phase the case is in is the panel that starts open: while questions are pending the
+  // analyst is answering them, and the case file is what comes after. Both stay one click away -
+  // this is a default, not a lock.
+  const qualifying = openQuestions > 0
 
   return (
     <Stack spacing={3}>
@@ -94,7 +98,13 @@ export const PsitBecDecisionPanel = ({
         </Stack>
       </CippButtonCard>
 
-      <PsitBecTriagePanel userData={userData} becData={becData} tenantFilter={tenantFilter} />
+      <PsitBecTriagePanel
+        userData={userData}
+        becData={becData}
+        tenantFilter={tenantFilter}
+        collapsible
+        defaultExpanded={qualifying}
+      />
 
       {/* Le ticket Autotask est toujours saisissable ; les champs propres à l'incident
           n'apparaissent qu'une fois une compromission retenue. */}
@@ -103,6 +113,8 @@ export const PsitBecDecisionPanel = ({
         becData={becData}
         tenantFilter={tenantFilter}
         triage={triage}
+        collapsible
+        defaultExpanded={!qualifying}
       />
     </Stack>
   )

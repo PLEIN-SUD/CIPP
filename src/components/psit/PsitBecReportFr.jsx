@@ -15,6 +15,16 @@ import { PictureAsPdf, Download, Close } from '@mui/icons-material'
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
+import { ApiGetCall } from '../../api/ApiCall'
+import { PsitBecAssessmentSection } from './PsitBecAssessmentSection'
+import {
+  SIGNAL_CLASS,
+  buildSignals,
+  buildTimeline,
+  buildVerdict,
+  formatUtc,
+  groupSignInsByIp,
+} from '../../utils/psit-bec-signals'
 import {
   AlertBox,
   Bold,
@@ -58,6 +68,7 @@ export const PsitBecReportFrDocument = ({
   brandingSettings,
   tenantName,
   variables,
+  triage = [],
 }) => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -65,16 +76,21 @@ export const PsitBecReportFrDocument = ({
     day: 'numeric',
   })
 
+  // Une seule base de temps dans tout le document. L'upstream affiche les connexions en heure
+  // locale du navigateur et les envois en UTC brut : impossible d'aligner « connexion depuis
+  // l'Italie » et « envoi depuis la France » le même matin, alors que c'est exactement la question.
   const formatDate = (dateString) => {
     if (!dateString) return 'N/D'
     try {
-      return new Date(dateString).toLocaleString('fr-FR', {
+      const rendered = new Date(dateString).toLocaleString('fr-FR', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'UTC',
       })
+      return `${rendered} UTC`
     } catch {
       return dateString
     }
@@ -151,19 +167,23 @@ export const PsitBecReportFrDocument = ({
   }
   stats.recentMfaDevices = (becData?.MFADevices || []).filter(isRecentMfaDevice).length
 
-  // Les connexions étrangères réussies d'abord : elles prouvent l'accès, les échecs sont
-  // essentiellement du bruit de password spraying.
-  const foreignSignIns = (becData?.SuspectUserSignIns || [])
-    .filter((signIn) => signIn?.ForeignLocation === true)
-    .sort((a, b) => (b?.Status === 'Success') - (a?.Status === 'Success'))
-
   const sortedIntuneDevices = [...(becData?.IntuneDevices || [])].sort((a, b) => {
     const aTime = a?.enrolledDateTime ? new Date(a.enrolledDateTime).getTime() : 0
     const bTime = b?.enrolledDateTime ? new Date(b.enrolledDateTime).getTime() : 0
     return bTime - aTime
   })
 
-  const threatLevel = psitCalculateThreatLevel(stats, becData)
+  // The verdict comes from the signal classification and the analyst determinations, not from a
+  // sum of counters: see src/utils/psit-bec-signals.js for why counting is not judging.
+  const signals = buildSignals(becData, userData)
+  const verdict = buildVerdict(signals, triage)
+  const timeline = buildTimeline(becData)
+  const signInGroups = groupSignInsByIp(becData?.SuspectUserSignIns || [])
+  const establishedCount = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED).length
+  const openQuestionCount = verdict.openQuestions.length
+  const foreignSuccessGroups = signInGroups.filter((group) => group.foreign && group.successes > 0)
+  const externalMessageCount =
+    becData?.SentMessageAnalysis?.AnalysableMessages ?? stats.sentTotalMessages
 
   return (
     <ReportDocument
@@ -214,27 +234,27 @@ export const PsitBecReportFrDocument = ({
         </Section>
 
         <Section title="Vue d'ensemble de l'investigation">
+          {/* Les chiffres mis en avant sont ceux qui portent une décision. Un compteur de règles
+              ou de « connexions étrangères » mélangeant succès et échecs n'en porte aucune. */}
           <StatRow
             stats={[
-              { value: stats.newRules, label: 'Règles de boîte' },
-              { value: stats.permissionChanges, label: 'Modifications de permissions' },
-              { value: stats.foreignSignIns, label: 'Connexions étrangères' },
-              { value: stats.maliciousApps, label: 'Applications malveillantes' },
+              { value: establishedCount, label: 'Signaux établis' },
+              { value: openQuestionCount, label: 'À qualifier' },
+              {
+                value: foreignSuccessGroups.reduce((total, group) => total + group.successes, 0),
+                label: 'Connexions réussies hors zone',
+              },
+              { value: externalMessageCount, label: 'Messages externes envoyés' },
             ]}
           />
-
-          <AlertBox
-            colour={threatLevel.color}
-            title={`Évaluation du risque : ${threatLevel.label}`}
-          >
-            {threatLevel.level === 'High' &&
-              "RISQUE ÉLEVÉ : plusieurs indicateurs de compromission ont été détectés. Des actions de remédiation immédiates sont fortement recommandées. Ce compte présente des schémas caractéristiques d'une attaque BEC active."}
-            {threatLevel.level === 'Medium' &&
-              "RISQUE MOYEN : des activités suspectes ont été détectées. Examinez les constats et envisagez la mise en œuvre des mesures de sécurité recommandées. Certains indicateurs suggèrent un accès non autorisé."}
-            {threatLevel.level === 'Low' &&
-              "RISQUE FAIBLE : peu d'activité suspecte détectée. Les constats correspondent à un usage normal, sans indicateur significatif de compromission. Maintenez la surveillance par précaution."}
-          </AlertBox>
         </Section>
+
+        <PsitBecAssessmentSection
+          verdict={verdict}
+          signals={signals}
+          triage={triage}
+          language="fr"
+        />
 
         <Section title="Origine des données">
           <InfoBox title="État du journal d'audit">{becData?.ExtractResult || 'Inconnu'}</InfoBox>
@@ -245,6 +265,45 @@ export const PsitBecReportFrDocument = ({
             {locationAnalysis?.UsageLocation ||
               "Non renseigné - les connexions et activités n'ont pas pu être comparées à un pays attendu"}
           </InfoBox>
+        </Section>
+      </ContentPage>
+
+      {/* CHRONOLOGIE */}
+      <ContentPage
+        title="Chronologie"
+        subtitle="Tous les horodatages en UTC, toutes sources confondues"
+      >
+        <Section>
+          <Paragraph>
+            Les sources de cette investigation n'utilisent pas le même format d'heure : les
+            connexions sont datées par Entra ID, le courrier par le suivi des messages, les
+            modifications par le journal d'audit. Tout est ramené ici en UTC pour qu'une
+            concomitance soit visible — par exemple une connexion depuis un pays et un envoi depuis
+            un autre le même matin.
+          </Paragraph>
+        </Section>
+
+        <Section title="Événements de la fenêtre analysée">
+          {timeline.length > 0 ? (
+            <>
+              {timeline.slice(0, 40).map((event, index) => (
+                <InfoBox key={`tl-${index}`} title={`${event.timestampUtc} — ${event.label}`}>
+                  {event.detail || ' '}
+                </InfoBox>
+              ))}
+              {timeline.length > 40 && (
+                <Note>
+                  ... et {timeline.length - 40} autres événements (liste complète dans l'export
+                  JSON)
+                </Note>
+              )}
+            </>
+          ) : (
+            <ClearBox title="Aucun événement daté">
+              Aucune connexion réussie, modification de configuration ni rafale d'envoi n'a été
+              datée sur la fenêtre analysée.
+            </ClearBox>
+          )}
         </Section>
       </ContentPage>
 
@@ -965,26 +1024,38 @@ export const PsitBecReportFrDocument = ({
                     depuis une IP étrangère a rarement une explication innocente.
                   </AlertBox>
 
-                  {foreignSignIns.slice(0, 10).map((signIn, index) => (
-                    <InfoBox
-                      key={index}
-                      title={`${formatDate(signIn.CreatedDateTime)} - ${
-                        signIn.Country || 'Inconnu'
-                      }`}
-                    >
-                      Application : {signIn.AppDisplayName || 'N/D'}
-                      {'\n'}
-                      Adresse IP : {signIn.IPAddress || 'N/D'}
-                      {'\n'}
-                      Ville : {signIn.City || 'N/D'}
-                      {'\n'}
-                      Résultat : {signIn.Status || 'N/D'}
-                    </InfoBox>
-                  ))}
-                  {foreignSignIns.length > 10 && (
+                  {/* Regroupé par adresse source : vingt-deux connexions depuis une même IP sont
+                      un fait unique, pas vingt-deux constats. Les adresses n'ayant produit que des
+                      échecs sont listées à part, en fin de section. */}
+                  {signInGroups
+                    .filter((group) => group.foreign && group.successes > 0)
+                    .slice(0, 10)
+                    .map((group) => (
+                      <InfoBox
+                        key={`grp-${group.ip}`}
+                        title={`${group.successes} connexion(s) réussie(s) — ${group.ip}${
+                          group.country ? ` (${group.country})` : ''
+                        }`}
+                      >
+                        Ville(s) : {group.cities.join(', ') || 'N/D'}
+                        {'\n'}
+                        Première : {formatUtc(group.firstSeenUtc)}
+                        {'\n'}
+                        Dernière : {formatUtc(group.lastSeenUtc)}
+                        {'\n'}
+                        Applications : {group.apps.slice(0, 5).join(', ') || 'N/D'}
+                        {group.failures > 0 && `\nÉchecs depuis la même adresse : ${group.failures}`}
+                      </InfoBox>
+                    ))}
+
+                  {signInGroups.filter((group) => group.successes === 0).length > 0 && (
                     <Note>
-                      ... et {foreignSignIns.length - 10} autres connexions étrangères (liste
-                      complète dans l'export JSON)
+                      {signInGroups
+                        .filter((group) => group.successes === 0)
+                        .reduce((total, group) => total + group.failures, 0)}{' '}
+                      tentative(s) en échec depuis{' '}
+                      {signInGroups.filter((group) => group.successes === 0).length} autre(s)
+                      adresse(s) : pulvérisation de mots de passe, aucune n'a abouti.
                     </Note>
                   )}
                 </>
@@ -1225,7 +1296,11 @@ export const PsitBecReportFrDocument = ({
           </InfoBox>
 
           <InfoBox title="Récapitulatif des constats">
-            Niveau de risque : {threatLevel.label}
+            Conclusion : {verdict.label}
+            {'\n'}
+            Signaux établis : {establishedCount}
+            {'\n'}
+            Questions ouvertes : {openQuestionCount}
             {'\n'}
             Règles de boîte trouvées : {stats.newRules}
             {'\n'}
@@ -1300,36 +1375,10 @@ export const PsitBecReportFrDocument = ({
   )
 }
 
-/**
- * Threat scoring, mirroring calculateThreatLevel in
- * src/components/BECRemediationReportButton.js so the French report never states a different level
- * than the English one for the same data. Exported for the unit test that pins the thresholds.
- */
-export const psitCalculateThreatLevel = (stats, becData) => {
-  let threatScore = 0
-  if (stats.newRules > 0) threatScore += 3
-  if (stats.ruleChanges > 0) threatScore += 3
-  if (stats.permissionChangesTargetingUser > 0) threatScore += 2
-  else if (stats.permissionChanges > 0) threatScore += 1
-  if (stats.newApps > 0) threatScore += 1
-  if (stats.newUsers > 5) threatScore += 1
-  if (stats.safelistChanges > 0) threatScore += 2
-
-  const hasSuspiciousRules = becData?.NewRules?.some((rule) => rule.MoveToFolder?.includes('RSS'))
-  if (hasSuspiciousRules) threatScore += 5
-
-  if (stats.maliciousApps > 0) threatScore += 5
-  if (stats.foreignSuccessfulSignIns > 0) threatScore += 3
-  if (stats.foreignActivity > 0) threatScore += 3
-  if (stats.anonymousLinks > 0) threatScore += 3
-  if (stats.massMailFlagged) threatScore += 3
-  if (stats.recentMfaDevices > 0) threatScore += 2
-  if (stats.recentIntuneDevices > 0) threatScore += 2
-
-  if (threatScore >= 7) return { level: 'High', label: 'élevé', color: '#742A2A' }
-  if (threatScore >= 4) return { level: 'Medium', label: 'moyen', color: '#744210' }
-  return { level: 'Low', label: 'faible', color: '#22543D' }
-}
+// The mechanical score that used to live here (a copy of upstream's calculateThreatLevel) is gone
+// on purpose: the verdict now comes from buildVerdict, which distinguishes what the data settles
+// from what an analyst has determined, and states no level while a question is open. Counting
+// counters is what produced "risque élevé" on a mailbox whose real signal was one Italian address.
 
 export const PsitBecReportFrButton = ({ userData, becData, tenantName }) => {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -1339,9 +1388,20 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName }) => {
   const brandingSettings = useBrandingSettings()
   const variables = useReportVariables()
 
+  // Fetched here rather than in the document: react-pdf renders through its own reconciler,
+  // outside the React tree, where there is no query client.
+  const triageRequest = ApiGetCall({
+    url: `/api/PSITListBecTriage?tenantFilter=${tenantName}&userId=${userData?.id}`,
+    queryKey: `PSITBecTriage-${tenantName}-${userData?.id}`,
+    waiting: Boolean(hasData && tenantName && userData?.id),
+  })
+  const triage = triageRequest.data?.Determinations || []
+
   if (!hasData) {
     return null
   }
+
+  const openQuestions = buildVerdict(buildSignals(becData, userData), triage).openQuestions.length
 
   return (
     <>
@@ -1350,7 +1410,7 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName }) => {
           WCAG 2.5.3 (Label in Name) and voice control. */}
       <Tooltip title="Rapport FR : générer le rapport BEC en français">
         <Button
-          variant="outlined"
+          variant="contained"
           startIcon={<PictureAsPdf />}
           onClick={() => setDialogOpen(true)}
           color="primary"
@@ -1372,9 +1432,19 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName }) => {
       >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" component="div">
-              Aperçu du rapport BEC (français)
-            </Typography>
+            <Box>
+              <Typography variant="h6" component="div">
+                Aperçu du rapport BEC (français)
+              </Typography>
+              {/* Avertit sans bloquer : un rapport « à qualifier » assumé vaut mieux qu'un niveau
+                  de risque que personne ne peut défendre. */}
+              {openQuestions > 0 && (
+                <Typography variant="body2" color="warning.main">
+                  {openQuestions} question(s) sans réponse : le rapport ne conclura pas sur un
+                  niveau de risque. Qualifiez-les dans le panneau « Qualification avant diffusion ».
+                </Typography>
+              )}
+            </Box>
             <IconButton onClick={() => setDialogOpen(false)} size="small">
               <Close />
             </IconButton>
@@ -1388,6 +1458,7 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName }) => {
               brandingSettings={brandingSettings}
               tenantName={tenantName}
               variables={variables}
+              triage={triage}
             />
           </PDFViewer>
         </DialogContent>
@@ -1401,6 +1472,7 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName }) => {
                 brandingSettings={brandingSettings}
                 tenantName={tenantName}
                 variables={variables}
+                triage={triage}
               />
             }
             fileName={`Rapport_BEC_${userData?.userPrincipalName}_${

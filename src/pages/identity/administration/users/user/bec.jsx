@@ -18,8 +18,9 @@ import { PropertyList } from '../../../../../components/property-list'
 import { PropertyListItem } from '../../../../../components/property-list-item'
 import { CippHead } from '../../../../../components/CippComponents/CippHead'
 import { BECRemediationReportButton } from '../../../../../components/BECRemediationReportButton'
-// PSIT-CUSTOM-BEGIN: French edition of the same report, for client delivery
+// PSIT-CUSTOM-BEGIN: French edition of the same report, plus the analyst qualification step
 import { PsitBecReportFrButton } from '../../../../../components/psit/PsitBecReportFr'
+import { PsitBecTriagePanel } from '../../../../../components/psit/PsitBecTriagePanel'
 // PSIT-CUSTOM-END
 import { CippDataTable } from '../../../../../components/CippTable/CippDataTable'
 import { getBecIntuneDeviceActions } from '../../../../../components/CippComponents/CippIntuneDeviceActions.jsx'
@@ -97,6 +98,23 @@ const Page = () => {
     queryKey: `execBECCheck-polling-${becInitialCall.data?.GUID}`,
     waiting: false,
   })
+
+  // PSIT-CUSTOM-BEGIN: analyst determinations on the signals data alone cannot settle
+  // Fetched here so the qualification panel and both reports read the same answers. React Query
+  // dedupes on the query key, so the panel and the French report button fetching it too costs
+  // nothing.
+  const psitTriageRequest = ApiGetCall({
+    url: `/api/PSITListBecTriage?tenantFilter=${userSettingsDefaults.currentTenant}&userId=${userId}`,
+    queryKey: `PSITBecTriage-${userSettingsDefaults.currentTenant}-${userId}`,
+    waiting: Boolean(userId && userSettingsDefaults.currentTenant),
+  })
+  const psitTriage = psitTriageRequest.data?.Determinations || []
+  // The upstream English report is superseded by the French one, which carries the analyst
+  // assessment and states no risk level while a question is open. Kept reachable behind a toggle
+  // rather than deleted: an English-speaking client is a real case, and removing upstream UI turns
+  // every sync into a conflict.
+  const [psitShowUpstreamReport, setPsitShowUpstreamReport] = useState(false)
+  // PSIT-CUSTOM-END
 
   // Effect to monitor becGuid and start polling
   useEffect(() => {
@@ -1011,15 +1029,35 @@ const Page = () => {
                     review. The report includes detailed explanations suitable for non-technical
                     users, managers, and compliance requirements (ISO/CMMC/SOC).
                   </Typography>
+                  {/* PSIT-CUSTOM-BEGIN: qualification step before the report is issued */}
+                  {becPollingCall.data && userRequest.data?.[0] && (
+                    <PsitBecTriagePanel
+                      userData={userRequest.data[0]}
+                      becData={becPollingCall.data}
+                      tenantFilter={userSettingsDefaults.currentTenant}
+                    />
+                  )}
+                  {/* PSIT-CUSTOM-END */}
                   {/* Implement download functionality */}
                   {becPollingCall.data && (
                     <Box sx={{ mt: 2 }}>
                       <Stack direction="row" spacing={2}>
-                        <BECRemediationReportButton
-                          userData={userRequest.data[0]}
-                          becData={becPollingCall.data}
-                          tenantName={userSettingsDefaults.currentTenant}
-                        />
+                        {/* PSIT-CUSTOM-BEGIN: French report is the primary deliverable; the
+                            upstream English one sits behind a toggle. becData carries the analyst
+                            determinations because the document renders outside the React tree and
+                            cannot fetch them itself. */}
+                        {psitShowUpstreamReport ? (
+                          <BECRemediationReportButton
+                            userData={userRequest.data[0]}
+                            becData={{ ...becPollingCall.data, PsitTriage: psitTriage }}
+                            tenantName={userSettingsDefaults.currentTenant}
+                          />
+                        ) : (
+                          <Button size="small" onClick={() => setPsitShowUpstreamReport(true)}>
+                            Rapport anglais (upstream)
+                          </Button>
+                        )}
+                        {/* PSIT-CUSTOM-END */}
                         {/* PSIT-CUSTOM-BEGIN: French edition of the same report, for client delivery */}
                         <PsitBecReportFrButton
                           userData={userRequest.data[0]}

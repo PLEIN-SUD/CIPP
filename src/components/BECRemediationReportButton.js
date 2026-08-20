@@ -30,6 +30,9 @@ import {
   Section,
   StatRow,
 } from './CippPdf'
+// PSIT-CUSTOM-BEGIN: analyst assessment block, shared with the French report
+import { PsitBecAssessmentBlock } from './psit/PsitBecAssessmentSection'
+// PSIT-CUSTOM-END
 
 // BEC Remediation PDF Document Component
 // Exported so the branding preview can render this report against sample data, and so tests can
@@ -255,6 +258,10 @@ export const BECRemediationReportDocument = ({
                 'LOW RISK: Minimal suspicious activity detected. The findings show standard user behavior with no significant indicators of compromise. Continue monitoring as a precautionary measure.'}
             </AlertBox>
         </Section>
+
+        {/* PSIT-CUSTOM-BEGIN: analyst assessment, which supersedes the mechanical score above */}
+        <PsitBecAssessmentBlock becData={becData} userData={userData} language="en" />
+        {/* PSIT-CUSTOM-END */}
 
         <Section title="Data Source Information">
           <InfoBox title="Audit Log Status">{becData?.ExtractResult || 'Unknown'}</InfoBox>

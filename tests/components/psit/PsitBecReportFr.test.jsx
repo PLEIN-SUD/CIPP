@@ -5,7 +5,6 @@ import { renderWithProviders } from '../../test-utils'
 import {
   PsitBecReportFrButton,
   PsitBecReportFrDocument,
-  psitCalculateThreatLevel,
 } from '../../../src/components/psit/PsitBecReportFr'
 
 vi.mock('../../../src/api/ApiCall', () => ({
@@ -155,68 +154,68 @@ describe('PsitBecReportFrDocument', () => {
   })
 })
 
-describe('psitCalculateThreatLevel', () => {
-  // These weights and thresholds mirror calculateThreatLevel in
-  // src/components/BECRemediationReportButton.js. Pinning them here makes an upstream change to the
-  // scoring a visible test failure rather than two reports quietly disagreeing.
-  const emptyStats = {
-    newRules: 0,
-    ruleChanges: 0,
-    permissionChanges: 0,
-    permissionChangesTargetingUser: 0,
-    newApps: 0,
-    newUsers: 0,
-    safelistChanges: 0,
-    maliciousApps: 0,
-    foreignSuccessfulSignIns: 0,
-    foreignActivity: 0,
-    anonymousLinks: 0,
-    massMailFlagged: false,
-    recentMfaDevices: 0,
-    recentIntuneDevices: 0,
-  }
+describe('PsitBecReportFrDocument verdict', () => {
+  // The verdict itself is unit-tested in tests/utils/psit-bec-signals.test.js; here we only check
+  // that the document prints it rather than a mechanical risk level.
+  const quotaRule = { Name: 'fieldglass', MoveToFolder: 'CAP - DEMANDES' }
 
-  it('reports a low level with no indicator', () => {
-    expect(psitCalculateThreatLevel(emptyStats, {})).toMatchObject({ level: 'Low', label: 'faible' })
-  })
-
-  it('reaches medium at a score of four', () => {
-    // newRules (3) + newApps (1) = 4
-    const result = psitCalculateThreatLevel({ ...emptyStats, newRules: 1, newApps: 1 }, {})
-    expect(result).toMatchObject({ level: 'Medium', label: 'moyen' })
-  })
-
-  it('reaches high at a score of seven', () => {
-    // newRules (3) + ruleChanges (3) + permissionChanges (1) = 7
-    const result = psitCalculateThreatLevel(
-      { ...emptyStats, newRules: 1, ruleChanges: 1, permissionChanges: 1 },
-      {}
+  it('prints "À qualifier" and the open question when nothing has been determined', () => {
+    renderWithProviders(
+      <PsitBecReportFrDocument
+        userData={userData}
+        becData={{ ...becData, NewRules: [quotaRule] }}
+        brandingSettings={{}}
+        tenantName="contoso.test"
+        variables={{}}
+        triage={[]}
+      />
     )
-    expect(result).toMatchObject({ level: 'High', label: 'élevé' })
+
+    // Several nodes carry it on purpose: the verdict box, the stat row and the audit recap.
+    expect(screen.getAllByText(/À qualifier/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Questions ouvertes/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Évaluation du risque/)).not.toBeInTheDocument()
   })
 
-  it('weights a known-malicious application as heavily as a rule moving mail to RSS', () => {
-    const malicious = psitCalculateThreatLevel({ ...emptyStats, maliciousApps: 1 }, {})
-    const rssRule = psitCalculateThreatLevel(emptyStats, {
-      NewRules: [{ MoveToFolder: 'RSS Subscriptions' }],
-    })
-    expect(malicious.level).toBe('Medium')
-    expect(rssRule.level).toBe('Medium')
+  it('prints the determination, its author and its date once recorded', () => {
+    const { container } = renderWithProviders(
+      <PsitBecReportFrDocument
+        userData={userData}
+        becData={{ ...becData, NewRules: [quotaRule] }}
+        brandingSettings={{}}
+        tenantName="contoso.test"
+        variables={{}}
+        triage={[
+          {
+            SignalId: 'rule-filing:fieldglass',
+            Verdict: 'expected',
+            Analyst: 's.miro@pleinsudit.com',
+            DecidedUtc: '2026-08-20T12:00:00Z',
+            Justification: 'Règle de classement fournisseur confirmée par le service achats',
+          },
+        ]}
+      />
+    )
+
+    expect(container.textContent).toContain('s.miro@pleinsudit.com')
+    expect(container.textContent).toContain('2026-08-20 12:00 UTC')
+    expect(container.textContent).toContain('service achats')
+    expect(container.textContent).toContain('Aucun signal retenu')
   })
 
-  it('counts a successful foreign sign-in and foreign activity separately', () => {
-    // 3 + 3 = 6, one point short of High: two foreign indicators alone do not reach the top band.
-    const foreignOnly = psitCalculateThreatLevel(
-      { ...emptyStats, foreignSuccessfulSignIns: 1, foreignActivity: 2 },
-      {}
+  it('renders the UTC chronology page', () => {
+    const { container } = renderWithProviders(
+      <PsitBecReportFrDocument
+        userData={userData}
+        becData={becData}
+        brandingSettings={{}}
+        tenantName="contoso.test"
+        variables={{}}
+        triage={[]}
+      />
     )
-    expect(foreignOnly).toMatchObject({ level: 'Medium', label: 'moyen' })
 
-    // Adding any third indicator crosses the threshold (+2 for a recent MFA registration).
-    const withMfa = psitCalculateThreatLevel(
-      { ...emptyStats, foreignSuccessfulSignIns: 1, foreignActivity: 2, recentMfaDevices: 1 },
-      {}
-    )
-    expect(withMfa).toMatchObject({ level: 'High', label: 'élevé' })
+    expect(container.textContent).toContain('Chronologie')
+    expect(container.textContent).toContain('Tous les horodatages en UTC')
   })
 })

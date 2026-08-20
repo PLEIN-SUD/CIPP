@@ -31,6 +31,8 @@ const STRINGS = {
     on: 'le',
     noJustification: 'sans justification consignée',
     verdictLabel: 'Verdict :',
+    detailPointer:
+      'Les faits retenus, les qualifications enregistrées et ce qui a été écarté sont détaillés en section « Faits et signaux », avec leur preuve et leur source.',
     disclaimer:
       "Ce document rapporte des constats et les qualifications de l'analyste. Il ne conclut pas au-delà de ce que les données et ces qualifications permettent d'affirmer.",
   },
@@ -47,16 +49,26 @@ const STRINGS = {
     on: 'on',
     noJustification: 'no justification recorded',
     verdictLabel: 'Verdict:',
+    detailPointer:
+      'The retained facts, the recorded determinations and what was set aside are detailed in the findings section, each with its evidence and source.',
     disclaimer:
       'This document reports findings and the analyst determinations. It does not conclude beyond what the data and those determinations support. The "Threat Assessment" banner earlier in this report is a mechanical score over counters; where the two differ, this assessment supersedes it.',
   },
 }
 
+/**
+ * @param compact Decision material only - the verdict, the open questions, the disclaimer. For a
+ *   report that details the signals on a later page: printing the established list and the
+ *   determinations twice made page 2 and page 8 of the first real PDF read like two documents, and
+ *   they disagreed. The full form stays the default for the upstream English report, which has no
+ *   findings page to point at.
+ */
 export const PsitBecAssessmentSection = ({
   verdict,
   signals = [],
   triage = [],
   language = 'fr',
+  compact = false,
 }) => {
   const t = STRINGS[language] || STRINGS.fr
   const determinations = new Map(
@@ -77,13 +89,15 @@ export const PsitBecAssessmentSection = ({
         {verdict?.detail}
       </Box>
 
-      {established.length > 0 && (
+      {!compact && established.length > 0 && (
         <InfoBox title={t.establishedTitle}>
           {established.map((signal) => `• ${signal.title}\n  ${signal.detail}`).join('\n')}
         </InfoBox>
       )}
 
-      {answered.length > 0 ? (
+      {compact && <Note>{t.detailPointer}</Note>}
+
+      {compact ? null : answered.length > 0 ? (
         <InfoBox title={t.qualifiedTitle}>
           {answered
             .map(

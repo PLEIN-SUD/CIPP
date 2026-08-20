@@ -10,6 +10,8 @@ import {
   Typography,
   IconButton,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from '@mui/material'
 import { ReportProblem, Download, Close } from '@mui/icons-material'
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
@@ -71,6 +73,7 @@ export const PsitBecIncidentReportDocument = ({
   triage = [],
   incident = {},
   remediation = {},
+  pseudonymise = false,
 }) => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -133,6 +136,7 @@ export const PsitBecIncidentReportDocument = ({
         <Section title="Identification">
           <InfoBox title="Incident">
             Référence : {incident?.Reference || 'à attribuer'}
+            {incident?.CreatedUtc ? ` (dossier ouvert le ${formatUtc(incident.CreatedUtc)})` : ''}
             {'\n'}
             Ticket Autotask : {incident?.AutotaskTicket || 'non renseigné'}
             {'\n'}
@@ -524,6 +528,14 @@ export const PsitBecIncidentReportDocument = ({
             <Bold>Cette liste ne constitue pas une liste de victimes</Bold> : la collecte ne lit pas
             le contenu des messages. Elle indique qui doit être vérifié en priorité.
           </Paragraph>
+          {pseudonymise && (
+            <Note>
+              Les adresses sont pseudonymisées dans cette version : seul le domaine est conservé,
+              car il suffit à identifier l'organisation à contacter. La correspondance entre les
+              identifiants T-01, T-02… et les adresses réelles figure dans l'export JSON du dossier,
+              à diffusion restreinte.
+            </Note>
+          )}
           {thirdParties.truncated && (
             <Note>
               Échantillon : la collecte a retourné {thirdParties.collectedRecipients} lignes de
@@ -543,12 +555,21 @@ export const PsitBecIncidentReportDocument = ({
         <Section title={`Destinataires (${thirdParties.recipients.length})`}>
           {thirdParties.recipients.length > 0 ? (
             <>
-              {thirdParties.recipients.slice(0, 60).map((entry) => (
-                <InfoBox key={entry.address} title={entry.address}>
+              {thirdParties.recipients.slice(0, 60).map((entry, index) => (
+                <InfoBox
+                  key={entry.address}
+                  title={
+                    pseudonymise
+                      ? `T-${String(index + 1).padStart(2, '0')} — ${entry.domain || 'domaine inconnu'}`
+                      : entry.address
+                  }
+                >
                   {entry.messages} message(s) — {entry.reasons.join(', ')}
                   {'\n'}
                   Du {entry.firstUtc || 'N/D'} au {entry.lastUtc || 'N/D'}
-                  {entry.subjects.length > 0 && `\nObjets : ${entry.subjects.join(' | ')}`}
+                  {!pseudonymise &&
+                    entry.subjects.length > 0 &&
+                    `\nObjets : ${entry.subjects.join(' | ')}`}
                 </InfoBox>
               ))}
               {thirdParties.recipients.length > 60 && (
@@ -651,6 +672,9 @@ export const PsitBecIncidentReportDocument = ({
 
 export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, triage = [] }) => {
   const [dialogOpen, setDialogOpen] = useState(false)
+  // Off by default: the annex exists to say who must be called first, and a pseudonym cannot be
+  // called. It is turned on for a copy that will circulate beyond the people handling the case.
+  const [pseudonymise, setPseudonymise] = useState(false)
   const brandingSettings = useBrandingSettings()
   const variables = useReportVariables()
 
@@ -685,10 +709,17 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
 
   const incident = incidentRequest.data?.Incident || {}
   const remediation = incidentRequest.data?.Remediation || {}
+  // The five items GDPR article 33(3) requires a controller to describe. A report that leaves any
+  // of them blank is worse than no report: it looks complete. So the preview stays available - the
+  // analyst has to see what is missing, in place - and the download is what waits.
   const missing = []
   if (!incident?.Reference) missing.push("aucune fiche d'incident ouverte")
   if (!incident?.DetectedUtc) missing.push('date de détection')
+  if (!psitAsArray(incident?.DataSubjectCategories).length) {
+    missing.push('catégories de personnes concernées')
+  }
   if (!psitAsArray(incident?.DataCategories).length) missing.push('catégories de données')
+  if (!incident?.AffectedPersonsEstimate) missing.push('nombre approximatif de personnes')
   if (!incident?.LikelyConsequences) missing.push('conséquences probables')
 
   const documentNode = (
@@ -701,6 +732,7 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
       triage={triage}
       incident={incident}
       remediation={remediation}
+      pseudonymise={pseudonymise}
     />
   )
 
@@ -731,8 +763,11 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
                 Aperçu du rapport d'incident
               </Typography>
               {missing.length > 0 && (
-                <Typography variant="body2" color="warning.main">
-                  À compléter avant diffusion : {missing.join(', ')}.
+                <Typography variant="body2" color="error.main">
+                  Téléchargement bloqué — à compléter dans la fiche de dossier :{' '}
+                  {missing.join(', ')}. Ces éléments sont ceux que l'article 33.3 du RGPD demande de
+                  décrire ; un rapport qui les laisse vides a l'air complet, ce qui est pire que pas
+                  de rapport. L'aperçu reste consultable.
                 </Typography>
               )}
             </Box>
@@ -746,24 +781,49 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
             {documentNode}
           </PDFViewer>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Fermer</Button>
-          <PDFDownloadLink
-            document={documentNode}
-            fileName={`${incident?.Reference || 'Incident_BEC'}_${userData?.userPrincipalName}.pdf`}
-            style={{ textDecoration: 'none' }}
-          >
-            {({ loading }) => (
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={loading ? <CircularProgress size={20} /> : <Download />}
-                disabled={loading}
+        <DialogActions sx={{ justifyContent: 'space-between' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={pseudonymise}
+                onChange={(event) => setPseudonymise(event.target.checked)}
+              />
+            }
+            label="Pseudonymiser les tiers en annexe"
+          />
+          <Box display="flex" gap={2} alignItems="center">
+            <Button onClick={() => setDialogOpen(false)}>Fermer</Button>
+            {missing.length > 0 ? (
+              <Tooltip
+                title={`Télécharger le PDF : indisponible tant que la fiche est incomplète (${missing.join(', ')})`}
               >
-                {loading ? 'Génération...' : 'Télécharger le PDF'}
-              </Button>
+                <span>
+                  <Button variant="contained" color="error" startIcon={<Download />} disabled>
+                    Télécharger le PDF
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <PDFDownloadLink
+                document={documentNode}
+                fileName={`${incident?.Reference || 'Incident_BEC'}_${userData?.userPrincipalName}${
+                  pseudonymise ? '_pseudonymise' : ''
+                }.pdf`}
+                style={{ textDecoration: 'none' }}
+              >
+                {({ loading }) => (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={loading ? <CircularProgress size={20} /> : <Download />}
+                    disabled={loading}
+                  >
+                    {loading ? 'Génération...' : 'Télécharger le PDF'}
+                  </Button>
+                )}
+              </PDFDownloadLink>
             )}
-          </PDFDownloadLink>
+          </Box>
         </DialogActions>
       </Dialog>
     </>

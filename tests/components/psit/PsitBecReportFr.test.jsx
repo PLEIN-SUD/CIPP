@@ -201,6 +201,37 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text.indexOf('Décision')).toBeLessThan(text.indexOf('Annexe A'))
   })
 
+  it('does not print the evidence twice: the decision page points at the findings', () => {
+    const { container } = render({
+      triage: [
+        {
+          SignalId: 'signin-ip:203.0.113.42',
+          Verdict: 'unexpected',
+          Analyst: 's.miro@pleinsudit.com',
+          DecidedUtc: '2026-08-20T13:02:00Z',
+          Justification: "l'utilisateur n'est pas en Italie",
+        },
+      ],
+    })
+    const text = container.textContent
+
+    expect(text).toContain('sont détaillés en section « Faits et signaux »')
+    // The full form's own headings belong to the upstream English report, not to page 1 here.
+    expect(text).not.toContain('Signaux établis par la donnée')
+    expect(text).not.toContain('Qualifications enregistrées')
+    // The determination itself is printed once, on the findings page.
+    expect(text.match(/s\.miro@pleinsudit\.com/g)).toHaveLength(1)
+  })
+
+  it('gives each open question the evidence needed to answer it', () => {
+    const { container } = render()
+    const text = container.textContent
+
+    expect(text).toContain('À qualifier (')
+    expect(text).toContain('Question :')
+    expect(text).toContain('Source :')
+  })
+
   it('carries the Autotask ticket and the incident cross-reference', () => {
     const { container } = render({
       incident: {

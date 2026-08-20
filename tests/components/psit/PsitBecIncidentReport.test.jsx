@@ -1,5 +1,6 @@
 import React from 'react'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test-utils'
 import {
   PsitBecIncidentReportButton,
@@ -131,9 +132,35 @@ describe('PsitBecIncidentReportButton', () => {
     expect(screen.getByRole('button', { name: /Rapport d'incident/ })).toBeDisabled()
   })
 
+  it('blocks the download while an article 33.3 item is missing, and says which', async () => {
+    ApiGetCall.mockImplementation(() => ({
+      data: { Incident: { Reference: 'PSIT-BEC-1', DetectedUtc: '2026-08-20T09:00:00Z' } },
+      isFetching: false,
+      isSuccess: true,
+      isError: false,
+    }))
+
+    renderWithProviders(
+      <PsitBecIncidentReportButton
+        userData={userData}
+        becData={compromisedBecData}
+        tenantName="contoso.test"
+        triage={[]}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /Rapport d'incident/ }))
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(/Téléchargement bloqué/)).toBeInTheDocument()
+    // The missing items are named in the same warning, tooltip included, hence getAllByText.
+    expect(screen.getAllByText(/conséquences probables/).length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: /Télécharger le PDF/ })).toBeDisabled()
+  })
+
   it('appears once a compromise is established and warns about missing fields', () => {
     ApiGetCall.mockImplementation(() => ({
-      data: { Incident: { Reference: 'PSIT-BEC-1' }, Remediation: remediation },
+      data: { Incident: incident, Remediation: remediation },
       isFetching: false,
       isSuccess: true,
       isError: false,
@@ -344,6 +371,30 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).toContain('courriel')
     expect(container.textContent).toContain('2026-08-21 10:30 UTC')
     expect(container.textContent).not.toContain("Aucun accusé de réception n'a été enregistré")
+  })
+
+  it('pseudonymises the third-party annex on demand, keeping the domain', () => {
+    const { container } = render({ pseudonymise: true })
+
+    expect(container.textContent).not.toContain('buyer@client.test')
+    expect(container.textContent).toContain('T-01')
+    expect(container.textContent).toContain('client.test')
+    expect(container.textContent).toContain('Les adresses sont pseudonymisées')
+    // A subject line can name a third party, so it goes with the address.
+    expect(container.textContent).not.toContain('Objets :')
+  })
+
+  it('names the addresses by default, because a pseudonym cannot be called', () => {
+    const { container } = render()
+    expect(container.textContent).toContain('buyer@client.test')
+    expect(container.textContent).not.toContain('Les adresses sont pseudonymisées')
+  })
+
+  it('dates the case file next to its reference, so the reference is not read as a date', () => {
+    const { container } = render({
+      incident: { ...incident, CreatedUtc: '2026-08-20T15:00:00Z' },
+    })
+    expect(container.textContent).toContain('(dossier ouvert le 2026-08-20 15:00 UTC)')
   })
 
   it('warns on its own first page when generated without a retained compromise', () => {

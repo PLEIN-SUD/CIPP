@@ -342,11 +342,15 @@ export const PsitBecReportFrDocument = ({
           />
         </Section>
 
+        {/* Compact: the decision page carries the verdict and the open questions, not a second
+            copy of the evidence. The first real PDF printed the established facts here and again
+            on page 8, and the two halves disagreed. */}
         <PsitBecAssessmentSection
           verdict={verdict}
           signals={signals}
           triage={triage}
           language="fr"
+          compact
         />
 
         <Section title="Suites à donner">
@@ -476,10 +480,18 @@ export const PsitBecReportFrDocument = ({
         </Section>
 
         {openQuestions.length > 0 && (
-          <Section title={`Questions ouvertes (${openQuestions.length})`}>
-            <AlertBox title="Le verdict dépend de ces réponses">
-              {openQuestions.map((signal) => `• ${signal.question}`).join('\n')}
-            </AlertBox>
+          <Section title={`À qualifier (${openQuestions.length})`}>
+            {/* The question on its own is on the decision page. Here it comes with what was
+                observed, which is what an analyst needs in order to answer it. */}
+            {openQuestions.map((signal) => (
+              <AlertBox key={signal.id} title={signal.title}>
+                {signal.detail}
+                {'\n'}
+                Question : {signal.question}
+                {'\n'}
+                Source : {(signal.evidence || []).join(', ') || 'collecte BEC'}
+              </AlertBox>
+            ))}
           </Section>
         )}
 

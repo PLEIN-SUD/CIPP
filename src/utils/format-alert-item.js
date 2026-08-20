@@ -1,3 +1,7 @@
+// PSIT-CUSTOM-BEGIN: humanize byte-valued alert fields
+import { psitFormatByteField } from './psit-format-bytes'
+// PSIT-CUSTOM-END
+
 const NOISE_KEYS = new Set(['tenant', 'tenantid', 'tenantfilter'])
 
 const isIdKey = (key) => /id$/i.test(key)
@@ -77,6 +81,10 @@ const pickTitle = (item) => {
   if (named) return String(named)
   for (const [key, value] of Object.entries(item)) {
     if (NOISE_KEYS.has(key.toLowerCase())) continue
+    // PSIT-CUSTOM-BEGIN: humanize byte-valued alert fields
+    const psitByteField = psitFormatByteField(key, value)
+    if (psitByteField) return `${psitByteField.label}: ${psitByteField.value}`
+    // PSIT-CUSTOM-END
     const formatted = formatValue(value)
     if (formatted) return `${formatFieldName(key)}: ${formatted}`
   }
@@ -87,6 +95,14 @@ const pickDetail = (item, title) => {
   const parts = []
   for (const [key, value] of Object.entries(item)) {
     if (NOISE_KEYS.has(key.toLowerCase()) || isIdKey(key)) continue
+    // PSIT-CUSTOM-BEGIN: humanize byte-valued alert fields
+    const psitByteField = psitFormatByteField(key, value)
+    if (psitByteField) {
+      parts.push(`${psitByteField.label}: ${psitByteField.value}`)
+      if (parts.length >= 2) break
+      continue
+    }
+    // PSIT-CUSTOM-END
     const formatted = formatValue(value)
     if (!formatted || formatted === title) continue
     parts.push(`${formatFieldName(key)}: ${formatted}`)
@@ -116,6 +132,13 @@ export const getAlertItemFields = (rawItem, contentPreview) => {
   const fields = []
   for (const [key, value] of Object.entries(item)) {
     if (NOISE_KEYS.has(key.toLowerCase())) continue
+    // PSIT-CUSTOM-BEGIN: humanize byte-valued alert fields
+    const psitByteField = psitFormatByteField(key, value)
+    if (psitByteField) {
+      fields.push(psitByteField)
+      continue
+    }
+    // PSIT-CUSTOM-END
     const formatted = formatValue(value)
     if (!formatted) continue
     fields.push({ label: formatFieldName(key), value: formatted })

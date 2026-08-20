@@ -195,7 +195,7 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).toContain('Chronologie')
     expect(text).toContain('Faits et signaux')
     expect(text).toContain('Couverture et limites')
-    expect(text).toContain('Annexe A — vérifications')
+    expect(text).toContain('Annexe A — couverture des vérifications')
     expect(text).toContain('Annexe B')
     // The decision page comes before the annex, which is the whole point of the restructure.
     expect(text.indexOf('Décision')).toBeLessThan(text.indexOf('Annexe A'))
@@ -271,12 +271,54 @@ describe('PsitBecReportFrDocument corrections', () => {
 
   it('does not reproduce the sender lists when nothing changed in the window', () => {
     const { container } = render()
-    expect(container.textContent).toContain('278 entrées des listes ne sont pas reproduites')
+    expect(container.textContent).toContain(
+      "278 entrées des listes d'expéditeurs ne sont pas reproduites"
+    )
     expect(container.textContent).not.toContain('spam12@spam.test')
   })
 
   it('separates the investigated user password change from tenant churn', () => {
     const { container } = render()
-    expect(container.textContent).toContain("Sur d'autres comptes du tenant : 1")
+    // No change on the account itself, so the coverage row says so and names the tenant churn
+    // instead of leaving the reader to read one as the other.
+    expect(container.textContent).toContain("Aucun changement dans la fenêtre (1 sur d'autres")
+  })
+
+  it('reports all eleven checks as a coverage table instead of eleven sections', () => {
+    const { container } = render()
+    const text = container.textContent
+
+    for (const control of [
+      '1. Règles de boîte de réception',
+      '2. Comptes créés dans le tenant',
+      '3. Applications',
+      '4. Permissions de boîte',
+      '5. Courrier sortant',
+      "6. Méthodes d'authentification",
+      '7. Mot de passe du compte',
+      '8. Expéditeurs approuvés et bloqués',
+      '9. Appareils Intune',
+      '10. Connexions par adresse source',
+      '11. Liens de partage',
+    ]) {
+      expect(text).toContain(control)
+    }
+
+    // The checks that found nothing get a table row, not a green box on its own page.
+    expect(text).not.toContain('Aucun compte créé pendant la fenêtre')
+    expect(text).not.toContain('Aucune modification des permissions de boîte')
+    expect(text).toContain('Aucune modification')
+  })
+
+  it('lists the indicators an analyst can reuse, Microsoft ranges excluded', () => {
+    const { container } = render()
+    const text = container.textContent
+
+    expect(text).toContain('Annexe C — indicateurs observés')
+    expect(text).toContain('203.0.113.42')
+    // The automatic reply was submitted by Exchange Online: blocking that address would block the
+    // client's own mail.
+    expect(text).not.toContain('2603:10a6:803:81::32')
+    expect(text).toContain("n'est pas un verdict")
   })
 })

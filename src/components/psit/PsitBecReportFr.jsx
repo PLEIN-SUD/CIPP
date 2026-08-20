@@ -31,13 +31,16 @@ import {
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { buildIocs } from '../../utils/psit-bec-iocs'
 import {
   AlertBox,
+  Bold,
   Bullet,
   BulletList,
   ClearBox,
   ContentPage,
   CoverMeta,
+  DataTable,
   InfoBox,
   Note,
   Paragraph,
@@ -114,6 +117,7 @@ export const PsitBecReportFrDocument = ({
   const signInGroups = groupSignInsByIp(becData?.SuspectUserSignIns || [])
   const mail = classifySentMessages(becData, userData)
   const exposure = buildExposure(becData, signals, triage, userData)
+  const iocs = buildIocs(becData, userData)
 
   const determinations = new Map(
     psitAsArray(triage).map((entry) => [String(entry?.SignalId), entry])
@@ -148,6 +152,118 @@ export const PsitBecReportFrDocument = ({
   const safelistChanges = becData?.SafelistChanges || []
   const senderListEntries =
     (becData?.TrustedSenders || []).length + (becData?.BlockedSenders || []).length
+
+  // Annexe A used to be eleven sections, most of them a green box saying nothing was found: two
+  // pages of negations in front of the reader. The eleven checks are still all reported - proof of
+  // coverage is the point of the annex - but as one table, with a detail block only for the checks
+  // that returned something.
+  const ruleCount = (becData?.NewRules || []).length
+  const ruleChangeCount = (becData?.InboxRuleChanges || []).length
+  const newUserCount = (becData?.NewUsers || []).length
+  const maliciousAppCount = (becData?.MaliciousSPs || []).length
+  const addedAppCount = (becData?.AddedApps || []).length
+  const permissionChangeCount = (becData?.MailboxPermissionChanges || []).length
+  const mfaCount = (becData?.MFADevices || []).length
+  const intuneCount = (becData?.IntuneDevices || []).length
+  const sharingCount = (becData?.SharingChanges || []).length
+  const signInSuccesses = signInGroups.reduce((total, group) => total + group.successes, 0)
+  const signInFailures = signInGroups.reduce((total, group) => total + group.failures, 0)
+
+  const detail = {
+    rules: ruleCount > 0 || ruleChangeCount > 0,
+    newUsers: newUserCount > 0,
+    apps: maliciousAppCount > 0 || addedAppCount > 0,
+    permissions: permissionChangeCount > 0,
+    outbound: mail.counts.collected > 0,
+    // Zero registered methods is a finding, not an absence: it gets its own block either way.
+    mfa: true,
+    passwords: suspectPasswordChange.length > 0,
+    safelist: safelistChanges.length > 0,
+    intune: intuneCount > 0 || Boolean(becData?.IntuneDevicesError),
+    signIns: signInGroups.length > 0,
+    sharing: sharingCount > 0,
+  }
+
+  const coverage = [
+    {
+      control: '1. Règles de boîte de réception',
+      result:
+        ruleCount === 0 && ruleChangeCount === 0
+          ? 'Aucune règle, aucune modification dans la fenêtre'
+          : `${plural(ruleCount, 'règle présente', 'règles présentes')}, ${ruleChangeCount} modification(s) dans la fenêtre`,
+      attention: ruleCount > 0 || ruleChangeCount > 0,
+    },
+    {
+      control: '2. Comptes créés dans le tenant',
+      result: newUserCount === 0 ? 'Aucun' : plural(newUserCount, 'compte créé', 'comptes créés'),
+      attention: newUserCount > 0,
+    },
+    {
+      control: '3. Applications',
+      result:
+        maliciousAppCount === 0 && addedAppCount === 0
+          ? 'Aucune ajoutée, aucune du catalogue malveillant'
+          : `${addedAppCount} ajoutée(s), ${maliciousAppCount} du catalogue malveillant`,
+      attention: maliciousAppCount > 0 || addedAppCount > 0,
+    },
+    {
+      control: '4. Permissions de boîte',
+      result:
+        permissionChangeCount === 0
+          ? 'Aucune modification'
+          : `${permissionChangeCount} modification(s)`,
+      attention: permissionChangeCount > 0,
+    },
+    {
+      control: '5. Courrier sortant',
+      result: `${mail.counts.collected} ligne(s) de suivi, dont ${mail.counts.humanExternal} vers l'extérieur`,
+      attention: mail.foreignHumanExternal.length > 0,
+    },
+    {
+      control: "6. Méthodes d'authentification",
+      result:
+        mfaCount === 0
+          ? 'Aucune méthode enregistrée'
+          : `${plural(mfaCount, 'méthode', 'méthodes')}${recentMfa.length > 0 ? `, dont ${recentMfa.length} dans la fenêtre` : ''}`,
+      attention: mfaCount === 0 || recentMfa.length > 0,
+    },
+    {
+      control: '7. Mot de passe du compte',
+      result:
+        suspectPasswordChange.length > 0
+          ? `Changé le ${formatUtc(suspectPasswordChange[0]?.lastPasswordChangeDateTime)}`
+          : `Aucun changement dans la fenêtre (${otherPasswordChanges} sur d'autres comptes)`,
+      attention: suspectPasswordChange.length > 0,
+    },
+    {
+      control: '8. Expéditeurs approuvés et bloqués',
+      result: `${senderListEntries} entrée(s), ${safelistChanges.length} modification(s) dans la fenêtre`,
+      attention: safelistChanges.length > 0,
+    },
+    {
+      control: '9. Appareils Intune',
+      result: becData?.IntuneDevicesError
+        ? 'Non récupérables'
+        : intuneCount === 0
+          ? 'Aucun appareil géré'
+          : plural(intuneCount, 'appareil géré', 'appareils gérés'),
+      attention: Boolean(becData?.IntuneDevicesError),
+    },
+    {
+      control: '10. Connexions par adresse source',
+      result:
+        signInGroups.length === 0
+          ? 'Aucune connexion retournée par la collecte'
+          : `${signInSuccesses} réussie(s) depuis ${signInGroups.filter((group) => group.successes > 0).length} adresse(s), ${signInFailures} échec(s)`,
+      attention: foreignSuccessSessions.length > 0,
+    },
+    {
+      control: '11. Liens de partage',
+      result: sharingCount === 0 ? 'Aucun créé ni modifié' : `${sharingCount} modification(s)`,
+      attention: sharingCount > 0,
+    },
+  ]
+  const hasAnyDetail = Object.values(detail).some(Boolean)
 
   const qualificationOf = (signalId) => {
     const determination = determinations.get(signalId)
@@ -442,276 +558,297 @@ export const PsitBecReportFrDocument = ({
         </Section>
       </ContentPage>
 
-      {/* ANNEXE A — LES ONZE VÉRIFICATIONS */}
+      {/* ANNEXE A — COUVERTURE PUIS DÉTAIL */}
       <ContentPage
-        title="Annexe A — vérifications"
-        subtitle="Les onze contrôles de la collecte, dans leur état brut"
+        title="Annexe A — couverture des vérifications"
+        subtitle="Les onze contrôles de la collecte et leur résultat"
       >
-        <Section title="1. Règles de boîte de réception">
-          {(becData?.NewRules || []).length > 0 ? (
-            (becData.NewRules || []).map((rule, index) => {
-              const signal = signals.find((item) => item.id.endsWith(`:${rule?.Name}`))
-              return (
-                <InfoBox key={`rule-${index}`} title={rule?.Name || 'Règle sans nom'}>
-                  {rule?.MoveToFolder ? `Déplace vers : ${rule.MoveToFolder}\n` : ''}
-                  {rule?.ForwardTo ? `Transfère vers : ${rule.ForwardTo}\n` : ''}
-                  {rule?.DeleteMessage ? 'Supprime les messages\n' : ''}
-                  {rule?.RecentlyChanged ? 'Créée ou modifiée pendant la fenêtre\n' : ''}
-                  Qualification : {signal ? qualificationOf(signal.id) : 'non évaluée'}
-                </InfoBox>
-              )
-            })
-          ) : (
-            <ClearBox title="Aucune règle">Aucune règle de boîte n'a été trouvée.</ClearBox>
-          )}
-          {(becData?.InboxRuleChanges || []).length > 0 && (
-            <InfoBox
-              title={plural(
-                becData.InboxRuleChanges.length,
-                'modification de règle dans la fenêtre',
-                'modifications de règles dans la fenêtre'
-              )}
-            >
-              {becData.InboxRuleChanges.slice(0, 8)
-                .map(
-                  (change) =>
-                    `${formatUtc(change?.Date)} — ${change?.Operation} « ${
-                      change?.RuleName || 'sans nom'
-                    } » depuis ${change?.ClientIP || 'IP inconnue'}${
-                      change?.Country ? ` (${change.Country})` : ''
-                    }`
-                )
-                .join('\n')}
-            </InfoBox>
-          )}
+        <Section>
+          <Paragraph>
+            La collecte exécute onze contrôles, tous listés ci-dessous qu'ils aient ou non retourné
+            quelque chose : c'est ce tableau qui atteste de l'étendue de l'analyse. Les contrôles
+            qui ont retourné des éléments sont détaillés ensuite ; les autres n'ont rien à montrer
+            de plus que cette ligne.
+          </Paragraph>
         </Section>
 
-        <Section title="2. Comptes créés récemment">
-          {(becData?.NewUsers || []).length > 0 ? (
-            <InfoBox title={plural(becData.NewUsers.length, 'compte créé', 'comptes créés')}>
-              {becData.NewUsers.slice(0, 10)
-                .map((user) => `${user?.userPrincipalName} — ${formatUtc(user?.createdDateTime)}`)
-                .join('\n')}
-            </InfoBox>
-          ) : (
-            <ClearBox title="Aucun compte créé">Aucun compte créé pendant la fenêtre.</ClearBox>
-          )}
+        <Section title="Résultats">
+          <DataTable
+            columns={[
+              { header: 'Contrôle', key: 'control', width: 2, bold: true },
+              {
+                header: 'Résultat',
+                key: 'result',
+                width: 3,
+                colour: (row) => (row.attention ? '#9B2C2C' : undefined),
+              },
+            ]}
+            rows={coverage}
+            limit={11}
+          />
         </Section>
 
-        <Section title="3. Applications">
-          {(becData?.MaliciousSPs || []).length > 0 && (
-            <AlertBox
-              title={plural(
-                becData.MaliciousSPs.length,
-                'application du catalogue malveillant présente',
-                'applications du catalogue malveillant présentes'
-              )}
-            >
-              {becData.MaliciousSPs.slice(0, 8)
-                .map(
-                  (app) =>
-                    `${app?.displayName} (${app?.appId}) — ${app?.CatalogName || 'catalogue'}`
-                )
-                .join('\n')}
-            </AlertBox>
-          )}
-          {(becData?.AddedApps || []).length > 0 ? (
-            <InfoBox
-              title={plural(
-                becData.AddedApps.length,
-                'application ajoutée dans la fenêtre',
-                'applications ajoutées dans la fenêtre'
-              )}
-            >
-              {becData.AddedApps.slice(0, 8)
-                .map(
-                  (app) =>
-                    `${app?.displayName || app?.appDisplayName} — ${formatUtc(
-                      app?.createdDateTime
-                    )}${app?.MaliciousMatch ? ' — correspond au catalogue malveillant' : ''}`
-                )
-                .join('\n')}
-            </InfoBox>
-          ) : (
-            (becData?.MaliciousSPs || []).length === 0 && (
-              <ClearBox title="Aucune application">
-                Aucune application ajoutée pendant la fenêtre, aucune application malveillante
-                connue présente dans le tenant.
-              </ClearBox>
-            )
-          )}
-        </Section>
-
-        <Section title="4. Permissions de boîte">
-          {(becData?.MailboxPermissionChanges || []).length > 0 ? (
-            <InfoBox
-              title={plural(
-                becData.MailboxPermissionChanges.length,
-                'modification de permission',
-                'modifications de permissions'
-              )}
-            >
-              {becData.MailboxPermissionChanges.slice(0, 8)
-                .map(
-                  (change) =>
-                    `${change?.Operation} par ${change?.UserKey || 'inconnu'} sur ${
-                      change?.ObjectId || 'N/D'
-                    }${change?.TargetsSuspect === true ? ' — concerne cette boîte' : ''}`
-                )
-                .join('\n')}
-            </InfoBox>
-          ) : (
-            <ClearBox title="Aucune modification">
-              Aucune modification des permissions de boîte pendant la fenêtre.
-            </ClearBox>
-          )}
-        </Section>
-
-        <Section title="5. Courrier sortant">
-          <InfoBox title="Volumes">
-            Lignes de suivi collectées : {mail.counts.collected}
-            {'\n'}
-            Dont destinataires externes, envoyés par l'utilisateur : {mail.counts.humanExternal}
-            {'\n'}
-            Dont générés par le service (réponses automatiques, non-remises) :{' '}
-            {mail.counts.systemGenerated}
-            {'\n'}
-            Dont destinataires internes : {mail.counts.internal}
-            {'\n'}
-            Envoyés depuis une adresse hors zone, hors service : {mail.foreignHumanExternal.length}
-          </InfoBox>
-          {(analysis?.Bursts || []).length > 0 && (
-            <InfoBox title={plural(analysis.Bursts.length, "rafale d'envoi", "rafales d'envoi")}>
-              {analysis.Bursts.slice(0, 5)
-                .map(
-                  (burst) =>
-                    `${formatUtc(burst?.WindowStart)} — ${burst?.MessageCount} message(s) vers ${
-                      burst?.RecipientCount
-                    } destinataire(s) : ${burst?.TopSubject || 'objet inconnu'}`
-                )
-                .join('\n')}
-            </InfoBox>
-          )}
-          {mail.humanExternal.length > 0 && (
-            <InfoBox title="Échantillon de courrier externe">
-              {mail.humanExternal
-                .slice(0, 8)
-                .map(
-                  (message) =>
-                    `${formatUtc(message?.Received)} — ${message?.RecipientAddress} — ${
-                      message?.Subject || '(sans objet)'
-                    } — depuis ${message?.FromIP || 'IP inconnue'}${
-                      message?.Country ? ` (${message.Country})` : ''
-                    }`
-                )
-                .join('\n')}
-            </InfoBox>
-          )}
-        </Section>
+        {senderListEntries > 0 && safelistChanges.length === 0 && (
+          /* Les listes complètes ne sont pas reproduites : données personnelles de tiers, sans
+             valeur d'enquête en l'absence de modification dans la fenêtre. */
+          <Note>
+            Les {senderListEntries} entrées des listes d'expéditeurs ne sont pas reproduites ici :
+            aucune n'a été modifiée pendant la fenêtre, et il s'agit de données personnelles de
+            tiers. Elles figurent dans l'export JSON.
+          </Note>
+        )}
       </ContentPage>
 
-      <ContentPage
-        title="Annexe A — vérifications (suite)"
-        subtitle="Authentification, appareils, localisations, partages"
-      >
-        <Section title="6. Méthodes d'authentification">
-          {(becData?.MFADevices || []).length > 0 ? (
-            <InfoBox
-              title={`${plural(
-                becData.MFADevices.length,
-                'méthode enregistrée',
-                'méthodes enregistrées'
-              )}${recentMfa.length > 0 ? `, dont ${recentMfa.length} dans la fenêtre` : ''}`}
-            >
-              {becData.MFADevices.map(
-                (method) =>
-                  `${String(method?.['@odata.type'] || 'inconnue')
-                    .replace('#microsoft.graph.', '')
-                    .replace('AuthenticationMethod', '')} — ${
-                    method?.displayName || 'sans nom'
-                  } — ${
-                    method?.createdDateTime ? formatUtc(method.createdDateTime) : 'date non exposée'
-                  }`
-              ).join('\n')}
-            </InfoBox>
-          ) : (
-            <AlertBox title="Aucune méthode d'authentification multifacteur">
-              Aucune méthode n'est enregistrée sur ce compte.
-            </AlertBox>
-          )}
-        </Section>
-
-        <Section title="7. Mots de passe">
-          <InfoBox title="Changements pendant la fenêtre">
-            Sur le compte analysé :{' '}
-            {suspectPasswordChange.length > 0
-              ? formatUtc(suspectPasswordChange[0]?.lastPasswordChangeDateTime)
-              : 'aucun'}
-            {'\n'}
-            Sur d'autres comptes du tenant : {otherPasswordChanges} — activité du tenant, sans lien
-            établi avec cette boîte
-          </InfoBox>
-        </Section>
-
-        <Section title="8. Expéditeurs approuvés et bloqués">
-          <InfoBox title="État">
-            Expéditeurs approuvés : {(becData?.TrustedSenders || []).length}
-            {'\n'}
-            Expéditeurs bloqués : {(becData?.BlockedSenders || []).length}
-            {'\n'}
-            Modifications pendant la fenêtre : {safelistChanges.length}
-          </InfoBox>
-          {safelistChanges.length > 0 ? (
-            <InfoBox title="Modifications">
-              {safelistChanges
-                .slice(0, 8)
-                .map(
-                  (change) =>
-                    `${formatUtc(change?.Date)} — par ${change?.UserKey || 'inconnu'} depuis ${
-                      change?.ClientIP || 'IP inconnue'
-                    }${change?.Country ? ` (${change.Country})` : ''}`
+      {hasAnyDetail && (
+        <ContentPage
+          title="Annexe A — détail des contrôles"
+          subtitle="Uniquement les contrôles qui ont retourné des éléments"
+        >
+          {detail.rules && (
+            <Section title="1. Règles de boîte de réception">
+              {psitAsArray(becData?.NewRules).map((rule, index) => {
+                const signal = signals.find((item) => item.id.endsWith(`:${rule?.Name}`))
+                return (
+                  <InfoBox key={`rule-${index}`} title={rule?.Name || 'Règle sans nom'}>
+                    {rule?.MoveToFolder ? `Déplace vers : ${rule.MoveToFolder}\n` : ''}
+                    {rule?.ForwardTo ? `Transfère vers : ${rule.ForwardTo}\n` : ''}
+                    {rule?.DeleteMessage ? 'Supprime les messages\n' : ''}
+                    {rule?.RecentlyChanged ? 'Créée ou modifiée pendant la fenêtre\n' : ''}
+                    Qualification : {signal ? qualificationOf(signal.id) : 'non évaluée'}
+                  </InfoBox>
                 )
-                .join('\n')}
-            </InfoBox>
-          ) : (
-            /* Les listes complètes ne sont pas reproduites : données personnelles de tiers, sans
-               valeur d'enquête en l'absence de modification dans la fenêtre. */
-            <Note>
-              Les {senderListEntries} entrées des listes ne sont pas reproduites ici : aucune n'a
-              été modifiée pendant la fenêtre, et il s'agit de données personnelles de tiers. Elles
-              figurent dans l'export JSON.
-            </Note>
+              })}
+              {ruleChangeCount > 0 && (
+                <InfoBox
+                  title={plural(
+                    ruleChangeCount,
+                    'modification de règle dans la fenêtre',
+                    'modifications de règles dans la fenêtre'
+                  )}
+                >
+                  {psitAsArray(becData?.InboxRuleChanges)
+                    .slice(0, 8)
+                    .map(
+                      (change) =>
+                        `${formatUtc(change?.Date)} — ${change?.Operation} « ${
+                          change?.RuleName || 'sans nom'
+                        } » depuis ${change?.ClientIP || 'IP inconnue'}${
+                          change?.Country ? ` (${change.Country})` : ''
+                        }`
+                    )
+                    .join('\n')}
+                </InfoBox>
+              )}
+            </Section>
           )}
-        </Section>
 
-        <Section title="9. Appareils Intune">
-          {becData?.IntuneDevicesError ? (
-            <AlertBox title="Appareils non récupérables">{becData.IntuneDevicesError}</AlertBox>
-          ) : (becData?.IntuneDevices || []).length > 0 ? (
-            <InfoBox
-              title={plural(becData.IntuneDevices.length, 'appareil géré', 'appareils gérés')}
-            >
-              {becData.IntuneDevices.slice(0, 8)
-                .map(
-                  (device) =>
-                    `${device?.deviceName} — ${
-                      device?.operatingSystem || 'OS inconnu'
-                    } — inscrit le ${formatUtc(device?.enrolledDateTime)} — conformité : ${
-                      device?.complianceState || 'N/D'
-                    }`
-                )
-                .join('\n')}
-            </InfoBox>
-          ) : (
-            <ClearBox title="Aucun appareil Intune">
-              Aucun appareil géré n'est associé à cet utilisateur.
-            </ClearBox>
+          {detail.newUsers && (
+            <Section title="2. Comptes créés récemment">
+              <InfoBox title={plural(newUserCount, 'compte créé', 'comptes créés')}>
+                {psitAsArray(becData?.NewUsers)
+                  .slice(0, 10)
+                  .map((user) => `${user?.userPrincipalName} — ${formatUtc(user?.createdDateTime)}`)
+                  .join('\n')}
+              </InfoBox>
+            </Section>
           )}
-        </Section>
 
-        <Section title="10. Connexions par adresse source">
-          {signInGroups.length > 0 ? (
-            <>
+          {detail.apps && (
+            <Section title="3. Applications">
+              {maliciousAppCount > 0 && (
+                <AlertBox
+                  title={plural(
+                    maliciousAppCount,
+                    'application du catalogue malveillant présente',
+                    'applications du catalogue malveillant présentes'
+                  )}
+                >
+                  {psitAsArray(becData?.MaliciousSPs)
+                    .slice(0, 8)
+                    .map(
+                      (app) =>
+                        `${app?.displayName} (${app?.appId}) — ${app?.CatalogName || 'catalogue'}`
+                    )
+                    .join('\n')}
+                </AlertBox>
+              )}
+              {addedAppCount > 0 && (
+                <InfoBox
+                  title={plural(
+                    addedAppCount,
+                    'application ajoutée dans la fenêtre',
+                    'applications ajoutées dans la fenêtre'
+                  )}
+                >
+                  {psitAsArray(becData?.AddedApps)
+                    .slice(0, 8)
+                    .map(
+                      (app) =>
+                        `${app?.displayName || app?.appDisplayName} — ${formatUtc(
+                          app?.createdDateTime
+                        )}${app?.MaliciousMatch ? ' — correspond au catalogue malveillant' : ''}`
+                    )
+                    .join('\n')}
+                </InfoBox>
+              )}
+            </Section>
+          )}
+
+          {detail.permissions && (
+            <Section title="4. Permissions de boîte">
+              <InfoBox
+                title={plural(
+                  permissionChangeCount,
+                  'modification de permission',
+                  'modifications de permissions'
+                )}
+              >
+                {psitAsArray(becData?.MailboxPermissionChanges)
+                  .slice(0, 8)
+                  .map(
+                    (change) =>
+                      `${change?.Operation} par ${change?.UserKey || 'inconnu'} sur ${
+                        change?.ObjectId || 'N/D'
+                      }${change?.TargetsSuspect === true ? ' — concerne cette boîte' : ''}`
+                  )
+                  .join('\n')}
+              </InfoBox>
+            </Section>
+          )}
+
+          {detail.outbound && (
+            <Section title="5. Courrier sortant">
+              <InfoBox title="Volumes">
+                Lignes de suivi collectées : {mail.counts.collected}
+                {'\n'}
+                Dont destinataires externes, envoyés par l'utilisateur : {mail.counts.humanExternal}
+                {'\n'}
+                Dont générés par le service (réponses automatiques, non-remises) :{' '}
+                {mail.counts.systemGenerated}
+                {'\n'}
+                Dont destinataires internes : {mail.counts.internal}
+                {'\n'}
+                Envoyés depuis une adresse hors zone, hors service :{' '}
+                {mail.foreignHumanExternal.length}
+              </InfoBox>
+              {psitAsArray(analysis?.Bursts).length > 0 && (
+                <InfoBox
+                  title={plural(
+                    psitAsArray(analysis?.Bursts).length,
+                    "rafale d'envoi",
+                    "rafales d'envoi"
+                  )}
+                >
+                  {psitAsArray(analysis?.Bursts)
+                    .slice(0, 5)
+                    .map(
+                      (burst) =>
+                        `${formatUtc(burst?.WindowStart)} — ${burst?.MessageCount} message(s) vers ${
+                          burst?.RecipientCount
+                        } destinataire(s) : ${burst?.TopSubject || 'objet inconnu'}`
+                    )
+                    .join('\n')}
+                </InfoBox>
+              )}
+              {mail.humanExternal.length > 0 && (
+                <InfoBox title="Échantillon de courrier externe">
+                  {mail.humanExternal
+                    .slice(0, 8)
+                    .map(
+                      (message) =>
+                        `${formatUtc(message?.Received)} — ${message?.RecipientAddress} — ${
+                          message?.Subject || '(sans objet)'
+                        } — depuis ${message?.FromIP || 'IP inconnue'}${
+                          message?.Country ? ` (${message.Country})` : ''
+                        }`
+                    )
+                    .join('\n')}
+                </InfoBox>
+              )}
+            </Section>
+          )}
+
+          <Section title="6. Méthodes d'authentification">
+            {mfaCount > 0 ? (
+              <InfoBox
+                title={`${plural(mfaCount, 'méthode enregistrée', 'méthodes enregistrées')}${
+                  recentMfa.length > 0 ? `, dont ${recentMfa.length} dans la fenêtre` : ''
+                }`}
+              >
+                {psitAsArray(becData?.MFADevices)
+                  .map(
+                    (method) =>
+                      `${String(method?.['@odata.type'] || 'inconnue')
+                        .replace('#microsoft.graph.', '')
+                        .replace('AuthenticationMethod', '')} — ${
+                        method?.displayName || 'sans nom'
+                      } — ${
+                        method?.createdDateTime
+                          ? formatUtc(method.createdDateTime)
+                          : 'date non exposée'
+                      }`
+                  )
+                  .join('\n')}
+              </InfoBox>
+            ) : (
+              <AlertBox title="Aucune méthode d'authentification multifacteur">
+                Aucune méthode n'est enregistrée sur ce compte.
+              </AlertBox>
+            )}
+          </Section>
+
+          {detail.passwords && (
+            <Section title="7. Mot de passe du compte">
+              <InfoBox title="Changement pendant la fenêtre">
+                Sur le compte analysé :{' '}
+                {formatUtc(suspectPasswordChange[0]?.lastPasswordChangeDateTime)}
+                {'\n'}
+                Sur d'autres comptes du tenant : {otherPasswordChanges} — activité du tenant, sans
+                lien établi avec cette boîte
+              </InfoBox>
+            </Section>
+          )}
+
+          {detail.safelist && (
+            <Section title="8. Expéditeurs approuvés et bloqués">
+              <InfoBox title="Modifications dans la fenêtre">
+                {safelistChanges
+                  .slice(0, 8)
+                  .map(
+                    (change) =>
+                      `${formatUtc(change?.Date)} — par ${change?.UserKey || 'inconnu'} depuis ${
+                        change?.ClientIP || 'IP inconnue'
+                      }${change?.Country ? ` (${change.Country})` : ''}`
+                  )
+                  .join('\n')}
+              </InfoBox>
+            </Section>
+          )}
+
+          {detail.intune && (
+            <Section title="9. Appareils Intune">
+              {becData?.IntuneDevicesError ? (
+                <AlertBox title="Appareils non récupérables">{becData.IntuneDevicesError}</AlertBox>
+              ) : (
+                <InfoBox title={plural(intuneCount, 'appareil géré', 'appareils gérés')}>
+                  {psitAsArray(becData?.IntuneDevices)
+                    .slice(0, 8)
+                    .map(
+                      (device) =>
+                        `${device?.deviceName} — ${
+                          device?.operatingSystem || 'OS inconnu'
+                        } — inscrit le ${formatUtc(device?.enrolledDateTime)} — conformité : ${
+                          device?.complianceState || 'N/D'
+                        }`
+                    )
+                    .join('\n')}
+                </InfoBox>
+              )}
+            </Section>
+          )}
+
+          {detail.signIns && (
+            <Section title="10. Connexions par adresse source">
               {signInGroups
                 .filter((group) => group.successes > 0)
                 .slice(0, 8)
@@ -746,37 +883,78 @@ export const PsitBecReportFrDocument = ({
                   : pulvérisation de mots de passe, aucune n'a abouti.
                 </Note>
               )}
-            </>
-          ) : (
-            <Note>Aucune connexion n'a été retournée par la collecte.</Note>
+            </Section>
           )}
-        </Section>
 
-        <Section title="11. Liens de partage">
-          {(becData?.SharingChanges || []).length > 0 ? (
-            <InfoBox
-              title={plural(
-                becData.SharingChanges.length,
-                'modification de partage',
-                'modifications de partages'
-              )}
-            >
-              {becData.SharingChanges.slice(0, 8)
-                .map(
-                  (change) =>
-                    `${formatUtc(change?.Date)} — ${change?.Operation} — ${
-                      change?.FileName || change?.ItemUrl || 'élément inconnu'
-                    }${change?.Target ? ` — partagé avec ${change.Target}` : ''}`
-                )
-                .join('\n')}
-            </InfoBox>
-          ) : (
-            <ClearBox title="Aucun partage">
-              Aucun lien de partage créé ni modifié pendant la fenêtre.
-            </ClearBox>
+          {detail.sharing && (
+            <Section title="11. Liens de partage">
+              <InfoBox
+                title={plural(sharingCount, 'modification de partage', 'modifications de partages')}
+              >
+                {psitAsArray(becData?.SharingChanges)
+                  .slice(0, 8)
+                  .map(
+                    (change) =>
+                      `${formatUtc(change?.Date)} — ${change?.Operation} — ${
+                        change?.FileName || change?.ItemUrl || 'élément inconnu'
+                      }${change?.Target ? ` — partagé avec ${change.Target}` : ''}`
+                  )
+                  .join('\n')}
+              </InfoBox>
+            </Section>
           )}
-        </Section>
-      </ContentPage>
+        </ContentPage>
+      )}
+
+      {/* ANNEXE C — INDICATEURS */}
+      {iocs.total > 0 && (
+        <ContentPage
+          title="Annexe C — indicateurs observés"
+          subtitle="Éléments techniques réutilisables, avec leur origine"
+        >
+          <Section>
+            <Paragraph>
+              Ces éléments ont été observés pendant la fenêtre analysée. Ils sont regroupés ici pour
+              pouvoir être repris ailleurs : blocage, recherche sur d'autres boîtes, transmission à
+              un tiers.{' '}
+              <Bold>
+                Leur présence n'est pas un verdict : une adresse figure ici parce qu'elle a été vue,
+                pas parce qu'elle est malveillante.
+              </Bold>{' '}
+              Les adresses d'infrastructure Microsoft sont exclues : les bloquer bloquerait le
+              courrier de l'organisation.
+            </Paragraph>
+          </Section>
+
+          <Section title="Adresses et destinataires">
+            <DataTable
+              columns={[
+                { header: 'Indicateur', key: 'value', width: 2, bold: true },
+                { header: 'Ce qui a été observé', key: 'detail', width: 3 },
+                { header: 'Source', key: 'basis', width: 2 },
+              ]}
+              rows={[...iocs.signInIps, ...iocs.sendingIps, ...iocs.forwardTargets]}
+              limit={30}
+              emptyText="Aucune adresse à signaler."
+            />
+          </Section>
+
+          {(iocs.ruleNames.length > 0 || iocs.apps.length > 0 || iocs.subjects.length > 0) && (
+            <Section title="Règles, applications et objets">
+              <DataTable
+                columns={[
+                  { header: 'Indicateur', key: 'value', width: 2, bold: true },
+                  { header: 'Ce qui a été observé', key: 'detail', width: 3 },
+                  { header: 'Source', key: 'basis', width: 2 },
+                ]}
+                rows={[...iocs.ruleNames, ...iocs.apps, ...iocs.subjects]}
+                limit={30}
+                emptyText="Rien à signaler."
+              />
+            </Section>
+          )}
+        </ContentPage>
+      )}
 
       {/* ANNEXE B — COMPRENDRE LE BEC */}
       <ContentPage

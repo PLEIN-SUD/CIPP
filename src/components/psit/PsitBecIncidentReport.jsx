@@ -582,6 +582,69 @@ export const PsitBecIncidentReportDocument = ({
           </Paragraph>
         </Section>
       </ContentPage>
+
+      {/* 10. REMISE ET VALIDATION */}
+      <ContentPage
+        title="Remise et validation"
+        subtitle="Qui a reçu ce rapport, quand, et ce qu'il reste à valider"
+      >
+        <Section>
+          <Paragraph>
+            Ce document est produit par Plein Sud IT en qualité de sous-traitant. Les constats et
+            les mesures qu'il rapporte relèvent de notre intervention ; les décisions qui en
+            découlent — qualification juridique d'une violation de données, notification à
+            l'autorité de contrôle et aux personnes concernées, déclaration à l'assureur, dépôt de
+            plainte — relèvent du responsable de traitement.
+          </Paragraph>
+        </Section>
+
+        <Section title="Remise">
+          <InfoBox title="Transmission">
+            Remis à : {incident?.DeliveredTo || 'non renseigné'}
+            {'\n'}
+            Le : {incident?.DeliveredUtc ? formatUtc(incident.DeliveredUtc) : 'non renseigné'}
+            {'\n'}
+            Canal : {incident?.DeliveryChannel || 'non renseigné'}
+            {'\n'}
+            Établi par : {incident?.UpdatedBy || incident?.CreatedBy || 'N/D'}
+          </InfoBox>
+          {incident?.AcknowledgedBy ? (
+            <InfoBox title="Accusé de réception">
+              Par : {incident.AcknowledgedBy}
+              {'\n'}
+              Le :{' '}
+              {incident?.AcknowledgedUtc
+                ? formatUtc(incident.AcknowledgedUtc)
+                : 'date non renseignée'}
+            </InfoBox>
+          ) : (
+            <Note>
+              Aucun accusé de réception n'a été enregistré à la date de génération de ce rapport.
+              L'absence d'accusé ne vaut pas absence de transmission ; elle signifie que la
+              transmission n'a pas été confirmée par écrit.
+            </Note>
+          )}
+        </Section>
+
+        <Section title="Validation par le responsable de traitement">
+          <Paragraph>
+            À compléter par le client. La signature vaut réception du présent rapport, non
+            approbation de son contenu.
+          </Paragraph>
+          {/* Deliberately blank lines: the signed copy is the artefact, and it has to be printable
+              from the PDF without anyone retyping the case reference. */}
+          <InfoBox title={`Dossier ${incident?.Reference || 'sans référence'}`}>
+            Nom et fonction : ______________________________________________
+            {'\n\n'}
+            Date : ______________________
+            {'\n\n'}
+            Signature : ______________________________________________
+            {'\n\n'}
+            Suite décidée (notification, dépôt de plainte, déclaration assureur, aucune) :{'\n'}
+            ______________________________________________________________
+          </InfoBox>
+        </Section>
+      </ContentPage>
     </ReportDocument>
   )
 }

@@ -159,6 +159,27 @@ describe('PsitBecIncidentPanel', () => {
     expect(screen.getByText('Données bancaires ou financières')).toBeInTheDocument()
   })
 
+  it('captures the handover of the report and sends it with the record', async () => {
+    const mutate = vi.fn()
+    ApiPostCall.mockImplementation(() => ({
+      mutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    }))
+
+    render({ becData: compromisedBecData })
+
+    await userEvent.type(screen.getByLabelText('Remis à'), 'Direction financière')
+    await userEvent.type(screen.getByLabelText('Accusé de réception par'), 'DAF')
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer la fiche/ }))
+
+    expect(mutate.mock.calls[0][0].data).toMatchObject({
+      deliveredTo: 'Direction financière',
+      acknowledgedBy: 'DAF',
+    })
+  })
+
   it('renders nothing while the collection is still running', () => {
     const { container } = render({ becData: { Waiting: true } })
     expect(container).toBeEmptyDOMElement()

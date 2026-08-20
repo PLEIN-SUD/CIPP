@@ -315,6 +315,37 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).toContain('Banque prévenue')
   })
 
+  it('records the handover and says plainly when no acknowledgement exists', () => {
+    const { container } = render()
+    expect(container.textContent).toContain('Remise et validation')
+    expect(container.textContent).toContain("Aucun accusé de réception n'a été enregistré")
+    expect(container.textContent).toContain(
+      "L'absence d'accusé ne vaut pas absence de transmission"
+    )
+    // A signature block, so the printed copy is the artefact.
+    expect(container.textContent).toContain('Signature :')
+    expect(container.textContent).toContain('vaut réception du présent rapport, non')
+  })
+
+  it('prints the recorded handover and acknowledgement when they exist', () => {
+    const { container } = render({
+      incident: {
+        ...incident,
+        DeliveredTo: 'Direction financière',
+        DeliveredUtc: '2026-08-21T09:00:00Z',
+        DeliveryChannel: 'courriel',
+        AcknowledgedBy: 'DAF',
+        AcknowledgedUtc: '2026-08-21T10:30:00Z',
+      },
+    })
+
+    expect(container.textContent).toContain('Direction financière')
+    expect(container.textContent).toContain('2026-08-21 09:00 UTC')
+    expect(container.textContent).toContain('courriel')
+    expect(container.textContent).toContain('2026-08-21 10:30 UTC')
+    expect(container.textContent).not.toContain("Aucun accusé de réception n'a été enregistré")
+  })
+
   it('warns on its own first page when generated without a retained compromise', () => {
     const { container } = render({ becData: cleanBecData })
     expect(container.textContent).toContain('sans compromission retenue')

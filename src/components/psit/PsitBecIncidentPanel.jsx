@@ -100,6 +100,11 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
         executiveNote: value('ExecutiveNote'),
         externalActions: list('ExternalActions'),
         thirdPartiesNotified: list('ThirdPartiesNotified'),
+        deliveredTo: value('DeliveredTo'),
+        deliveredUtc: value('DeliveredUtc'),
+        deliveryChannel: value('DeliveryChannel'),
+        acknowledgedBy: value('AcknowledgedBy'),
+        acknowledgedUtc: value('AcknowledgedUtc'),
       },
     })
   }
@@ -357,6 +362,53 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
                 >
                   Ajouter une action
                 </Button>
+              </Stack>
+
+              <Stack spacing={2}>
+                <Typography variant="subtitle2">Remise du rapport et validation</Typography>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <TextField
+                    label="Remis à"
+                    size="small"
+                    fullWidth
+                    placeholder="nom et fonction chez le client"
+                    value={value('DeliveredTo')}
+                    onChange={(event) => set('DeliveredTo', event.target.value)}
+                  />
+                  <TextField
+                    type="datetime-local"
+                    label="Remis le"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                    value={toLocalInput(value('DeliveredUtc'))}
+                    onChange={(event) => set('DeliveredUtc', toUtcFromInput(event.target.value))}
+                  />
+                  <TextField
+                    label="Canal"
+                    size="small"
+                    placeholder="courriel, remise en main propre"
+                    value={value('DeliveryChannel')}
+                    onChange={(event) => set('DeliveryChannel', event.target.value)}
+                  />
+                </Stack>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <TextField
+                    label="Accusé de réception par"
+                    size="small"
+                    fullWidth
+                    helperText="Laisser vide si le client n'a pas encore accusé réception : le rapport le dira."
+                    value={value('AcknowledgedBy')}
+                    onChange={(event) => set('AcknowledgedBy', event.target.value)}
+                  />
+                  <TextField
+                    type="datetime-local"
+                    label="Accusé le"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                    value={toLocalInput(value('AcknowledgedUtc'))}
+                    onChange={(event) => set('AcknowledgedUtc', toUtcFromInput(event.target.value))}
+                  />
+                </Stack>
               </Stack>
 
               <Stack spacing={1}>

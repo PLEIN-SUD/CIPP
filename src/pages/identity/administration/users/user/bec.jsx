@@ -19,11 +19,7 @@ import { PropertyListItem } from '../../../../../components/property-list-item'
 import { CippHead } from '../../../../../components/CippComponents/CippHead'
 import { BECRemediationReportButton } from '../../../../../components/BECRemediationReportButton'
 // PSIT-CUSTOM-BEGIN: French reports, analyst qualification and incident record
-import { PsitBecReportFrButton } from '../../../../../components/psit/PsitBecReportFr'
-import { PsitBecTriagePanel } from '../../../../../components/psit/PsitBecTriagePanel'
-import { PsitBecIncidentPanel } from '../../../../../components/psit/PsitBecIncidentPanel'
-import { PsitBecIncidentReportButton } from '../../../../../components/psit/PsitBecIncidentReport'
-import { PsitBecCollectionStatus } from '../../../../../components/psit/PsitBecCollectionStatus'
+import { PsitBecDecisionPanel } from '../../../../../components/psit/PsitBecDecisionPanel'
 import { psitAsArray } from '../../../../../utils/psit-as-array'
 // PSIT-CUSTOM-END
 import { CippDataTable } from '../../../../../components/CippTable/CippDataTable'
@@ -551,6 +547,17 @@ const Page = () => {
             {/* All Steps */}
             <Grid size={7}>
               <Stack spacing={3}>
+                {/* PSIT-CUSTOM-BEGIN: the decision comes before the material it is based on. This
+                    block used to sit inside the "Report" accordion at the bottom of the eleven
+                    checks, which is where an analyst stops scrolling. */}
+                <PsitBecDecisionPanel
+                  userData={userRequest.data[0]}
+                  becData={becPollingCall.data}
+                  tenantFilter={userSettingsDefaults.currentTenant}
+                  triage={psitTriage}
+                  onRestart={restartProcess}
+                />
+                {/* PSIT-CUSTOM-END */}
                 <BecCheckCard title="Log information">
                   <Typography variant="body2" gutterBottom>
                     {becPollingCall.data?.ExtractResult}. The data of this log was extracted at{' '}
@@ -1041,30 +1048,8 @@ const Page = () => {
                     review. The report includes detailed explanations suitable for non-technical
                     users, managers, and compliance requirements (ISO/CMMC/SOC).
                   </Typography>
-                  {/* PSIT-CUSTOM-BEGIN: qualification step before the report is issued */}
-                  {becPollingCall.data && userRequest.data?.[0] && (
-                    <>
-                      {/* A failed collection is cached like a successful one and never re-queued on
-                          its own, so it has to be named here - and the way out is upstream's own
-                          overwrite, reached through restartProcess. */}
-                      <PsitBecCollectionStatus
-                        becData={becPollingCall.data}
-                        onRestart={restartProcess}
-                      />
-                      <PsitBecTriagePanel
-                        userData={userRequest.data[0]}
-                        becData={becPollingCall.data}
-                        tenantFilter={userSettingsDefaults.currentTenant}
-                      />
-                      {/* Only renders once a compromise is retained. */}
-                      <PsitBecIncidentPanel
-                        userData={userRequest.data[0]}
-                        becData={becPollingCall.data}
-                        tenantFilter={userSettingsDefaults.currentTenant}
-                        triage={psitTriage}
-                      />
-                    </>
-                  )}
+                  {/* PSIT-CUSTOM-BEGIN: the French reports and the case file are at the top of
+                      the page, in the decision panel. What is left here is upstream's own report. */}
                   {/* PSIT-CUSTOM-END */}
                   {/* Implement download functionality */}
                   {becPollingCall.data && (
@@ -1085,19 +1070,6 @@ const Page = () => {
                             Rapport anglais (upstream)
                           </Button>
                         )}
-                        {/* PSIT-CUSTOM-END */}
-                        {/* PSIT-CUSTOM-BEGIN: French edition of the same report, for client delivery */}
-                        <PsitBecReportFrButton
-                          userData={userRequest.data[0]}
-                          becData={becPollingCall.data}
-                          tenantName={userSettingsDefaults.currentTenant}
-                        />
-                        <PsitBecIncidentReportButton
-                          userData={userRequest.data[0]}
-                          becData={becPollingCall.data}
-                          tenantName={userSettingsDefaults.currentTenant}
-                          triage={psitTriage}
-                        />
                         {/* PSIT-CUSTOM-END */}
                         <Button
                           onClick={() => {

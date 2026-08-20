@@ -18,6 +18,7 @@ import {
 import { Add, DeleteOutline, ArchiveOutlined } from '@mui/icons-material'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { PsitBecArchivedEvidenceButton } from './PsitBecArchivedEvidenceButton'
 import {
   VERDICT_STATUS,
   buildSignals,
@@ -517,6 +518,12 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
                     {previous.ClosedBy || 'N/D'}
                     {previous.ClosureNote ? ` : ${previous.ClosureNote}` : ''}
                   </Typography>
+                  <PsitBecArchivedEvidenceButton
+                    tenantFilter={tenantFilter}
+                    userId={userId}
+                    userPrincipalName={userData?.userPrincipalName}
+                    reference={previous.Reference}
+                  />
                 </Alert>
               ))}
               <Typography variant="body2" color="text.secondary">

@@ -29,6 +29,7 @@ import {
   groupSignInsByIp,
 } from '../../utils/psit-bec-signals'
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
+import { getCollectionStatus } from '../../utils/psit-bec-collection'
 import {
   AlertBox,
   Bullet,
@@ -849,6 +850,21 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
 
   if (!hasData) {
     return null
+  }
+
+  // Same guard as the incident report: a cached failure looks like an empty collection, and an
+  // investigation report built on one would state "aucune règle, aucune connexion" as findings.
+  const collection = getCollectionStatus(becData)
+  if (collection.blocksReport) {
+    return (
+      <Tooltip title="Rapport FR indisponible : la collecte doit être relancée avant de produire un document">
+        <span>
+          <Button variant="contained" startIcon={<PictureAsPdf />} disabled>
+            Rapport FR
+          </Button>
+        </span>
+      </Tooltip>
+    )
   }
 
   const openQuestions = buildVerdict(buildSignals(becData, userData), resolvedTriage).openQuestions

@@ -23,6 +23,7 @@ import { PsitBecReportFrButton } from '../../../../../components/psit/PsitBecRep
 import { PsitBecTriagePanel } from '../../../../../components/psit/PsitBecTriagePanel'
 import { PsitBecIncidentPanel } from '../../../../../components/psit/PsitBecIncidentPanel'
 import { PsitBecIncidentReportButton } from '../../../../../components/psit/PsitBecIncidentReport'
+import { PsitBecCollectionStatus } from '../../../../../components/psit/PsitBecCollectionStatus'
 // PSIT-CUSTOM-END
 import { CippDataTable } from '../../../../../components/CippTable/CippDataTable'
 import { getBecIntuneDeviceActions } from '../../../../../components/CippComponents/CippIntuneDeviceActions.jsx'
@@ -132,7 +133,12 @@ const Page = () => {
     // The !restart guard keeps a refresh from being cancelled: between clicking Refresh Data
     // and the overwrite call resolving, the polling cache still holds the previous run, which
     // would otherwise read as "done" and stop the loading state.
-    if (!restart && becPollingCall.isSuccess && becPollingCall.data && !becPollingCall.data?.Waiting) {
+    if (
+      !restart &&
+      becPollingCall.isSuccess &&
+      becPollingCall.data &&
+      !becPollingCall.data?.Waiting
+    ) {
       setIsLoading(false)
     }
   }, [becPollingCall.dataUpdatedAt, becInitialCall])
@@ -232,9 +238,7 @@ const Page = () => {
         )
       }
       if (analysis?.Bursts?.length > 0) {
-        parts.push(
-          `${analysis.Bursts.length} short burst(s) of high-volume sending were detected`
-        )
+        parts.push(`${analysis.Bursts.length} short burst(s) of high-volume sending were detected`)
       }
       const foreignCount = becPollingCall.data.LocationAnalysis?.ForeignSentMessageCount || 0
       if (foreignCount > 0) {
@@ -709,7 +713,9 @@ const Page = () => {
                     <Box mt={2} sx={{ maxHeight: 300, overflowY: 'auto' }}>
                       <PropertyList>
                         {[...becPollingCall.data.MailboxPermissionChanges]
-                          .sort((a, b) => (b?.TargetsSuspect === true) - (a?.TargetsSuspect === true))
+                          .sort(
+                            (a, b) => (b?.TargetsSuspect === true) - (a?.TargetsSuspect === true)
+                          )
                           .map((permission, index) => (
                             <PropertyListItem
                               key={index}
@@ -773,7 +779,9 @@ const Page = () => {
                               sx={checkItemSx}
                               label={`${burst?.MessageCount} message(s) to ${burst?.RecipientCount} recipient(s) within ${burst?.WindowMinutes} minutes`}
                               value={`Starting ${burst?.WindowStart}${
-                                burst?.TopSubject ? ` | Most common subject: ${burst.TopSubject}` : ''
+                                burst?.TopSubject
+                                  ? ` | Most common subject: ${burst.TopSubject}`
+                                  : ''
                               }`}
                             />
                           ))}
@@ -1034,6 +1042,13 @@ const Page = () => {
                   {/* PSIT-CUSTOM-BEGIN: qualification step before the report is issued */}
                   {becPollingCall.data && userRequest.data?.[0] && (
                     <>
+                      {/* A failed collection is cached like a successful one and never re-queued on
+                          its own, so it has to be named here - and the way out is upstream's own
+                          overwrite, reached through restartProcess. */}
+                      <PsitBecCollectionStatus
+                        becData={becPollingCall.data}
+                        onRestart={restartProcess}
+                      />
                       <PsitBecTriagePanel
                         userData={userRequest.data[0]}
                         becData={becPollingCall.data}

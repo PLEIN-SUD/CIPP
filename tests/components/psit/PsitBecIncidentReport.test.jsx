@@ -118,6 +118,19 @@ describe('PsitBecIncidentReportButton', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('is offered but disabled when the collection itself failed', () => {
+    renderWithProviders(
+      <PsitBecIncidentReportButton
+        userData={userData}
+        becData={{ ...compromisedBecData, Results: 'AADSTS500011' }}
+        tenantName="contoso.test"
+        triage={[]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /Rapport d'incident/ })).toBeDisabled()
+  })
+
   it('appears once a compromise is established and warns about missing fields', () => {
     ApiGetCall.mockImplementation(() => ({
       data: { Incident: { Reference: 'PSIT-BEC-1' }, Remediation: remediation },

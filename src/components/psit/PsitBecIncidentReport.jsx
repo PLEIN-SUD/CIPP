@@ -16,6 +16,7 @@ import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
+import { getCollectionStatus } from '../../utils/psit-bec-collection'
 import {
   AlertBox,
   Bold,
@@ -583,6 +584,21 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
   })
 
   if (!hasData) return null
+
+  // A cached failure reaches the page looking like a collection that found nothing, so the guard
+  // belongs here rather than in the document: no document at all from an unusable collection.
+  const collection = getCollectionStatus(becData)
+  if (collection.blocksReport) {
+    return (
+      <Tooltip title="Rapport d'incident indisponible : la collecte doit être relancée avant de produire un document">
+        <span>
+          <Button variant="contained" color="error" startIcon={<ReportProblem />} disabled>
+            Rapport d'incident
+          </Button>
+        </span>
+      </Tooltip>
+    )
+  }
 
   const signals = buildSignals(becData, userData)
   const verdict = buildVerdict(signals, triage)

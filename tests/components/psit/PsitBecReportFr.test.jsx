@@ -154,6 +154,18 @@ describe('PsitBecReportFrButton', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('refuses to produce a report from a cached collection failure', () => {
+    renderWithProviders(
+      <PsitBecReportFrButton
+        userData={userData}
+        becData={{ Results: 'AADSTS500011', ExtractedAt: '2026-08-20T10:00:00Z' }}
+        tenantName="contoso.test"
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /Rapport FR/ })).toBeDisabled()
+  })
+
   it('renders the French report button and opens the preview dialog', async () => {
     renderWithProviders(
       <PsitBecReportFrButton userData={userData} becData={becData} tenantName="contoso.test" />

@@ -6,6 +6,7 @@ import {
   buildVerdict,
   formatUtc,
 } from '../../utils/psit-bec-signals'
+import { psitAsArray } from '../../utils/psit-as-array'
 
 // The block that turns both BEC reports into a dated, attributable assessment instead of a
 // machine score: what the data settles on its own, what an analyst determined and on what grounds,
@@ -58,7 +59,9 @@ export const PsitBecAssessmentSection = ({
   language = 'fr',
 }) => {
   const t = STRINGS[language] || STRINGS.fr
-  const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
+  const determinations = new Map(
+    psitAsArray(triage).map((entry) => [String(entry?.SignalId), entry])
+  )
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const qualified = signals
     .filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
@@ -122,7 +125,7 @@ export const PsitBecAssessmentSection = ({
  */
 export const PsitBecAssessmentBlock = ({ becData, userData, language = 'fr' }) => {
   const signals = buildSignals(becData, userData)
-  const triage = becData?.PsitTriage || []
+  const triage = psitAsArray(becData?.PsitTriage)
   return (
     <PsitBecAssessmentSection
       verdict={buildVerdict(signals, triage)}

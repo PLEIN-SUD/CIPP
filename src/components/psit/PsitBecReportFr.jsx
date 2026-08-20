@@ -30,6 +30,7 @@ import {
 } from '../../utils/psit-bec-signals'
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
+import { psitAsArray } from '../../utils/psit-as-array'
 import {
   AlertBox,
   Bullet,
@@ -114,7 +115,9 @@ export const PsitBecReportFrDocument = ({
   const mail = classifySentMessages(becData, userData)
   const exposure = buildExposure(becData, signals, triage, userData)
 
-  const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
+  const determinations = new Map(
+    psitAsArray(triage).map((entry) => [String(entry?.SignalId), entry])
+  )
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const qualified = signals.filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
   const retained = [
@@ -845,7 +848,7 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
     queryKey: `PSITBecIncident-${tenantName}-${userData?.id}`,
     waiting: Boolean(hasData && tenantName && userData?.id),
   })
-  const resolvedTriage = triage ?? triageRequest.data?.Determinations ?? []
+  const resolvedTriage = psitAsArray(triage ?? triageRequest.data?.Determinations)
   const incident = caseRequest.data?.Incident || {}
 
   if (!hasData) {

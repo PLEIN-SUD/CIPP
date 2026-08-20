@@ -24,6 +24,7 @@ import { PsitBecTriagePanel } from '../../../../../components/psit/PsitBecTriage
 import { PsitBecIncidentPanel } from '../../../../../components/psit/PsitBecIncidentPanel'
 import { PsitBecIncidentReportButton } from '../../../../../components/psit/PsitBecIncidentReport'
 import { PsitBecCollectionStatus } from '../../../../../components/psit/PsitBecCollectionStatus'
+import { psitAsArray } from '../../../../../utils/psit-as-array'
 // PSIT-CUSTOM-END
 import { CippDataTable } from '../../../../../components/CippTable/CippDataTable'
 import { getBecIntuneDeviceActions } from '../../../../../components/CippComponents/CippIntuneDeviceActions.jsx'
@@ -111,7 +112,8 @@ const Page = () => {
     queryKey: `PSITBecTriage-${userSettingsDefaults.currentTenant}-${userId}`,
     waiting: Boolean(userId && userSettingsDefaults.currentTenant),
   })
-  const psitTriage = psitTriageRequest.data?.Determinations || []
+  // The worker serialises a one-row list as a bare object, so never trust it to be an array.
+  const psitTriage = psitAsArray(psitTriageRequest.data?.Determinations)
   // The upstream English report is superseded by the French one, which carries the analyst
   // assessment and states no risk level while a question is open. Kept reachable behind a toggle
   // rather than deleted: an English-speaking client is a real case, and removing upstream UI turns

@@ -17,6 +17,7 @@ import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
+import { psitAsArray } from '../../utils/psit-as-array'
 import {
   AlertBox,
   Bold,
@@ -89,7 +90,7 @@ export const PsitBecIncidentReportDocument = ({
   const containment = buildContainment(remediation)
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const confirmed = signals.filter((signal) => {
-    const determination = (triage || []).find((entry) => entry.SignalId === signal.id)
+    const determination = psitAsArray(triage).find((entry) => entry.SignalId === signal.id)
     return determination?.Verdict === 'unexpected'
   })
   const mailReadStatus = incident?.MailReadStatus || exposure.mailReadSuggested
@@ -231,7 +232,7 @@ export const PsitBecIncidentReportDocument = ({
               Aucune action de remédiation n'a été retrouvée dans le journal CIPP pour ce compte.
             </Note>
           )}
-          {(incident?.ExternalActions || []).map((action, index) => (
+          {psitAsArray(incident?.ExternalActions).map((action, index) => (
             <InfoBox
               key={`ext-${index}`}
               title={`${action?.DoneUtc ? formatUtc(action.DoneUtc) : 'date déclarée'} — ${
@@ -250,7 +251,9 @@ export const PsitBecIncidentReportDocument = ({
         <Section title="Éléments retenus">
           {[...established, ...confirmed].length > 0 ? (
             [...established, ...confirmed].map((signal) => {
-              const determination = (triage || []).find((entry) => entry.SignalId === signal.id)
+              const determination = psitAsArray(triage).find(
+                (entry) => entry.SignalId === signal.id
+              )
               return (
                 <InfoBox key={signal.id} title={signal.title}>
                   {signal.detail}
@@ -331,7 +334,7 @@ export const PsitBecIncidentReportDocument = ({
 
         <Section title="Personnes concernées">
           <InfoBox title="Catégories de personnes">
-            {(incident?.DataSubjectCategories || []).join(', ') ||
+            {psitAsArray(incident?.DataSubjectCategories).join(', ') ||
               'Non renseigné : à compléter par l’analyste avant diffusion'}
           </InfoBox>
           <InfoBox title="Nombre approximatif">
@@ -343,7 +346,7 @@ export const PsitBecIncidentReportDocument = ({
 
         <Section title="Données concernées">
           <InfoBox title="Catégories de données présentes dans la boîte">
-            {(incident?.DataCategories || []).join(', ') ||
+            {psitAsArray(incident?.DataCategories).join(', ') ||
               'Non renseigné : à compléter par l’analyste avant diffusion'}
           </InfoBox>
           <InfoBox
@@ -419,8 +422,8 @@ export const PsitBecIncidentReportDocument = ({
         </Section>
 
         <Section title="Tiers prévenus">
-          {(incident?.ThirdPartiesNotified || []).length > 0 ? (
-            (incident.ThirdPartiesNotified || []).map((entry, index) => (
+          {psitAsArray(incident?.ThirdPartiesNotified).length > 0 ? (
+            psitAsArray(incident.ThirdPartiesNotified).map((entry, index) => (
               <InfoBox key={`tp-${index}`} title={entry?.Name || entry?.name || 'Tiers'}>
                 {entry?.NotifiedUtc || entry?.notifiedUtc
                   ? `Prévenu le ${formatUtc(entry.NotifiedUtc || entry.notifiedUtc)}`
@@ -610,7 +613,7 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
   const missing = []
   if (!incident?.Reference) missing.push("aucune fiche d'incident ouverte")
   if (!incident?.DetectedUtc) missing.push('date de détection')
-  if (!(incident?.DataCategories || []).length) missing.push('catégories de données')
+  if (!psitAsArray(incident?.DataCategories).length) missing.push('catégories de données')
   if (!incident?.LikelyConsequences) missing.push('conséquences probables')
 
   const documentNode = (

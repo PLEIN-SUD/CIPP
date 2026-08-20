@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import { Add, DeleteOutline } from '@mui/icons-material'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
+import { psitAsArray } from '../../utils/psit-as-array'
 import { VERDICT_STATUS, buildSignals, buildVerdict, formatUtc } from '../../utils/psit-bec-signals'
 import {
   DATA_CATEGORIES,
@@ -74,7 +75,9 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
   // reason as the triage panel: mirroring server state through an effect loops.
   const [edits, setEdits] = useState({})
   const value = (field, fallback = '') => edits[field] ?? stored?.[field] ?? fallback
-  const list = (field) => edits[field] ?? stored?.[field] ?? []
+  // psitAsArray, not `?? []`: the worker serialises a one-row list as a bare object, and this
+  // is what `list(field).map(...)` blew up on.
+  const list = (field) => psitAsArray(edits[field] ?? stored?.[field])
   const set = (field, next) => setEdits((previous) => ({ ...previous, [field]: next }))
 
   const handleSave = () => {

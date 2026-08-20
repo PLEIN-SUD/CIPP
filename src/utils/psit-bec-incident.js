@@ -7,6 +7,7 @@
 // way", and the analyst has to override it deliberately after checking Purview.
 
 import { SIGNAL_CLASS, classifySentMessages, toUtc } from './psit-bec-signals'
+import { psitAsArray } from './psit-as-array'
 
 /** Categories of data subjects, for the GDPR article 33(3) description. */
 export const DATA_SUBJECT_CATEGORIES = [
@@ -167,7 +168,9 @@ export const buildThirdPartyExposure = (becData = {}, userData = {}) => {
  * incident report that states a fact without its basis is a liability.
  */
 export const buildExposure = (becData = {}, signals = [], triage = [], userData = {}) => {
-  const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
+  const determinations = new Map(
+    psitAsArray(triage).map((entry) => [String(entry?.SignalId), entry])
+  )
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const confirmedByAnalyst = signals.filter(
     (signal) => determinations.get(signal.id)?.Verdict === 'unexpected'
@@ -246,7 +249,7 @@ export const CONTAINMENT_ACTIONS = [
 
 export const buildContainment = (remediation = {}) => {
   const performed = new Map(
-    (remediation?.ActionsPerformed || []).map((entry) => [String(entry.Action), entry])
+    psitAsArray(remediation?.ActionsPerformed).map((entry) => [String(entry.Action), entry])
   )
   return CONTAINMENT_ACTIONS.map((action) => {
     const entry = performed.get(action.key)

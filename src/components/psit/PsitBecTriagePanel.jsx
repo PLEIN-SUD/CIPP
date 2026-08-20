@@ -20,6 +20,7 @@ import {
 import ExpandMoreIcon from '@heroicons/react/24/outline/ChevronDownIcon'
 import { SvgIcon } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
+import { psitAsArray } from '../../utils/psit-as-array'
 import {
   SIGNAL_CLASS,
   VERDICT_STATUS,
@@ -62,7 +63,10 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
 
   const signals = useMemo(() => buildSignals(becData, userData), [becData, userData])
   // Memoised so the derived verdict and lookup below do not rebuild on every render.
-  const stored = useMemo(() => triageRequest.data?.Determinations || [], [triageRequest.data])
+  const stored = useMemo(
+    () => psitAsArray(triageRequest.data?.Determinations),
+    [triageRequest.data]
+  )
   const verdict = useMemo(() => buildVerdict(signals, stored), [signals, stored])
 
   // Local state holds only what the analyst changed, never a copy of the stored answers. Mirroring
@@ -71,9 +75,13 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
   // forever. The displayed value is derived instead - stored answer unless there is an edit on top.
   const [edits, setEdits] = useState({})
 
-  const storedById = useMemo(() => new Map(stored.map((entry) => [entry.SignalId, entry])), [stored])
+  const storedById = useMemo(
+    () => new Map(stored.map((entry) => [entry.SignalId, entry])),
+    [stored]
+  )
 
-  const shownVerdict = (signalId) => edits[signalId]?.verdict ?? storedById.get(signalId)?.Verdict ?? null
+  const shownVerdict = (signalId) =>
+    edits[signalId]?.verdict ?? storedById.get(signalId)?.Verdict ?? null
   const shownJustification = (signalId) =>
     edits[signalId]?.justification ?? storedById.get(signalId)?.Justification ?? ''
 
@@ -86,8 +94,7 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
     if (!verdict) return false
     const saved = storedById.get(signal.id)
     return (
-      verdict !== saved?.Verdict ||
-      shownJustification(signal.id) !== (saved?.Justification || '')
+      verdict !== saved?.Verdict || shownJustification(signal.id) !== (saved?.Justification || '')
     )
   })
 
@@ -157,8 +164,8 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
                           size="small"
                           color={saved.Verdict === 'unexpected' ? 'error' : 'default'}
                           label={`${
-                            VERDICT_CHOICES.find((choice) => choice.value === saved.Verdict)?.label ||
-                            saved.Verdict
+                            VERDICT_CHOICES.find((choice) => choice.value === saved.Verdict)
+                              ?.label || saved.Verdict
                           } — ${saved.Analyst} le ${formatUtc(saved.DecidedUtc)}`}
                         />
                       ) : (
@@ -195,7 +202,10 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
                       onChange={(event) =>
                         setEdits((previous) => ({
                           ...previous,
-                          [signal.id]: { ...previous[signal.id], justification: event.target.value },
+                          [signal.id]: {
+                            ...previous[signal.id],
+                            justification: event.target.value,
+                          },
                         }))
                       }
                     />

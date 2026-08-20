@@ -295,6 +295,26 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).not.toContain('Aucun destinataire signalé')
   })
 
+  it('renders a one-row list that arrived as a bare object', () => {
+    const { container } = render({
+      incident: {
+        ...incident,
+        DataCategories: 'Données bancaires ou financières',
+        DataSubjectCategories: 'Clients',
+        ExternalActions: { Action: 'Banque prévenue', DoneUtc: '2026-08-20T13:30:00Z', By: 'DAF' },
+        ThirdPartiesNotified: {
+          Name: 'Banque',
+          NotifiedUtc: '2026-08-20T13:30:00Z',
+          Channel: 'téléphone',
+        },
+      },
+    })
+
+    expect(container.textContent).toContain('Données bancaires ou financières')
+    expect(container.textContent).toContain('Clients')
+    expect(container.textContent).toContain('Banque prévenue')
+  })
+
   it('warns on its own first page when generated without a retained compromise', () => {
     const { container } = render({ becData: cleanBecData })
     expect(container.textContent).toContain('sans compromission retenue')

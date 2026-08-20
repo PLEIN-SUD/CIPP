@@ -131,6 +131,34 @@ describe('PsitBecIncidentPanel', () => {
     expect(screen.getByLabelText('Ticket Autotask')).toHaveValue('T20260820.0042')
   })
 
+  it('survives a one-row list arriving as a bare object', () => {
+    // The worker flattens single-element collections, so ExternalActions and ThirdPartiesNotified
+    // arrive as objects. This is the payload that crashed the page with "map is not a function".
+    ApiGetCall.mockImplementation(() => ({
+      data: {
+        Incident: {
+          Reference: 'PSIT-BEC-20260820-AB12',
+          ExternalActions: {
+            Action: 'Banque prévenue',
+            DoneUtc: '2026-08-20T13:30:00Z',
+            By: 'DAF',
+          },
+          ThirdPartiesNotified: { Name: 'Banque', NotifiedUtc: '2026-08-20T13:30:00Z' },
+          DataCategories: 'Données bancaires ou financières',
+        },
+      },
+      isFetching: false,
+      isSuccess: true,
+      isError: false,
+    }))
+
+    render({ becData: compromisedBecData })
+
+    expect(screen.getByDisplayValue('Banque prévenue')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Banque')).toBeInTheDocument()
+    expect(screen.getByText('Données bancaires ou financières')).toBeInTheDocument()
+  })
+
   it('renders nothing while the collection is still running', () => {
     const { container } = render({ becData: { Waiting: true } })
     expect(container).toBeEmptyDOMElement()

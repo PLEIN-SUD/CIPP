@@ -15,6 +15,8 @@
 // Everything here is a pure function of becData plus the recorded triage, so it is unit-testable
 // and produces the same verdict in the panel and in the report.
 
+import { psitAsArray } from './psit-as-array'
+
 const HIDING_FOLDER_PATTERN =
   /rss|conversation history|archive|junk|deleted|notes|sync issues|corbeille|indésirable|éléments supprimés/i
 
@@ -373,7 +375,9 @@ export const buildTimeline = (becData = {}) => {
  * qualified as unexpected. Returns null when nothing supports a date, and the report then says so.
  */
 export const firstUnauthorisedAccessUtc = (becData = {}, signals = [], triage = []) => {
-  const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
+  const determinations = new Map(
+    psitAsArray(triage).map((entry) => [String(entry?.SignalId), entry])
+  )
   const retainedIps = signals
     .filter(
       (signal) =>

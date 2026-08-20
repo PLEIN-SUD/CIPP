@@ -8,7 +8,12 @@ import {
 import { ApiGetCall } from '../../../src/api/ApiCall'
 
 vi.mock('../../../src/api/ApiCall', () => ({
-  ApiGetCall: vi.fn(() => ({ data: undefined, isFetching: false, isSuccess: false, isError: false })),
+  ApiGetCall: vi.fn(() => ({
+    data: undefined,
+    isFetching: false,
+    isSuccess: false,
+    isError: false,
+  })),
   ApiPostCall: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   ApiGetCallWithPagination: vi.fn(() => ({ data: undefined, isFetching: false })),
 }))
@@ -44,7 +49,7 @@ vi.mock('@react-pdf/renderer', () => {
 const userData = {
   id: 'u1',
   displayName: 'Patrice T',
-  userPrincipalName: 'p.taieb@contoso.test',
+  userPrincipalName: 'p.martin@contoso.test',
 }
 
 // A compromise the data settles on its own: a rule forwarding outside the organisation.
@@ -75,6 +80,7 @@ const cleanBecData = { ...compromisedBecData, NewRules: [], SentMessages: [] }
 
 const incident = {
   Reference: 'PSIT-BEC-20260820-AB12',
+  AutotaskTicket: 'T20260820.0042',
   DetectedUtc: '2026-08-20T09:00:00Z',
   ContainedUtc: '2026-08-20T13:05:00Z',
   Status: 'contained',
@@ -168,9 +174,7 @@ describe('PsitBecIncidentReportDocument', () => {
 
   it('leaves the legal qualification to the controller', () => {
     const { container } = render()
-    expect(container.textContent).toContain(
-      'relèvent du responsable de traitement'
-    )
+    expect(container.textContent).toContain('relèvent du responsable de traitement')
     expect(container.textContent).not.toContain('violation notifiable')
   })
 
@@ -184,11 +188,13 @@ describe('PsitBecIncidentReportDocument', () => {
     const { container } = render({
       incident: {
         ...incident,
-        ExternalActions: [{ Action: 'Banque prévenue', DoneUtc: '2026-08-20T13:30:00Z', By: 'DAF client' }],
+        ExternalActions: [
+          { Action: 'Banque prévenue', DoneUtc: '2026-08-20T13:30:00Z', By: 'DAF client' },
+        ],
       },
     })
     expect(container.textContent).toContain('Mot de passe réinitialisé')
-    expect(container.textContent).toContain('Non attestée par le journal CIPP')
+    expect(container.textContent).toContain('non attestée')
     expect(container.textContent).toContain('Banque prévenue')
   })
 
@@ -198,6 +204,51 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).toContain('buyer@client.test')
     expect(container.textContent).toContain('ne constitue pas une liste de victimes')
     expect(container.textContent).toContain('données à caractère personnel de tiers')
+  })
+
+  it('dates the first unauthorised access from a retained signal, never from the first timeline row', () => {
+    const withOldMfa = {
+      ...compromisedBecData,
+      // The defect this pins: a 2021 registration once became "premier accès non autorisé observé".
+      MFADevices: [{ displayName: 'poste', createdDateTime: '2021-03-12T20:03:00Z' }],
+      SuspectUserSignIns: [
+        {
+          CreatedDateTime: '2026-08-16T16:40:00Z',
+          IPAddress: '77.83.112.47',
+          Country: 'IT',
+          Status: 'Success',
+          ForeignLocation: true,
+        },
+      ],
+    }
+    const { container } = render({
+      becData: withOldMfa,
+      triage: [{ SignalId: 'signin-ip:77.83.112.47', Verdict: 'unexpected', Analyst: 's.miro' }],
+    })
+
+    expect(container.textContent).toContain(
+      'Premier accès non autorisé observé : 2026-08-16 16:40 UTC'
+    )
+    expect(container.textContent).not.toContain('Premier accès non autorisé observé : 2021')
+  })
+
+  it('says so rather than guessing when no access can be dated', () => {
+    const { container } = render()
+    expect(container.textContent).toContain(
+      "non déterminé : aucun signal de connexion n'a été retenu"
+    )
+  })
+
+  it('carries the Autotask ticket and points back to the collection', () => {
+    const { container } = render()
+    expect(container.textContent).toContain('T20260820.0042')
+    expect(container.textContent).toContain("Rapport d'investigation associé : collecte du")
+  })
+
+  it('states what the third-party annex excludes', () => {
+    const { container } = render()
+    expect(container.textContent).toContain('Exclus de cette liste')
+    expect(container.textContent).toContain("n'est pas un tiers à prévenir")
   })
 
   it('warns on its own first page when generated without a retained compromise', () => {

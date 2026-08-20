@@ -46,7 +46,183 @@ export const formatUtc = (value) => {
   return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`
 }
 
-const domainOf = (address) => String(address || '').split('@').pop().toLowerCase()
+const domainOf = (address) =>
+  String(address || '')
+    .split('@')
+    .pop()
+    .toLowerCase()
+
+/**
+ * The analysis window. The upstream collection is fixed at 7 days ending at ExtractedAt, and the
+ * chronology has to be bounded by it: without this, an MFA method registered in 2021 lands in the
+ * timeline of a 7-day investigation and, worse, gets read as the first unauthorised access.
+ */
+export const getAnalysisWindow = (becData = {}, days = 7) => {
+  const end = toUtc(becData?.ExtractedAt) || toUtc(new Date().toISOString())
+  const endMs = new Date(end).getTime()
+  return {
+    days,
+    startUtc: `${new Date(endMs - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19)}Z`,
+    endUtc: end,
+  }
+}
+
+// Subject prefixes for mail the service or the client generates on the user's behalf. Mirrors the
+// pattern in Get-PSITBecOutboundClassification.ps1; kept here as well because a report is often
+// rendered from a collection made before that classification existed, and a client-facing document
+// must not depend on a flag that may be absent.
+const SYSTEM_SUBJECT_PATTERN =
+  /^\s*(r[ée]ponse\s+auto(matique)?|automatic\s+reply|automatische\s+antwort|respuesta\s+autom[áa]tica|out\s+of\s+office|undeliverable|non[- ]remis|[ée]chec\s+de\s+la\s+remise|delivery\s+status\s+notification|mail\s+delivery\s+failed)\s*[:\-]/i
+
+const MICROSOFT_PREFIXES = [
+  { v: 6, prefix: '2603:1000::', bits: 24 },
+  { v: 6, prefix: '2a01:0111::', bits: 32 },
+  { v: 6, prefix: '2620:01ec::', bits: 36 },
+  { v: 4, prefix: '40.92.0.0', bits: 15 },
+  { v: 4, prefix: '40.107.0.0', bits: 16 },
+  { v: 4, prefix: '52.100.0.0', bits: 14 },
+  { v: 4, prefix: '104.47.0.0', bits: 17 },
+]
+
+const ipv4ToInt = (address) =>
+  address.split('.').reduce((total, part) => total * 256 + (Number(part) & 0xff), 0)
+
+const ipv6ToBits = (address) => {
+  const [head, tail = ''] = address.replace(/^\[|\]$/g, '').split('::')
+  const headGroups = head ? head.split(':').filter(Boolean) : []
+  const tailGroups = tail ? tail.split(':').filter(Boolean) : []
+  const missing = 8 - headGroups.length - tailGroups.length
+  const groups = [...headGroups, ...Array(Math.max(missing, 0)).fill('0'), ...tailGroups]
+  return groups
+    .slice(0, 8)
+    .map((group) =>
+      parseInt(group || '0', 16)
+        .toString(2)
+        .padStart(16, '0')
+    )
+    .join('')
+}
+
+/** Is this the address of Microsoft's own mail infrastructure rather than the user's? */
+export const isServiceIp = (value) => {
+  const raw = String(value || '')
+    .replace(/^\[|\]$/g, '')
+    .trim()
+  if (!raw) return false
+  const isV6 = raw.includes(':') && !/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(raw)
+  const address = isV6 ? raw.split('%')[0] : raw.replace(/:\d+$/, '')
+
+  for (const entry of MICROSOFT_PREFIXES) {
+    if (entry.v === 6 && isV6) {
+      if (
+        ipv6ToBits(address).slice(0, entry.bits) === ipv6ToBits(entry.prefix).slice(0, entry.bits)
+      ) {
+        return true
+      }
+    }
+    if (entry.v === 4 && !isV6 && /^\d{1,3}(\.\d{1,3}){3}$/.test(address)) {
+      const mask = entry.bits === 0 ? 0 : (-1 << (32 - entry.bits)) >>> 0
+      if ((ipv4ToInt(address) & mask) === (ipv4ToInt(entry.prefix) & mask)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * Classifies the outbound trace rows the collection returned. Uses the API flags when present and
+ * derives them otherwise, so a report never asserts "166 messages sent from abroad" about mail that
+ * Exchange Online submitted on the user's behalf.
+ */
+export const classifySentMessages = (becData = {}, userData = {}) => {
+  const userDomain = domainOf(userData?.userPrincipalName)
+  const rows = (becData?.SentMessages || []).map((message) => {
+    const subject = String(message?.Subject || '')
+    const recipientDomain = domainOf(message?.RecipientAddress)
+    const systemGenerated =
+      typeof message?.SystemGenerated === 'boolean'
+        ? message.SystemGenerated
+        : SYSTEM_SUBJECT_PATTERN.test(subject)
+    const serviceIp =
+      typeof message?.ServiceIp === 'boolean' ? message.ServiceIp : isServiceIp(message?.FromIP)
+    const internal =
+      typeof message?.Internal === 'boolean'
+        ? message.Internal
+        : Boolean(recipientDomain) && recipientDomain === userDomain
+    return { ...message, systemGenerated, serviceIp, internal }
+  })
+
+  const humanExternal = rows.filter((row) => !row.systemGenerated && !row.internal)
+  return {
+    rows,
+    humanExternal,
+    // Only mail a person actually sent outside the organisation, from an address that is not
+    // Microsoft's, can be read as activity from an unexpected place.
+    foreignHumanExternal: humanExternal.filter(
+      (row) => !row.serviceIp && row.ForeignLocation === true
+    ),
+    counts: {
+      collected: rows.length,
+      systemGenerated: rows.filter((row) => row.systemGenerated).length,
+      serviceIp: rows.filter((row) => row.serviceIp).length,
+      internal: rows.filter((row) => row.internal).length,
+      humanExternal: humanExternal.length,
+      totalRecipients: becData?.SentMessageAnalysis?.TotalRecipients ?? rows.length,
+      totalMessages: becData?.SentMessageAnalysis?.TotalMessages ?? rows.length,
+    },
+    // True when the collection predates the API-side classification, which is worth stating: the
+    // numbers below were derived locally rather than at collection time.
+    derivedLocally: (becData?.SentMessages || []).some(
+      (message) => typeof message?.SystemGenerated !== 'boolean'
+    ),
+  }
+}
+
+/**
+ * Consecutive sign-ins from one address are one session, not twenty findings. A 30-minute gap
+ * starts a new one, which is what turns three pages of near-identical chronology lines into the
+ * two sessions they actually represent.
+ */
+export const buildSignInSessions = (signIns = [], gapMinutes = 30) => {
+  const successful = signIns
+    .filter((signIn) => signIn?.Status === 'Success' && toUtc(signIn?.CreatedDateTime))
+    .map((signIn) => ({ ...signIn, stamp: toUtc(signIn.CreatedDateTime) }))
+    .sort((a, b) => a.stamp.localeCompare(b.stamp))
+
+  const sessions = []
+  for (const signIn of successful) {
+    const ip = String(signIn.IPAddress || 'inconnue')
+    const last = sessions.find(
+      (session) =>
+        session.ip === ip &&
+        new Date(signIn.stamp).getTime() - new Date(session.endUtc).getTime() <=
+          gapMinutes * 60 * 1000
+    )
+    const target = last && sessions[sessions.length - 1] === last ? last : null
+    if (target) {
+      target.endUtc = signIn.stamp
+      target.count += 1
+      if (signIn.AppDisplayName) target.apps.add(signIn.AppDisplayName)
+      if (signIn.City) target.cities.add(signIn.City)
+    } else {
+      sessions.push({
+        ip,
+        country: signIn.Country || null,
+        startUtc: signIn.stamp,
+        endUtc: signIn.stamp,
+        count: 1,
+        foreign: signIn.ForeignLocation === true,
+        apps: new Set([signIn.AppDisplayName].filter(Boolean)),
+        cities: new Set([signIn.City].filter(Boolean)),
+      })
+    }
+  }
+
+  return sessions.map((session) => ({
+    ...session,
+    apps: [...session.apps],
+    cities: [...session.cities],
+  }))
+}
 
 const ruleTargets = (rule) =>
   [rule?.ForwardTo, rule?.ForwardAsAttachmentTo, rule?.RedirectTo]
@@ -94,20 +270,22 @@ export const groupSignInsByIp = (signIns = []) => {
     }
   }
 
-  return [...groups.values()]
-    .map((group) => ({
-      ...group,
-      cities: [...group.cities],
-      apps: [...group.apps],
-      total: group.successes + group.failures,
-    }))
-    // Successful and foreign first: that is the order an analyst reads in.
-    .sort(
-      (a, b) =>
-        Number(b.foreign && b.successes > 0) - Number(a.foreign && a.successes > 0) ||
-        b.successes - a.successes ||
-        b.total - a.total
-    )
+  return (
+    [...groups.values()]
+      .map((group) => ({
+        ...group,
+        cities: [...group.cities],
+        apps: [...group.apps],
+        total: group.successes + group.failures,
+      }))
+      // Successful and foreign first: that is the order an analyst reads in.
+      .sort(
+        (a, b) =>
+          Number(b.foreign && b.successes > 0) - Number(a.foreign && a.successes > 0) ||
+          b.successes - a.successes ||
+          b.total - a.total
+      )
+  )
 }
 
 /**
@@ -116,32 +294,50 @@ export const groupSignInsByIp = (signIns = []) => {
  * at 07:52Z" visible at all.
  */
 export const buildTimeline = (becData = {}) => {
+  const window = getAnalysisWindow(becData)
   const events = []
+  const context = []
   const push = (timestamp, kind, label, detail) => {
     const stamp = toUtc(timestamp)
     if (!stamp) return
-    events.push({ timestampUtc: stamp, kind, label, detail })
+    const entry = { timestampUtc: stamp, kind, label, detail }
+    // Out of window goes to `context`, never into the chronology: an authentication method
+    // registered in 2021 has no business in the timeline of a seven-day investigation, and it must
+    // never be mistaken for the first unauthorised access.
+    if (stamp < window.startUtc || stamp > window.endUtc) context.push(entry)
+    else events.push(entry)
   }
 
-  for (const signIn of becData?.SuspectUserSignIns || []) {
-    if (signIn?.Status !== 'Success') continue
+  for (const session of buildSignInSessions(becData?.SuspectUserSignIns || [])) {
+    const span =
+      session.startUtc === session.endUtc
+        ? ''
+        : ` jusqu'à ${session.endUtc.slice(11, 19)}Z, ${session.count} connexion(s)`
     push(
-      signIn.CreatedDateTime,
+      session.startUtc,
       'signin',
-      `Connexion réussie depuis ${signIn.IPAddress || 'IP inconnue'}${
-        signIn.Country ? ` (${signIn.Country})` : ''
-      }`,
-      signIn.AppDisplayName || ''
+      `Session depuis ${session.ip}${session.country ? ` (${session.country})` : ''}${span}`,
+      [session.cities.join(', '), session.apps.slice(0, 4).join(', ')].filter(Boolean).join(' — ')
     )
   }
   for (const change of becData?.InboxRuleChanges || []) {
-    push(change?.Date, 'rule', `Règle ${change?.Operation || 'modifiée'} : ${change?.RuleName || 'sans nom'}`, change?.ClientIP || '')
+    push(
+      change?.Date,
+      'rule',
+      `Règle ${change?.Operation || 'modifiée'} : ${change?.RuleName || 'sans nom'}`,
+      change?.ClientIP || ''
+    )
   }
   for (const change of becData?.SafelistChanges || []) {
     push(change?.Date, 'safelist', "Modification des listes d'expéditeurs", change?.ClientIP || '')
   }
   for (const change of becData?.SharingChanges || []) {
-    push(change?.Date, 'sharing', `Partage : ${change?.Operation || 'modifié'}`, change?.FileName || change?.ItemUrl || '')
+    push(
+      change?.Date,
+      'sharing',
+      `Partage : ${change?.Operation || 'modifié'}`,
+      change?.FileName || change?.ItemUrl || ''
+    )
   }
   for (const burst of becData?.SentMessageAnalysis?.Bursts || []) {
     push(
@@ -152,10 +348,52 @@ export const buildTimeline = (becData = {}) => {
     )
   }
   for (const method of becData?.MFADevices || []) {
-    push(method?.createdDateTime, 'mfa', `Méthode MFA enregistrée : ${method?.displayName || method?.['@odata.type'] || 'inconnue'}`, '')
+    push(
+      method?.createdDateTime,
+      'mfa',
+      `Méthode MFA enregistrée : ${method?.displayName || method?.['@odata.type'] || 'inconnue'}`,
+      ''
+    )
   }
 
-  return events.sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
+  events.sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
+  context.sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
+  // Returns an array so existing callers keep working, with the out-of-window items attached.
+  events.context = context
+  events.window = window
+  return events
+}
+
+/**
+ * The earliest access that the investigation actually retains as unauthorised - never simply the
+ * first row of the timeline, which is how a 2021 authentication method once became "premier accès
+ * non autorisé observé" in an incident report meant for a DPO.
+ *
+ * Derived from the retained sign-in signals only: an established signal, or one the analyst
+ * qualified as unexpected. Returns null when nothing supports a date, and the report then says so.
+ */
+export const firstUnauthorisedAccessUtc = (becData = {}, signals = [], triage = []) => {
+  const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
+  const retainedIps = signals
+    .filter(
+      (signal) =>
+        signal.id.startsWith('signin-ip:') &&
+        (signal.class === SIGNAL_CLASS.ESTABLISHED ||
+          determinations.get(signal.id)?.Verdict === 'unexpected')
+    )
+    .map((signal) => signal.id.replace('signin-ip:', ''))
+
+  if (retainedIps.length === 0) return null
+
+  const stamps = (becData?.SuspectUserSignIns || [])
+    .filter(
+      (signIn) => signIn?.Status === 'Success' && retainedIps.includes(String(signIn?.IPAddress))
+    )
+    .map((signIn) => toUtc(signIn.CreatedDateTime))
+    .filter(Boolean)
+    .sort()
+
+  return stamps[0] || null
 }
 
 /**
@@ -209,7 +447,9 @@ export const buildSignals = (becData = {}, userData = {}) => {
       category: 'rules',
       title: `Règle de classement « ${name} »`,
       detail: `Aucune action d'exfiltration : ${
-        rule?.MoveToFolder ? `classement vers « ${rule.MoveToFolder} »` : 'pas de transfert, pas de suppression'
+        rule?.MoveToFolder
+          ? `classement vers « ${rule.MoveToFolder} »`
+          : 'pas de transfert, pas de suppression'
       }.`,
       question: `La règle « ${name} » fait-elle partie du fonctionnement normal de cette boîte ?`,
       suggestion: 'expected',
@@ -217,10 +457,15 @@ export const buildSignals = (becData = {}, userData = {}) => {
     })
   }
 
-  if ((becData?.MaliciousSPs?.length || 0) > 0 || (becData?.AddedApps || []).some((app) => app?.MaliciousMatch)) {
+  if (
+    (becData?.MaliciousSPs?.length || 0) > 0 ||
+    (becData?.AddedApps || []).some((app) => app?.MaliciousMatch)
+  ) {
     const names = [
       ...(becData?.MaliciousSPs || []).map((app) => app?.displayName),
-      ...(becData?.AddedApps || []).filter((app) => app?.MaliciousMatch).map((app) => app?.displayName),
+      ...(becData?.AddedApps || [])
+        .filter((app) => app?.MaliciousMatch)
+        .map((app) => app?.displayName),
     ].filter(Boolean)
     add({
       id: 'app-malicious',
@@ -241,14 +486,18 @@ export const buildSignals = (becData = {}, userData = {}) => {
       class: SIGNAL_CLASS.ESTABLISHED,
       category: 'sharing',
       title: `${anonymousLinks.length} lien(s) de partage anonyme(s) créé(s) pendant la fenêtre`,
-      detail: "Le contenu est accessible à quiconque détient l'URL, indépendamment de toute remédiation sur le compte.",
+      detail:
+        "Le contenu est accessible à quiconque détient l'URL, indépendamment de toute remédiation sur le compte.",
       evidence: ['SharingChanges'],
     })
   }
 
   const foreignConfigChanges = [
     ...(becData?.InboxRuleChanges || []).map((change) => ({ change, what: 'une règle de boîte' })),
-    ...(becData?.SafelistChanges || []).map((change) => ({ change, what: "les listes d'expéditeurs" })),
+    ...(becData?.SafelistChanges || []).map((change) => ({
+      change,
+      what: "les listes d'expéditeurs",
+    })),
     ...(becData?.SharingChanges || []).map((change) => ({ change, what: 'un partage' })),
   ].filter((entry) => entry.change?.ForeignLocation === true)
   if (foreignConfigChanges.length > 0) {
@@ -287,19 +536,19 @@ export const buildSignals = (becData = {}, userData = {}) => {
   if (analysis?.Flagged) {
     const bursts = analysis?.Bursts?.length || 0
     const campaigns = analysis?.FlaggedSubjectCount || 0
+    const mail = classifySentMessages(becData, userData)
     add({
       id: 'mail-pattern',
       class: SIGNAL_CLASS.TO_QUALIFY,
       category: 'mail',
       title: "Volume d'envoi inhabituel",
-      detail: `${campaigns} campagne(s) à objet répété et ${bursts} rafale(s), sur ${
-        analysis?.AnalysableMessages ?? analysis?.TotalMessages ?? 0
-      } message(s) envoyés à des destinataires externes${
-        analysis?.SystemGeneratedMessages
-          ? ` (${analysis.SystemGeneratedMessages} réponse(s) automatique(s) exclue(s) du calcul)`
-          : ''
-      }.`,
-      question: "Ce volume correspond-il à l'activité normale de ce poste (commercial, recrutement, support) ?",
+      detail: `${campaigns} campagne(s) à objet répété et ${bursts} rafale(s). Sur ${
+        mail.counts.collected
+      } ligne(s) de suivi collectées : ${mail.counts.humanExternal} vers des destinataires externes, ${
+        mail.counts.systemGenerated
+      } réponse(s) automatique(s) et ${mail.counts.internal} interne(s), exclues du calcul.`,
+      question:
+        "Ce volume correspond-il à l'activité normale de ce poste (commercial, recrutement, support) ?",
       evidence: ['SentMessageAnalysis'],
     })
   }
@@ -308,7 +557,9 @@ export const buildSignals = (becData = {}, userData = {}) => {
     const created = toUtc(method?.createdDateTime)
     if (!created) return false
     const extracted = toUtc(becData?.ExtractedAt) || toUtc(new Date().toISOString())
-    const windowStart = new Date(new Date(extracted).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const windowStart = new Date(
+      new Date(extracted).getTime() - 7 * 24 * 60 * 60 * 1000
+    ).toISOString()
     return created >= `${windowStart.slice(0, 19)}Z`
   })
   if (recentMfa.length > 0) {
@@ -318,7 +569,10 @@ export const buildSignals = (becData = {}, userData = {}) => {
       category: 'mfa',
       title: `${recentMfa.length} méthode(s) MFA enregistrée(s) pendant la fenêtre`,
       detail: recentMfa
-        .map((method) => `${method?.displayName || method?.['@odata.type']} le ${formatUtc(method?.createdDateTime)}`)
+        .map(
+          (method) =>
+            `${method?.displayName || method?.['@odata.type']} le ${formatUtc(method?.createdDateTime)}`
+        )
         .join(' ; '),
       question: "L'utilisateur a-t-il lui-même enregistré cette méthode d'authentification ?",
       evidence: ['MFADevices'],
@@ -351,7 +605,8 @@ export const buildSignals = (becData = {}, userData = {}) => {
       class: SIGNAL_CLASS.NOISE,
       category: 'signin',
       title: `${attempts} tentative(s) de connexion en échec depuis ${failedOnly.length} adresse(s)`,
-      detail: 'Pulvérisation de mots de passe, présente sur la plupart des tenants. Aucune n\'a abouti.',
+      detail:
+        "Pulvérisation de mots de passe, présente sur la plupart des tenants. Aucune n'a abouti.",
       evidence: ['SuspectUserSignIns'],
     })
   }
@@ -376,7 +631,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       class: SIGNAL_CLASS.NOISE,
       category: 'tenant',
       title: `${otherPasswordChanges.length} changement(s) de mot de passe sur d'autres comptes`,
-      detail: "Activité du tenant, sans lien établi avec cette boîte.",
+      detail: 'Activité du tenant, sans lien établi avec cette boîte.',
       evidence: ['ChangedPasswords'],
     })
   }
@@ -391,7 +646,8 @@ export const buildSignals = (becData = {}, userData = {}) => {
       title: `Listes d'expéditeurs inchangées (${becData?.TrustedSenders?.length || 0} approuvés, ${
         becData?.BlockedSenders?.length || 0
       } bloqués)`,
-      detail: 'Aucune modification pendant la fenêtre analysée : historique du poste, pas un signal.',
+      detail:
+        'Aucune modification pendant la fenêtre analysée : historique du poste, pas un signal.',
       evidence: ['TrustedSenders', 'BlockedSenders'],
     })
   }

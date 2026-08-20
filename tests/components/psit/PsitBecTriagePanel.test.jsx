@@ -6,22 +6,32 @@ import { PsitBecTriagePanel } from '../../../src/components/psit/PsitBecTriagePa
 import { ApiGetCall, ApiPostCall } from '../../../src/api/ApiCall'
 
 vi.mock('../../../src/api/ApiCall', () => ({
-  ApiGetCall: vi.fn(() => ({ data: undefined, isFetching: false, isSuccess: false, isError: false })),
-  ApiPostCall: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false })),
+  ApiGetCall: vi.fn(() => ({
+    data: undefined,
+    isFetching: false,
+    isSuccess: false,
+    isError: false,
+  })),
+  ApiPostCall: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
   ApiGetCallWithPagination: vi.fn(() => ({ data: undefined, isFetching: false })),
 }))
 
-const userData = { id: 'user-guid', userPrincipalName: 'p.taieb@contoso.test' }
+const userData = { id: 'user-guid', userPrincipalName: 'p.martin@contoso.test' }
 
 const becData = {
   ExtractedAt: '2026-08-20T10:32:00Z',
-  NewRules: [{ Name: 'fieldglass', MoveToFolder: 'CAP - DEMANDES' }],
+  NewRules: [{ Name: 'classement', MoveToFolder: 'DOSSIERS' }],
   SuspectUserSignIns: [
     {
       CreatedDateTime: '2026-08-20T06:49:00Z',
-      IPAddress: '146.241.181.10',
+      IPAddress: '203.0.113.42',
       Country: 'IT',
-      City: 'Sommacampagna',
+      City: 'Vérone',
       Status: 'Success',
       AppDisplayName: 'Microsoft Graph',
       ForeignLocation: true,
@@ -55,7 +65,9 @@ describe('PsitBecTriagePanel', () => {
     )
 
     expect(screen.getByText('À qualifier')).toBeInTheDocument()
-    expect(screen.getByText(/1 connexion\(s\) réussie\(s\) depuis 146\.241\.181\.10/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/1 connexion\(s\) réussie\(s\) depuis 203\.0\.113\.42/)
+    ).toBeInTheDocument()
     expect(screen.getByText(/derrière un VPN ou un roaming/)).toBeInTheDocument()
     // The spray attempts are present but filed as noise, not as a question.
     expect(screen.getByText(/Écarté du verdict/)).toBeInTheDocument()
@@ -75,7 +87,12 @@ describe('PsitBecTriagePanel', () => {
 
   it('posts the determination with the signal id and the justification', async () => {
     const mutate = vi.fn()
-    ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
+    ApiPostCall.mockImplementation(() => ({
+      mutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    }))
 
     renderWithProviders(
       <PsitBecTriagePanel userData={userData} becData={becData} tenantFilter="contoso.test" />
@@ -104,7 +121,7 @@ describe('PsitBecTriagePanel', () => {
       data: {
         Determinations: [
           {
-            SignalId: 'signin-ip:146.241.181.10',
+            SignalId: 'signin-ip:203.0.113.42',
             Verdict: 'expected',
             Analyst: 's.miro@pleinsudit.com',
             DecidedUtc: '2026-08-20T12:00:00Z',
@@ -128,7 +145,11 @@ describe('PsitBecTriagePanel', () => {
 
   it('renders nothing while the collection is still running', () => {
     const { container } = renderWithProviders(
-      <PsitBecTriagePanel userData={userData} becData={{ Waiting: true }} tenantFilter="contoso.test" />
+      <PsitBecTriagePanel
+        userData={userData}
+        becData={{ Waiting: true }}
+        tenantFilter="contoso.test"
+      />
     )
     expect(container).toBeEmptyDOMElement()
   })

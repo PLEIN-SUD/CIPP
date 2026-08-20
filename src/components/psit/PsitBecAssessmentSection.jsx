@@ -29,6 +29,7 @@ const STRINGS = {
     by: 'par',
     on: 'le',
     noJustification: 'sans justification consignée',
+    verdictLabel: 'Verdict :',
     disclaimer:
       "Ce document rapporte des constats et les qualifications de l'analyste. Il ne conclut pas au-delà de ce que les données et ces qualifications permettent d'affirmer.",
   },
@@ -44,12 +45,18 @@ const STRINGS = {
     by: 'by',
     on: 'on',
     noJustification: 'no justification recorded',
+    verdictLabel: 'Verdict:',
     disclaimer:
       'This document reports findings and the analyst determinations. It does not conclude beyond what the data and those determinations support. The "Threat Assessment" banner earlier in this report is a mechanical score over counters; where the two differ, this assessment supersedes it.',
   },
 }
 
-export const PsitBecAssessmentSection = ({ verdict, signals = [], triage = [], language = 'fr' }) => {
+export const PsitBecAssessmentSection = ({
+  verdict,
+  signals = [],
+  triage = [],
+  language = 'fr',
+}) => {
   const t = STRINGS[language] || STRINGS.fr
   const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
@@ -78,7 +85,9 @@ export const PsitBecAssessmentSection = ({ verdict, signals = [], triage = [], l
           {answered
             .map(
               ({ signal, determination }) =>
-                `• ${signal.title}\n  → ${t.verdicts[determination.Verdict] || determination.Verdict} ${t.by} ${
+                // No arrow glyph: Helvetica's WinAnsi encoding has no U+2192, and react-pdf drew a
+                // curly quote instead in every generated report.
+                `• ${signal.title}\n  ${t.verdictLabel} ${t.verdicts[determination.Verdict] || determination.Verdict} ${t.by} ${
                   determination.Analyst || 'N/D'
                 } ${t.on} ${formatUtc(determination.DecidedUtc)}\n  ${
                   determination.Justification || t.noJustification
@@ -87,7 +96,11 @@ export const PsitBecAssessmentSection = ({ verdict, signals = [], triage = [], l
             .join('\n')}
         </InfoBox>
       ) : (
-        qualified.length > 0 && <InfoBox tone="warn" title={t.qualifiedTitle}>{t.noneQualified}</InfoBox>
+        qualified.length > 0 && (
+          <InfoBox tone="warn" title={t.qualifiedTitle}>
+            {t.noneQualified}
+          </InfoBox>
+        )
       )}
 
       {open.length > 0 && (

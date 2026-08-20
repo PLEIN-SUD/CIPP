@@ -6,7 +6,7 @@
 // collection does not gather it at all. So the honest default is "cannot be established either
 // way", and the analyst has to override it deliberately after checking Purview.
 
-import { SIGNAL_CLASS, toUtc } from './psit-bec-signals'
+import { SIGNAL_CLASS, classifySentMessages, toUtc } from './psit-bec-signals'
 
 /** Categories of data subjects, for the GDPR article 33(3) description. */
 export const DATA_SUBJECT_CATEGORIES = [
@@ -57,7 +57,11 @@ export const INCIDENT_STATUS_LABELS = {
   closed: 'Clôturée',
 }
 
-const domainOf = (address) => String(address || '').split('@').pop().toLowerCase()
+const domainOf = (address) =>
+  String(address || '')
+    .split('@')
+    .pop()
+    .toLowerCase()
 
 /**
  * Third parties who received mail from the mailbox during the window, restricted to the sends that
@@ -67,12 +71,17 @@ const domainOf = (address) => String(address || '').split('@').pop().toLowerCase
  *
  * Goes in an annex, not in the body: it is personal data belonging to third parties.
  */
-export const buildThirdPartyExposure = (becData = {}) => {
+export const buildThirdPartyExposure = (becData = {}, userData = {}) => {
   const analysis = becData?.SentMessageAnalysis || {}
+  const mail = classifySentMessages(becData, userData)
   const flaggedSubjects = new Set(
     (analysis.RepeatedSubjects || [])
       .filter((group) => group.Flagged)
-      .map((group) => String(group.Subject || '').trim().toLowerCase())
+      .map((group) =>
+        String(group.Subject || '')
+          .trim()
+          .toLowerCase()
+      )
   )
   const burstWindows = (analysis.Bursts || [])
     .map((burst) => {
@@ -83,9 +92,10 @@ export const buildThirdPartyExposure = (becData = {}) => {
     })
     .filter(Boolean)
 
-  const rows = (becData?.SentMessages || []).filter(
-    (message) => !message?.SystemGenerated && !message?.Internal
-  )
+  // Human, external mail only. The classification is derived locally when the collection predates
+  // the API-side flags, which is what once put the mailbox owner, his colleagues and the recipients
+  // of automatic replies to newsletters into this annex - 65 "third parties" over nine pages.
+  const rows = mail.humanExternal
 
   const byRecipient = new Map()
   for (const message of rows) {
@@ -93,7 +103,9 @@ export const buildThirdPartyExposure = (becData = {}) => {
     if (!address) continue
 
     const reasons = new Set()
-    const subject = String(message?.Subject || '').trim().toLowerCase()
+    const subject = String(message?.Subject || '')
+      .trim()
+      .toLowerCase()
     if (flaggedSubjects.has(subject)) reasons.add('campagne à objet répété')
     if (message?.ForeignLocation === true) reasons.add('envoi depuis une IP hors zone')
     const stamp = toUtc(message?.Received)
@@ -133,7 +145,7 @@ export const buildThirdPartyExposure = (becData = {}) => {
     .sort((a, b) => b.messages - a.messages || a.address.localeCompare(b.address))
 
   // The collection caps the message list it returns, so the annex must say when it is a sample.
-  const collected = (becData?.SentMessages || []).length
+  const collected = mail.counts.collected
   const total = analysis.TotalRecipients ?? collected
 
   return {
@@ -142,6 +154,11 @@ export const buildThirdPartyExposure = (becData = {}) => {
     truncated: total > collected,
     collectedRecipients: collected,
     totalRecipients: total,
+    excluded: {
+      systemGenerated: mail.counts.systemGenerated,
+      internal: mail.counts.internal,
+    },
+    derivedLocally: mail.derivedLocally,
   }
 }
 
@@ -149,7 +166,7 @@ export const buildThirdPartyExposure = (becData = {}) => {
  * What can and cannot be asserted about exposure. Every field carries its basis, because an
  * incident report that states a fact without its basis is a liability.
  */
-export const buildExposure = (becData = {}, signals = [], triage = []) => {
+export const buildExposure = (becData = {}, signals = [], triage = [], userData = {}) => {
   const determinations = new Map((triage || []).map((entry) => [String(entry?.SignalId), entry]))
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const confirmedByAnalyst = signals.filter(
@@ -161,19 +178,28 @@ export const buildExposure = (becData = {}, signals = [], triage = []) => {
   const exfiltration = []
   for (const signal of established) {
     if (signal.id.startsWith('rule-exfil:')) {
-      exfiltration.push({ kind: 'forwarding-rule', detail: signal.detail, basis: signal.title })
+      exfiltration.push({
+        label: 'Règle de transfert vers l’extérieur',
+        detail: signal.detail,
+        basis: signal.title,
+      })
     }
     if (signal.id === 'sharing-anonymous') {
-      exfiltration.push({ kind: 'anonymous-link', detail: signal.detail, basis: signal.title })
+      exfiltration.push({
+        label: 'Lien de partage anonyme',
+        detail: signal.detail,
+        basis: signal.title,
+      })
     }
   }
-  const foreignSends = (becData?.SentMessages || []).filter(
-    (message) => message?.ForeignLocation === true && !message?.SystemGenerated
-  ).length
-  if (foreignSends > 0) {
+  // Human, external mail sent from an address that is neither Microsoft's nor in the usage
+  // location. Counting the raw ForeignLocation flag turned 166 service-submitted automatic replies
+  // into a claimed exfiltration in a report meant for a DPO.
+  const mail = classifySentMessages(becData, userData)
+  if (mail.foreignHumanExternal.length > 0) {
     exfiltration.push({
-      kind: 'outbound-from-foreign-ip',
-      detail: `${foreignSends} message(s) envoyés depuis une adresse hors du pays d'utilisation déclaré.`,
+      label: 'Courrier envoyé depuis une adresse hors zone',
+      detail: `${mail.foreignHumanExternal.length} message(s) envoyés par l'utilisateur à des destinataires externes depuis une adresse hors du pays d'utilisation déclaré, hors messages générés par le service.`,
       basis: 'Suivi des messages',
     })
   }
@@ -190,7 +216,7 @@ export const buildExposure = (becData = {}, signals = [], triage = []) => {
     // clearing them. Verified against what the BEC run actually gathers.
     notCovered: [
       "Consentements OAuth de l'utilisateur (seules les applications créées pendant la fenêtre et celles du catalogue malveillant sont collectées)",
-      "Secrets et certificats ajoutés à une application existante",
+      'Secrets et certificats ajoutés à une application existante',
       'Pass d’accès temporaire (TAP) et méthodes d’authentification ajoutées hors fenêtre',
       'Transfert configuré au niveau de la boîte (ForwardingSmtpAddress)',
       'Protocoles hérités IMAP et POP activés sur la boîte',

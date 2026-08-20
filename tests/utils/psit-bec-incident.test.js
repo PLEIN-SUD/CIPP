@@ -8,14 +8,14 @@ import {
 } from '../../src/utils/psit-bec-incident'
 import { buildSignals } from '../../src/utils/psit-bec-signals'
 
-const userData = { id: 'u1', userPrincipalName: 'p.taieb@contoso.test' }
+const userData = { id: 'u1', userPrincipalName: 'p.martin@contoso.test' }
 
 const sentMessage = (overrides) => ({
   MessageTraceId: Math.random().toString(36).slice(2),
   Subject: 'Fwd: consultation',
   RecipientAddress: 'contact@client.test',
   Received: '2026-08-19T07:11:00Z',
-  FromIP: '92.92.126.129',
+  FromIP: '198.51.100.7',
   SystemGenerated: false,
   Internal: false,
   ForeignLocation: false,
@@ -31,7 +31,11 @@ describe('buildThirdPartyExposure', () => {
       // Sent from a foreign address.
       sentMessage({ RecipientAddress: 'ceo@partner.test', ForeignLocation: true }),
       // Internal: never in the annex.
-      sentMessage({ RecipientAddress: 'colleague@contoso.test', Internal: true, Subject: 'Mise a jour bancaire' }),
+      sentMessage({
+        RecipientAddress: 'colleague@contoso.test',
+        Internal: true,
+        Subject: 'Mise a jour bancaire',
+      }),
       // Service-generated: never in the annex.
       sentMessage({
         RecipientAddress: 'someone@client.test',
@@ -49,7 +53,7 @@ describe('buildThirdPartyExposure', () => {
   }
 
   it('keeps only external, human-sent mail that carried a flag', () => {
-    const result = buildThirdPartyExposure(becData)
+    const result = buildThirdPartyExposure(becData, userData)
     const addresses = result.recipients.map((entry) => entry.address)
 
     expect(addresses).toEqual(
@@ -61,32 +65,76 @@ describe('buildThirdPartyExposure', () => {
   })
 
   it('states the reason each recipient is listed', () => {
-    const result = buildThirdPartyExposure(becData)
-    expect(result.recipients.find((entry) => entry.address === 'buyer@client.test').reasons).toContain(
-      'campagne à objet répété'
-    )
-    expect(result.recipients.find((entry) => entry.address === 'ceo@partner.test').reasons).toContain(
-      'envoi depuis une IP hors zone'
-    )
+    const result = buildThirdPartyExposure(becData, userData)
+    expect(
+      result.recipients.find((entry) => entry.address === 'buyer@client.test').reasons
+    ).toContain('campagne à objet répété')
+    expect(
+      result.recipients.find((entry) => entry.address === 'ceo@partner.test').reasons
+    ).toContain('envoi depuis une IP hors zone')
   })
 
   it('flags a recipient caught inside a burst window', () => {
-    const result = buildThirdPartyExposure({
-      SentMessages: [sentMessage({ RecipientAddress: 'x@client.test', Received: '2026-08-19T07:15:00Z' })],
-      SentMessageAnalysis: {
-        TotalRecipients: 1,
-        RepeatedSubjects: [],
-        Bursts: [{ WindowStart: '2026-08-19T07:10:00Z', WindowMinutes: 10 }],
+    const result = buildThirdPartyExposure(
+      {
+        SentMessages: [
+          sentMessage({ RecipientAddress: 'x@client.test', Received: '2026-08-19T07:15:00Z' }),
+        ],
+        SentMessageAnalysis: {
+          TotalRecipients: 1,
+          RepeatedSubjects: [],
+          Bursts: [{ WindowStart: '2026-08-19T07:10:00Z', WindowMinutes: 10 }],
+        },
       },
-    })
+      userData
+    )
     expect(result.recipients[0].reasons).toContain("rafale d'envoi")
   })
 
+  it('excludes automatic replies and internal mail even when the collection carries no flags', () => {
+    // This is the case that produced a nine-page annex listing the mailbox owner himself and the
+    // recipients of automatic replies to newsletters.
+    const unflagged = buildThirdPartyExposure(
+      {
+        SentMessages: [
+          {
+            Subject: 'Réponse automatique : Vos destinations de l’été',
+            RecipientAddress: 'info@sncf.test',
+            FromIP: '2603:10a6:803:81::32',
+            Received: '2026-08-19T07:11:00Z',
+            ForeignLocation: true,
+          },
+          {
+            Subject: 'Fwd: dossier',
+            RecipientAddress: 'p.martin@contoso.test',
+            FromIP: '203.0.113.7',
+            Received: '2026-08-19T07:11:00Z',
+            ForeignLocation: true,
+          },
+          {
+            Subject: 'Facture',
+            RecipientAddress: 'buyer@client.test',
+            FromIP: '203.0.113.7',
+            Received: '2026-08-19T07:11:00Z',
+            ForeignLocation: true,
+          },
+        ],
+        SentMessageAnalysis: { TotalRecipients: 3, RepeatedSubjects: [], Bursts: [] },
+      },
+      userData
+    )
+
+    expect(unflagged.recipients.map((entry) => entry.address)).toEqual(['buyer@client.test'])
+    expect(unflagged.excluded.systemGenerated).toBe(1)
+    expect(unflagged.excluded.internal).toBe(1)
+    expect(unflagged.derivedLocally).toBe(true)
+  })
+
   it('says so when the trace it was given is only a sample', () => {
-    const truncated = buildThirdPartyExposure({
-      ...becData,
-      SentMessageAnalysis: { ...becData.SentMessageAnalysis, TotalRecipients: 241 },
-    })
+    const truncated = buildThirdPartyExposure(
+      { ...becData, SentMessageAnalysis: { ...becData.SentMessageAnalysis, TotalRecipients: 241 } },
+      userData
+    )
     expect(truncated.truncated).toBe(true)
     expect(truncated.collectedRecipients).toBe(6)
     expect(truncated.totalRecipients).toBe(241)
@@ -115,12 +163,17 @@ describe('buildExposure', () => {
       LocationAnalysis: { UsageLocation: 'FR' },
     }
     const signals = buildSignals(becData, userData)
-    const exposure = buildExposure(becData, signals, [])
+    const exposure = buildExposure(becData, signals, [], userData)
 
     expect(exposure.accessEstablished).toBe(true)
     expect(exposure.accessBasis.join(' ')).toContain('copie')
-    expect(exposure.exfiltration.map((item) => item.kind)).toEqual(
-      expect.arrayContaining(['forwarding-rule', 'outbound-from-foreign-ip'])
+    // Labels, not internal keys: "outbound-from-foreign-ip" once appeared verbatim in a client
+    // document.
+    expect(exposure.exfiltration.map((item) => item.label)).toEqual(
+      expect.arrayContaining([
+        'Règle de transfert vers l’extérieur',
+        'Courrier envoyé depuis une adresse hors zone',
+      ])
     )
   })
 
@@ -130,7 +183,7 @@ describe('buildExposure', () => {
       SuspectUserSignIns: [
         {
           CreatedDateTime: '2026-08-20T06:49:00Z',
-          IPAddress: '146.241.181.10',
+          IPAddress: '203.0.113.42',
           Country: 'IT',
           Status: 'Success',
           ForeignLocation: true,
@@ -140,12 +193,15 @@ describe('buildExposure', () => {
     }
     const signals = buildSignals(becData, userData)
     const target = signals.find((signal) => signal.id.startsWith('signin-ip:'))
-    const exposure = buildExposure(becData, signals, [
-      { SignalId: target.id, Verdict: 'unexpected', Analyst: 's.miro' },
-    ])
+    const exposure = buildExposure(
+      becData,
+      signals,
+      [{ SignalId: target.id, Verdict: 'unexpected', Analyst: 's.miro' }],
+      userData
+    )
 
     expect(exposure.accessEstablished).toBe(true)
-    expect(exposure.accessBasis[0]).toContain('146.241.181.10')
+    expect(exposure.accessBasis[0]).toContain('203.0.113.42')
   })
 
   it('offers a closed list of data categories for the analyst to pick from', () => {
@@ -165,7 +221,13 @@ describe('buildContainment', () => {
           Operator: 's.miro@pleinsudit.com',
           HasFailure: false,
         },
-        { Action: 'SessionsRevoked', Count: 1, FirstUtc: '2026-08-20T13:01:00Z', Operator: 's.miro@pleinsudit.com', HasFailure: true },
+        {
+          Action: 'SessionsRevoked',
+          Count: 1,
+          FirstUtc: '2026-08-20T13:01:00Z',
+          Operator: 's.miro@pleinsudit.com',
+          HasFailure: true,
+        },
       ],
     })
 

@@ -18,9 +18,11 @@ import { PropertyList } from '../../../../../components/property-list'
 import { PropertyListItem } from '../../../../../components/property-list-item'
 import { CippHead } from '../../../../../components/CippComponents/CippHead'
 import { BECRemediationReportButton } from '../../../../../components/BECRemediationReportButton'
-// PSIT-CUSTOM-BEGIN: French edition of the same report, plus the analyst qualification step
+// PSIT-CUSTOM-BEGIN: French reports, analyst qualification and incident record
 import { PsitBecReportFrButton } from '../../../../../components/psit/PsitBecReportFr'
 import { PsitBecTriagePanel } from '../../../../../components/psit/PsitBecTriagePanel'
+import { PsitBecIncidentPanel } from '../../../../../components/psit/PsitBecIncidentPanel'
+import { PsitBecIncidentReportButton } from '../../../../../components/psit/PsitBecIncidentReport'
 // PSIT-CUSTOM-END
 import { CippDataTable } from '../../../../../components/CippTable/CippDataTable'
 import { getBecIntuneDeviceActions } from '../../../../../components/CippComponents/CippIntuneDeviceActions.jsx'
@@ -1031,11 +1033,20 @@ const Page = () => {
                   </Typography>
                   {/* PSIT-CUSTOM-BEGIN: qualification step before the report is issued */}
                   {becPollingCall.data && userRequest.data?.[0] && (
-                    <PsitBecTriagePanel
-                      userData={userRequest.data[0]}
-                      becData={becPollingCall.data}
-                      tenantFilter={userSettingsDefaults.currentTenant}
-                    />
+                    <>
+                      <PsitBecTriagePanel
+                        userData={userRequest.data[0]}
+                        becData={becPollingCall.data}
+                        tenantFilter={userSettingsDefaults.currentTenant}
+                      />
+                      {/* Only renders once a compromise is retained. */}
+                      <PsitBecIncidentPanel
+                        userData={userRequest.data[0]}
+                        becData={becPollingCall.data}
+                        tenantFilter={userSettingsDefaults.currentTenant}
+                        triage={psitTriage}
+                      />
+                    </>
                   )}
                   {/* PSIT-CUSTOM-END */}
                   {/* Implement download functionality */}
@@ -1063,6 +1074,12 @@ const Page = () => {
                           userData={userRequest.data[0]}
                           becData={becPollingCall.data}
                           tenantName={userSettingsDefaults.currentTenant}
+                        />
+                        <PsitBecIncidentReportButton
+                          userData={userRequest.data[0]}
+                          becData={becPollingCall.data}
+                          tenantName={userSettingsDefaults.currentTenant}
+                          triage={psitTriage}
                         />
                         {/* PSIT-CUSTOM-END */}
                         <Button

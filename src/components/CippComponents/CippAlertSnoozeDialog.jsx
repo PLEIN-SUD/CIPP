@@ -20,12 +20,7 @@ import {
   getAlertItemFields,
   humanizeCmdlet,
 } from '../../utils/format-alert-item'
-
-const SNOOZE_OPTIONS = [
-  { value: '7', label: 'Snooze for 7 days' },
-  { value: '14', label: 'Snooze for 14 days' },
-  { value: '30', label: 'Snooze for 30 days' },
-]
+import { SNOOZE_OPTIONS } from '../../utils/alert-snooze-durations'
 
 export const CippAlertSnoozeDialog = ({
   open,

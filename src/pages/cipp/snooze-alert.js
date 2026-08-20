@@ -5,13 +5,11 @@ import { Box, Typography, CircularProgress, Alert, Button, Stack } from '@mui/ma
 import { ApiPostCall } from '../../api/ApiCall'
 import { CippApiResults } from '../../components/CippComponents/CippApiResults'
 import CippPageCard from '../../components/CippCards/CippPageCard'
-
-const VALID_DURATIONS = [7, 14, 30, 90, -1]
-
-const durationLabel = (d) => {
-  if (d === -1) return 'forever'
-  return `${d} days`
-}
+import {
+  SNOOZE_DURATIONS,
+  isValidSnoozeDuration,
+  snoozeDurationLabel,
+} from '../../utils/alert-snooze-durations'
 
 const Page = () => {
   const router = useRouter()
@@ -33,8 +31,8 @@ const Page = () => {
     }
 
     const durationNum = parseInt(duration, 10)
-    if (!VALID_DURATIONS.includes(durationNum)) {
-      setParseError(`Invalid duration: ${duration}. Must be 7, 14, 30, or -1.`)
+    if (!isValidSnoozeDuration(durationNum)) {
+      setParseError(`Invalid duration: ${duration}. Must be one of ${SNOOZE_DURATIONS.join(', ')}.`)
       return
     }
 
@@ -96,7 +94,7 @@ const Page = () => {
           )}
           {duration && (
             <Typography variant="body2" color="text.secondary">
-              Duration: {durationLabel(parseInt(duration, 10))}
+              Duration: {snoozeDurationLabel(parseInt(duration, 10))}
             </Typography>
           )}
           <CippApiResults apiObject={snoozeRequest} />

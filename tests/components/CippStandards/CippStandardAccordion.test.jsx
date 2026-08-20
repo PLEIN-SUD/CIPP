@@ -7,7 +7,9 @@ import { renderWithProviders } from '../../test-utils'
 import CippStandardAccordion from '../../../src/components/CippStandards/CippStandardAccordion'
 import standardsData from '../../../src/data/standards.json'
 
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
+vi.mock('../../../src/api/ApiCall', async () =>
+  (await import('../../mocks/api-call')).apiCallMock()
+)
 import { api, getResult, paginatedResult, postResult } from '../../mocks/api-call'
 
 api.get = getResult({ isSuccess: false })
@@ -54,7 +56,9 @@ const applyBulkActions = async (user, labels) => {
   }
   await user.click(screen.getByRole('menuitem', { name: 'Apply to all standards' }))
   await waitFor(() => {
-    expect(screen.queryByRole('menuitem', { name: 'Apply to all standards' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Apply to all standards' })
+    ).not.toBeInTheDocument()
   })
 }
 
@@ -62,7 +66,7 @@ describe('CippStandardAccordion Set All Actions', () => {
   it('bulk apply intersects picked actions with each standard availability, Remediate never lands on a remediate-disabled standard', async () => {
     const user = userEvent.setup()
     renderWithProviders(
-      <Harness selected={{ 'standards.AddDMARCToMOERA': true, 'standards.AuditLog': true }} />,
+      <Harness selected={{ 'standards.AddDMARCToMOERA': true, 'standards.AuditLog': true }} />
     )
 
     await applyBulkActions(user, ['Report', 'Remediate'])
@@ -75,7 +79,7 @@ describe('CippStandardAccordion Set All Actions', () => {
   it('bulk apply skips a standard entirely when no picked action is available, no empty action written', async () => {
     const user = userEvent.setup()
     renderWithProviders(
-      <Harness selected={{ 'standards.AddDMARCToMOERA': true, 'standards.AuditLog': true }} />,
+      <Harness selected={{ 'standards.AddDMARCToMOERA': true, 'standards.AuditLog': true }} />
     )
 
     await applyBulkActions(user, ['Remediate'])
@@ -93,14 +97,16 @@ describe('CippStandardAccordion Set All Actions', () => {
           'standards.GhostStandardRemovedFromCatalog': true,
           'standards.AuditLog': true,
         }}
-      />,
+      />
     )
 
     await applyBulkActions(user, ['Report'])
 
     expect(capturedForm.getValues('standards.AuditLog.action')).toEqual([REPORT])
     expect(capturedForm.getValues('standards.SPDirectSharing.action')).toBeUndefined()
-    expect(capturedForm.getValues('standards.GhostStandardRemovedFromCatalog.action')).toBeUndefined()
+    expect(
+      capturedForm.getValues('standards.GhostStandardRemovedFromCatalog.action')
+    ).toBeUndefined()
   })
 
   it('bulk apply keeps previously saved fields, configured standard stays configured', async () => {
@@ -117,7 +123,7 @@ describe('CippStandardAccordion Set All Actions', () => {
             },
           },
         }}
-      />,
+      />
     )
 
     // edit-mode init derives configured state from the loaded template
@@ -146,7 +152,7 @@ describe('CippStandardAccordion Set All Actions', () => {
             },
           },
         }}
-      />,
+      />
     )
     expect(await screen.findByText('Configured')).toBeInTheDocument()
 

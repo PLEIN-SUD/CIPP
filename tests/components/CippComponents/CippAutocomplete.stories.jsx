@@ -72,7 +72,13 @@ export const ApiDriven = {
     multiple: false,
     label: 'Users',
     onChange: () => {},
-    api: { url: '/api/ListUsers', labelField: 'displayName', valueField: 'id', dataKey: 'Results', queryKey: 'story-users' },
+    api: {
+      url: '/api/ListUsers',
+      labelField: 'displayName',
+      valueField: 'id',
+      dataKey: 'Results',
+      queryKey: 'story-users',
+    },
   },
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement)

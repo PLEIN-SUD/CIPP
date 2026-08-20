@@ -7,19 +7,65 @@ import { Delete, Edit, Visibility, Block, CheckCircle } from '@mui/icons-materia
 
 const generateLargeDataset = (count = 10000) => {
   const firstNames = [
-    'Alice', 'Bob', 'Carol', 'Dave', 'Eve',
-    'Frank', 'Grace', 'Hank', 'Ivy', 'Jack',
-    'Karen', 'Leo', 'Mia', 'Noah', 'Olivia',
-    'Paul', 'Quinn', 'Rachel', 'Sam', 'Tina',
+    'Alice',
+    'Bob',
+    'Carol',
+    'Dave',
+    'Eve',
+    'Frank',
+    'Grace',
+    'Hank',
+    'Ivy',
+    'Jack',
+    'Karen',
+    'Leo',
+    'Mia',
+    'Noah',
+    'Olivia',
+    'Paul',
+    'Quinn',
+    'Rachel',
+    'Sam',
+    'Tina',
   ]
   const lastNames = [
-    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones',
-    'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
-    'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson',
+    'Smith',
+    'Johnson',
+    'Williams',
+    'Brown',
+    'Jones',
+    'Garcia',
+    'Miller',
+    'Davis',
+    'Rodriguez',
+    'Martinez',
+    'Anderson',
+    'Taylor',
+    'Thomas',
+    'Moore',
+    'Jackson',
   ]
   const domains = ['contoso.com', 'fabrikam.com', 'northwind.com', 'adventure-works.com']
-  const departments = ['IT', 'Sales', 'Marketing', 'Engineering', 'HR', 'Finance', 'Legal', 'Operations']
-  const jobTitles = ['Manager', 'Developer', 'Analyst', 'Director', 'Coordinator', 'Specialist', 'Administrator', 'Engineer']
+  const departments = [
+    'IT',
+    'Sales',
+    'Marketing',
+    'Engineering',
+    'HR',
+    'Finance',
+    'Legal',
+    'Operations',
+  ]
+  const jobTitles = [
+    'Manager',
+    'Developer',
+    'Analyst',
+    'Director',
+    'Coordinator',
+    'Specialist',
+    'Administrator',
+    'Engineer',
+  ]
   const severities = ['High', 'Medium', 'Low', 'Informational']
   const statuses = ['Success', 'Failed', 'In Progress', 'Not Started', 'Warning']
   const riskLevels = ['none', 'low', 'medium', 'high', 'hidden']
@@ -69,14 +115,15 @@ const generateLargeDataset = (count = 10000) => {
       info: {
         displayName: `${first} ${last} (Info)`,
       },
-      businessPhones: Math.random() > 0.3
-        ? [
-            `+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-            ...(Math.random() > 0.5
-              ? [`+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`]
-              : []),
-          ]
-        : [],
+      businessPhones:
+        Math.random() > 0.3
+          ? [
+              `+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+              ...(Math.random() > 0.5
+                ? [`+1-555-${String(Math.floor(Math.random() * 9000) + 1000)}`]
+                : []),
+            ]
+          : [],
       delegatedPrivilegeStatus: pick(delegationStatuses),
       jobTitle: pick(jobTitles),
       department: pick(departments),
@@ -86,7 +133,6 @@ const generateLargeDataset = (count = 10000) => {
 
 // Rich dataset (500 rows), all formatter fields for thorough coverage
 const richDataset = generateLargeDataset(500)
-
 
 const basicData = [
   {
@@ -244,7 +290,9 @@ export const WithActions = {
         const icons = canvasElement.querySelectorAll('[data-testid="MoreHorizIcon"]')
         expect(icons.length).toBeGreaterThan(0)
       })
-      const actionButton = canvasElement.querySelectorAll('[data-testid="MoreHorizIcon"]')[0].closest('button')
+      const actionButton = canvasElement
+        .querySelectorAll('[data-testid="MoreHorizIcon"]')[0]
+        .closest('button')
       await userEvent.click(actionButton)
     })
 
@@ -423,7 +471,9 @@ export const WithConditionalActions = {
         const icons = canvasElement.querySelectorAll('[data-testid="MoreHorizIcon"]')
         expect(icons.length).toBeGreaterThan(0)
       })
-      const actionButton = canvasElement.querySelectorAll('[data-testid="MoreHorizIcon"]')[0].closest('button')
+      const actionButton = canvasElement
+        .querySelectorAll('[data-testid="MoreHorizIcon"]')[0]
+        .closest('button')
       await userEvent.click(actionButton)
     })
 
@@ -435,8 +485,13 @@ export const WithConditionalActions = {
       await waitFor(() => {
         expect(root.getByRole('menuitem', { name: enabledLabel })).toBeVisible()
       })
-      await expect(root.getByRole('menuitem', { name: enabledLabel })).not.toHaveAttribute('aria-disabled')
-      await expect(root.getByRole('menuitem', { name: disabledLabel })).toHaveAttribute('aria-disabled', 'true')
+      await expect(root.getByRole('menuitem', { name: enabledLabel })).not.toHaveAttribute(
+        'aria-disabled'
+      )
+      await expect(root.getByRole('menuitem', { name: disabledLabel })).toHaveAttribute(
+        'aria-disabled',
+        'true'
+      )
     })
   },
 }

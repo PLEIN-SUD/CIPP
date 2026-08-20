@@ -25,9 +25,7 @@ describe('CippCopyToClipboard', () => {
   })
 
   it('renders chip with text', () => {
-    renderWithTheme(
-      <CippCopyToClipBoard text="cipp-secret-key" type="chip" visible={true} />
-    )
+    renderWithTheme(<CippCopyToClipBoard text="cipp-secret-key" type="chip" visible={true} />)
     expect(screen.getByText('cipp-secret-key')).toBeInTheDocument()
   })
 
@@ -37,9 +35,7 @@ describe('CippCopyToClipboard', () => {
       clipboard: { writeText },
     })
 
-    renderWithTheme(
-      <CippCopyToClipBoard text="cipp-secret-key" type="chip" visible={true} />
-    )
+    renderWithTheme(<CippCopyToClipBoard text="cipp-secret-key" type="chip" visible={true} />)
 
     // clickable Chip renders with role="button", Tooltip title is its aria-label
     await userEvent.click(screen.getByRole('button', { name: 'Copy to clipboard' }))
@@ -47,9 +43,7 @@ describe('CippCopyToClipboard', () => {
   })
 
   it('renders masked password and toggles visibility', async () => {
-    renderWithTheme(
-      <CippCopyToClipBoard text="S3cr3tP@ssw0rd" type="password" visible={true} />
-    )
+    renderWithTheme(<CippCopyToClipBoard text="S3cr3tP@ssw0rd" type="password" visible={true} />)
     expect(screen.getByText('********')).toBeInTheDocument()
 
     // Tooltip title becomes the aria-label on the toggle IconButton

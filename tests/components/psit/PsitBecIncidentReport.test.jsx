@@ -397,6 +397,24 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).toContain('(dossier ouvert le 2026-08-20 15:00 UTC)')
   })
 
+  it('puts a repeat compromise in the summary, where the controller will read it', () => {
+    const { container } = render({
+      incident: {
+        ...incident,
+        PreviousCases: [
+          {
+            Reference: 'PSIT-BEC-20260820-AB12',
+            DetectedUtc: '2026-08-20T09:00:00Z',
+            ClosedUtc: '2026-08-25T16:00:00Z',
+          },
+        ],
+      },
+    })
+
+    expect(container.textContent).toContain('Compromission répétée')
+    expect(container.textContent).toContain('PSIT-BEC-20260820-AB12')
+  })
+
   it('warns on its own first page when generated without a retained compromise', () => {
     const { container } = render({ becData: cleanBecData })
     expect(container.textContent).toContain('sans compromission retenue')

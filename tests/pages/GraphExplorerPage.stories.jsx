@@ -37,7 +37,9 @@ export const PresetRun = {
       })
       await userEvent.click(combo)
       const body = within(canvasElement.ownerDocument.body)
-      await userEvent.click(await body.findByRole('option', { name: 'All users with email addresses' }))
+      await userEvent.click(
+        await body.findByRole('option', { name: 'All users with email addresses' })
+      )
       await userEvent.click(canvas.getByRole('button', { name: 'Run' }))
     })
 

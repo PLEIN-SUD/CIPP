@@ -58,7 +58,9 @@ describe('ReleaseNotesDialog', () => {
   it('opens on the .0 base release even when running a hotfix build', async () => {
     renderWithProviders(<ReleaseNotesDialog />)
 
-    expect(await screen.findByText('Release notes for v10.8.0 - Ramos Melon Fizz')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Release notes for v10.8.0 - Ramos Melon Fizz')
+    ).toBeInTheDocument()
     expect(screen.getByText('Notes for the base release of the 10.8 series')).toBeInTheDocument()
   })
 
@@ -87,7 +89,9 @@ describe('ReleaseNotesDialog', () => {
 
     renderWithProviders(<ReleaseNotesDialog />)
 
-    expect(await screen.findByText('Release notes for v10.9.0 - Something Newer')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Release notes for v10.9.0 - Something Newer')
+    ).toBeInTheDocument()
   })
 
   it('falls back to the .0 notes when the running version has no release of its own', async () => {
@@ -95,7 +99,9 @@ describe('ReleaseNotesDialog', () => {
 
     renderWithProviders(<ReleaseNotesDialog />)
 
-    expect(await screen.findByText('Release notes for v10.9.0 - Something Newer')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Release notes for v10.9.0 - Something Newer')
+    ).toBeInTheDocument()
   })
 
   it('honours a permanent dismissal', async () => {

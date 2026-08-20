@@ -1,16 +1,10 @@
-import {
-  decodeHtmlEntities,
-  htmlToPlainText,
-  parseInlineHtml,
-} from '../../src/utils/html-inline'
+import { decodeHtmlEntities, htmlToPlainText, parseInlineHtml } from '../../src/utils/html-inline'
 
 // Compact rendering of the node tree: 'plain <strong>bold</strong>'
 const show = (nodes) =>
   nodes
     .map((node) =>
-      node.type === 'text'
-        ? node.value
-        : `<${node.type}>${show(node.children)}</${node.type}>`
+      node.type === 'text' ? node.value : `<${node.type}>${show(node.children)}</${node.type}>`
     )
     .join('')
 
@@ -18,9 +12,7 @@ const parse = (html) => show(parseInlineHtml(html))
 
 describe('parseInlineHtml', () => {
   it('keeps the marks the editor can produce', () => {
-    expect(parse('plain <strong>bold</strong>')).toBe(
-      'plain <strong>bold</strong>'
-    )
+    expect(parse('plain <strong>bold</strong>')).toBe('plain <strong>bold</strong>')
     expect(parse('<em>italic</em>')).toBe('<em>italic</em>')
     expect(parse('<s>struck</s>')).toBe('<strike>struck</strike>')
     expect(parse('<code>x</code>')).toBe('<code>x</code>')
@@ -30,18 +22,12 @@ describe('parseInlineHtml', () => {
     expect(parse('<b>bold</b> <i>italic</i> <u>under</u>')).toBe(
       '<strong>bold</strong> <em>italic</em> <underline>under</underline>'
     )
-    expect(parse('<del>a</del><strike>b</strike>')).toBe(
-      '<strike>a</strike><strike>b</strike>'
-    )
+    expect(parse('<del>a</del><strike>b</strike>')).toBe('<strike>a</strike><strike>b</strike>')
   })
 
   it('preserves nesting so bold italic stays both', () => {
-    expect(parse('<strong><em>both</em></strong>')).toBe(
-      '<strong><em>both</em></strong>'
-    )
-    expect(parse('<em><strong>both</strong></em>')).toBe(
-      '<em><strong>both</strong></em>'
-    )
+    expect(parse('<strong><em>both</em></strong>')).toBe('<strong><em>both</em></strong>')
+    expect(parse('<em><strong>both</strong></em>')).toBe('<em><strong>both</strong></em>')
   })
 
   it('is transparent to tags it does not style', () => {
@@ -63,9 +49,7 @@ describe('parseInlineHtml', () => {
   })
 
   it('leaves value text alone', () => {
-    expect(parse('Defender_for_Business_Servers')).toBe(
-      'Defender_for_Business_Servers'
-    )
+    expect(parse('Defender_for_Business_Servers')).toBe('Defender_for_Business_Servers')
     // HTML is not Markdown: asterisks here are literal.
     expect(parse('5 * 3 and _snake_case_')).toBe('5 * 3 and _snake_case_')
   })
@@ -73,9 +57,7 @@ describe('parseInlineHtml', () => {
   it('survives malformed markup', () => {
     expect(parse('<strong>unclosed')).toBe('<strong>unclosed</strong>')
     expect(parse('stray </strong> close')).toBe('stray  close')
-    expect(parse('<strong>a<em>b</strong>c</em>')).toBe(
-      '<strong>a<em>b</em></strong>c'
-    )
+    expect(parse('<strong>a<em>b</strong>c</em>')).toBe('<strong>a<em>b</em></strong>c')
   })
 
   it('drops script and style content entirely', () => {

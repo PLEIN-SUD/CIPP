@@ -66,10 +66,7 @@ describe('deriveCacheSummary', () => {
   })
 
   it('warns between 30 and 72 hours and reports the age in hours', () => {
-    const summary = deriveCacheSummary(
-      [row('a.com', 'Users', 48)],
-      [tenant('a.com', 'Alpha')]
-    )
+    const summary = deriveCacheSummary([row('a.com', 'Users', 48)], [tenant('a.com', 'Alpha')])
 
     expect(summary.freshness).toEqual({ fresh: 0, stale: 1, missing: 0 })
     expect(summary.staleTenants[0]).toMatchObject({
@@ -90,18 +87,13 @@ describe('deriveCacheSummary', () => {
     )
 
     const [alpha] = summary.staleTenants
-    expect(alpha.collections.map((entry) => entry.type)).toEqual([
-      'SPOTenant',
-      'Mailboxes',
-    ])
+    expect(alpha.collections.map((entry) => entry.type)).toEqual(['SPOTenant', 'Mailboxes'])
     expect(alpha.collections[0].ageHours).toBeCloseTo(216, 1)
     expect(alpha.collections[0].lastRefresh).toBeTruthy()
   })
 
   it('sorts never cached first, then oldest, without truncating the list', () => {
-    const tenants = ['a', 'b', 'c', 'd', 'e', 'f'].map((letter) =>
-      tenant(`${letter}.com`)
-    )
+    const tenants = ['a', 'b', 'c', 'd', 'e', 'f'].map((letter) => tenant(`${letter}.com`))
     const summary = deriveCacheSummary(
       [
         row('a.com', 'Users', 100),

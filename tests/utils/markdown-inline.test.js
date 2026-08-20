@@ -1,16 +1,11 @@
-import {
-  inlineToPlainText,
-  parseInlineMarkdown,
-} from '../../src/utils/markdown-inline'
+import { inlineToPlainText, parseInlineMarkdown } from '../../src/utils/markdown-inline'
 
 // Compact rendering of the node tree so expectations stay readable:
 // 'plain <strong>bold</strong>'
 const show = (nodes) =>
   nodes
     .map((node) =>
-      node.type === 'text'
-        ? node.value
-        : `<${node.type}>${show(node.children)}</${node.type}>`
+      node.type === 'text' ? node.value : `<${node.type}>${show(node.children)}</${node.type}>`
     )
     .join('')
 
@@ -18,9 +13,7 @@ const parse = (text) => show(parseInlineMarkdown(text))
 
 describe('parseInlineMarkdown', () => {
   it('italicises the underscore emphasis that used to leak into the PDF', () => {
-    expect(
-      parse('_No results available for this test. Run an assessment first._')
-    ).toBe(
+    expect(parse('_No results available for this test. Run an assessment first._')).toBe(
       '<em>No results available for this test. Run an assessment first.</em>'
     )
   })
@@ -28,13 +21,9 @@ describe('parseInlineMarkdown', () => {
   it('leaves underscores inside a word alone', () => {
     // Licence SKUs are everywhere in these reports; eating their separators would be worse
     // than the leaked markup this parser exists to fix.
-    expect(parse('Defender_for_Business_Servers')).toBe(
-      'Defender_for_Business_Servers'
-    )
+    expect(parse('Defender_for_Business_Servers')).toBe('Defender_for_Business_Servers')
     expect(parse('SPE_E5_USGOV_GCCHIGH')).toBe('SPE_E5_USGOV_GCCHIGH')
-    expect(parse('snake_case_name and more_text_here')).toBe(
-      'snake_case_name and more_text_here'
-    )
+    expect(parse('snake_case_name and more_text_here')).toBe('snake_case_name and more_text_here')
   })
 
   it('handles emphasis and intraword underscores in the same line', () => {
@@ -54,16 +43,12 @@ describe('parseInlineMarkdown', () => {
   })
 
   it('keeps surrounding text', () => {
-    expect(parse('**Total Licensed Users:** 3')).toBe(
-      '<strong>Total Licensed Users:</strong> 3'
-    )
+    expect(parse('**Total Licensed Users:** 3')).toBe('<strong>Total Licensed Users:</strong> 3')
     expect(parse('a **b** c *d* e')).toBe('a <strong>b</strong> c <em>d</em> e')
   })
 
   it('nests emphasis', () => {
-    expect(parse('**bold with _em_ inside**')).toBe(
-      '<strong>bold with <em>em</em> inside</strong>'
-    )
+    expect(parse('**bold with _em_ inside**')).toBe('<strong>bold with <em>em</em> inside</strong>')
   })
 
   it('renders code spans literally', () => {
@@ -73,9 +58,7 @@ describe('parseInlineMarkdown', () => {
   })
 
   it('keeps only the label of a link', () => {
-    expect(parse('see [the docs](https://docs.cipp.app/x)')).toBe(
-      'see the docs'
-    )
+    expect(parse('see [the docs](https://docs.cipp.app/x)')).toBe('see the docs')
   })
 
   it('treats unmatched and spaced delimiters as ordinary text', () => {
@@ -103,8 +86,6 @@ describe('inlineToPlainText', () => {
   })
 
   it('preserves a value that only looks like markup', () => {
-    expect(inlineToPlainText('Defender_for_Business_Servers')).toBe(
-      'Defender_for_Business_Servers'
-    )
+    expect(inlineToPlainText('Defender_for_Business_Servers')).toBe('Defender_for_Business_Servers')
   })
 })

@@ -6,8 +6,18 @@ import { CippDataTable } from '../../../src/components/CippTable/CippDataTable'
 
 const basicData = [
   { displayName: 'Alice Smith', mail: 'alice@contoso.com', department: 'IT', accountEnabled: true },
-  { displayName: 'Bob Johnson', mail: 'bob@contoso.com', department: 'Sales', accountEnabled: true },
-  { displayName: 'Carol Williams', mail: 'carol@contoso.com', department: 'HR', accountEnabled: false },
+  {
+    displayName: 'Bob Johnson',
+    mail: 'bob@contoso.com',
+    department: 'Sales',
+    accountEnabled: true,
+  },
+  {
+    displayName: 'Carol Williams',
+    mail: 'carol@contoso.com',
+    department: 'HR',
+    accountEnabled: false,
+  },
 ]
 
 describe('CippDataTable', () => {
@@ -160,11 +170,7 @@ describe('CippDataTable', () => {
       { id: 'mail', header: 'Email Address', accessorKey: 'mail' },
     ]
     const { container } = renderWithProviders(
-      <CippDataTable
-        data={basicData}
-        columns={customColumns}
-        maxHeightOffset="100px"
-      />
+      <CippDataTable data={basicData} columns={customColumns} maxHeightOffset="100px" />
     )
     await waitFor(() => {
       expect(container.querySelector('table')).not.toBeNull()

@@ -35,9 +35,9 @@ describe('getCippFormatting (text mode)', () => {
   })
 
   it('translates @odata.type graph types and passes non-graph types through', () => {
-    expect(getCippFormatting('#microsoft.graph.conditionalAccessPolicy', '@odata.type', 'text')).toBe(
-      'Conditional Access Policy'
-    )
+    expect(
+      getCippFormatting('#microsoft.graph.conditionalAccessPolicy', '@odata.type', 'text')
+    ).toBe('Conditional Access Policy')
     expect(getCippFormatting('customType', '@odata.type', 'text')).toBe('customType')
   })
 
@@ -90,9 +90,7 @@ describe('getCippFormatting (text mode)', () => {
   it('translates trustType device join values', () => {
     expect(getCippFormatting('azuread', 'trustType', 'text')).toBe('Microsoft Entra joined')
     expect(getCippFormatting('workplace', 'trustType', 'text')).toBe('Microsoft Entra registered')
-    expect(getCippFormatting('serverad', 'trustType', 'text')).toBe(
-      'Microsoft Entra hybrid joined'
-    )
+    expect(getCippFormatting('serverad', 'trustType', 'text')).toBe('Microsoft Entra hybrid joined')
   })
 
   it('formats state values', () => {

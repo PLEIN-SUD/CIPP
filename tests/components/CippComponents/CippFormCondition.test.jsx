@@ -88,11 +88,7 @@ describe('CippFormCondition', () => {
     renderWithTheme(
       <FormWrapper defaultValues={{ name: 'John' }}>
         {(formControl) => (
-          <CippFormCondition
-            field="name"
-            compareType="hasValue"
-            formControl={formControl}
-          >
+          <CippFormCondition field="name" compareType="hasValue" formControl={formControl}>
             <div data-testid="child-content">HasValue Content</div>
           </CippFormCondition>
         )}
@@ -105,11 +101,7 @@ describe('CippFormCondition', () => {
     renderWithTheme(
       <FormWrapper defaultValues={{ name: '' }}>
         {(formControl) => (
-          <CippFormCondition
-            field="name"
-            compareType="hasValue"
-            formControl={formControl}
-          >
+          <CippFormCondition field="name" compareType="hasValue" formControl={formControl}>
             <div data-testid="child-content">HasValue Content</div>
           </CippFormCondition>
         )}

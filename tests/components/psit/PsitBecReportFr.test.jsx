@@ -232,6 +232,48 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).toContain('Source :')
   })
 
+  it('does not act on an answer given before the window, and says so', () => {
+    const { container } = render({
+      triage: [
+        {
+          SignalId: 'signin-ip:203.0.113.42',
+          Verdict: 'expected',
+          Analyst: 's.miro@pleinsudit.com',
+          DecidedUtc: '2026-01-05T09:00:00Z',
+          Justification: 'déplacement confirmé',
+        },
+      ],
+    })
+    const text = container.textContent
+
+    expect(text).toContain('Qualifications antérieures à la fenêtre')
+    expect(text).toContain('ne sont pas appliquées à cette collecte')
+    // And the signal is still a question rather than being filed as noise.
+    expect(text).toContain('À qualifier')
+  })
+
+  it('reports a previous case on the same mailbox as a finding', () => {
+    const { container } = render({
+      incident: {
+        Reference: 'PSIT-BEC-20261102-CD34',
+        PreviousCases: [
+          {
+            Reference: 'PSIT-BEC-20260820-AB12',
+            AutotaskTicket: 'T20260820.0042',
+            DetectedUtc: '2026-08-20T09:00:00Z',
+            ClosedUtc: '2026-08-25T16:00:00Z',
+            ClosedBy: 's.miro@pleinsudit.com',
+          },
+        ],
+      },
+    })
+    const text = container.textContent
+
+    expect(text).toContain('Antécédents sur cette boîte')
+    expect(text).toContain('PSIT-BEC-20260820-AB12')
+    expect(text).toContain('Une compromission répétée de la même boîte est un constat en soi')
+  })
+
   it('carries the Autotask ticket and the incident cross-reference', () => {
     const { container } = render({
       incident: {

@@ -410,6 +410,39 @@ export const firstUnauthorisedAccessUtc = (becData = {}, signals = [], triage = 
 }
 
 /**
+ * Splits recorded determinations into the ones that still speak for the collection in hand and the
+ * ones that no longer do.
+ *
+ * Why this exists: signal ids are derived from stable discriminators - a source address, a rule
+ * name - so they survive across collections on purpose, which is what lets a determination outlive
+ * a re-run. The same property is a trap when the mailbox is compromised a second time months later:
+ * the attacker returns from the same address, and the answer given in August ("attendu, l'utilisateur
+ * était en Italie") is applied to a November event and files it as noise, without asking anyone.
+ *
+ * So an answer decided before the current window opened is stale: the signal goes back to being a
+ * question, and the previous answer is shown as history rather than acted on. Closing the case
+ * archives determinations properly (see Close-PSITBecIncident); this covers the case nobody closed.
+ */
+export const partitionDeterminations = (triage = [], becData = {}) => {
+  const window = getAnalysisWindow(becData)
+  const current = []
+  const stale = []
+
+  for (const determination of psitAsArray(triage)) {
+    const decided = toUtc(determination?.DecidedUtc)
+    // No timestamp: treated as current. A determination without a date is a data problem, not a
+    // reason to discard a human answer.
+    if (!decided || decided >= window.startUtc) {
+      current.push(determination)
+    } else {
+      stale.push(determination)
+    }
+  }
+
+  return { current, stale, windowStartUtc: window.startUtc }
+}
+
+/**
  * The signal set. Ids are the triage keys, so they are derived from stable discriminators (source
  * address, rule name) rather than from array positions - a determination must survive the next
  * collection. Renaming a rule does start a fresh question, which is the honest behaviour: it is a

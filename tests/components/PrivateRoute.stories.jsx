@@ -34,10 +34,9 @@ export const Unauthenticated = {
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement)
     await step('null clientPrincipal blocks the app content', async () => {
-      await waitFor(
-        () => {
-          expect(canvas.getByText('Sign in to CIPP')).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(canvas.getByText('Sign in to CIPP')).toBeInTheDocument()
+      })
       expect(canvas.queryByText('app content')).not.toBeInTheDocument()
     })
   },
@@ -60,10 +59,9 @@ export const AuthenticatedNoRoles = {
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement)
     await step('anonymous/authenticated roles alone still block the app content', async () => {
-      await waitFor(
-        () => {
-          expect(canvas.getByText('Access Denied')).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(canvas.getByText('Access Denied')).toBeInTheDocument()
+      })
       expect(canvas.queryByText('app content')).not.toBeInTheDocument()
     })
   },
@@ -86,10 +84,9 @@ export const Authenticated = {
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement)
     await step('admin role on both auth endpoints renders the app content', async () => {
-      await waitFor(
-        () => {
-          expect(canvas.getByText('app content')).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(canvas.getByText('app content')).toBeInTheDocument()
+      })
     })
   },
 }
@@ -108,10 +105,9 @@ export const ApiOffline = {
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement)
     await step('404 from /api/me shows CIPP API Unreachable', async () => {
-      await waitFor(
-        () => {
-          expect(canvas.getByText('CIPP API Unreachable')).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(canvas.getByText('CIPP API Unreachable')).toBeInTheDocument()
+      })
     })
   },
 }

@@ -44,6 +44,7 @@ import {
   firstUnauthorisedAccessUtc,
   formatUtc,
   getAnalysisWindow,
+  partitionDeterminations,
 } from '../../utils/psit-bec-signals'
 import {
   INCIDENT_STATUS_LABELS,
@@ -82,18 +83,21 @@ export const PsitBecIncidentReportDocument = ({
   })
 
   const window = getAnalysisWindow(becData)
+  // See partitionDeterminations: an answer given before this window opened is history, not a
+  // verdict on the events in hand.
+  const { current: liveTriage } = partitionDeterminations(triage, becData)
   const signals = buildSignals(becData, userData)
-  const verdict = buildVerdict(signals, triage)
+  const verdict = buildVerdict(signals, liveTriage)
   const timeline = buildTimeline(becData)
-  const exposure = buildExposure(becData, signals, triage, userData)
+  const exposure = buildExposure(becData, signals, liveTriage, userData)
   const thirdParties = buildThirdPartyExposure(becData, userData)
   // Never timeline[0]: an authentication method registered in 2021 once became "first unauthorised
   // access observed" in a report meant for a DPO.
-  const firstAccessUtc = firstUnauthorisedAccessUtc(becData, signals, triage)
+  const firstAccessUtc = firstUnauthorisedAccessUtc(becData, signals, liveTriage)
   const containment = buildContainment(remediation)
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const confirmed = signals.filter((signal) => {
-    const determination = psitAsArray(triage).find((entry) => entry.SignalId === signal.id)
+    const determination = psitAsArray(liveTriage).find((entry) => entry.SignalId === signal.id)
     return determination?.Verdict === 'unexpected'
   })
   const mailReadStatus = incident?.MailReadStatus || exposure.mailReadSuggested
@@ -181,6 +185,22 @@ export const PsitBecIncidentReportDocument = ({
             </AlertBox>
           )}
 
+          {psitAsArray(incident?.PreviousCases).length > 0 && (
+            <AlertBox
+              colour="#742A2A"
+              title={`Compromission répétée : ${psitAsArray(incident.PreviousCases).length} dossier(s) antérieur(s) sur cette boîte`}
+            >
+              {psitAsArray(incident.PreviousCases)
+                .map(
+                  (previous) =>
+                    `${previous.Reference} — détection ${
+                      previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'
+                    }, clos le ${previous.ClosedUtc ? formatUtc(previous.ClosedUtc) : 'N/D'}`
+                )
+                .join('\n')}
+            </AlertBox>
+          )}
+
           {incident?.ExecutiveNote && <Paragraph>{incident.ExecutiveNote}</Paragraph>}
 
           <Paragraph>
@@ -255,7 +275,7 @@ export const PsitBecIncidentReportDocument = ({
         <Section title="Éléments retenus">
           {[...established, ...confirmed].length > 0 ? (
             [...established, ...confirmed].map((signal) => {
-              const determination = psitAsArray(triage).find(
+              const determination = psitAsArray(liveTriage).find(
                 (entry) => entry.SignalId === signal.id
               )
               return (

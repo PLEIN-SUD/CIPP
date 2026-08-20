@@ -60,7 +60,12 @@ export const ErrorsOnly = {
     errorsOnly: true,
     apiObject: {
       data: {
-        Results: ['User created successfully', 'Error: License assignment failed', 'Group membership updated', 'Error: MFA policy could not be applied'],
+        Results: [
+          'User created successfully',
+          'Error: License assignment failed',
+          'Group membership updated',
+          'Error: MFA policy could not be applied',
+        ],
       },
       isFetching: false,
       isSuccess: true,

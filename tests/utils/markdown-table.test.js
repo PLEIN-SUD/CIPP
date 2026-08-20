@@ -46,10 +46,7 @@ describe('parseTableRow', () => {
   })
 
   it('unescapes backslashes', () => {
-    expect(parseTableRow('| CONTOSO\\\\jdoe | Admin |')).toEqual([
-      'CONTOSO\\jdoe',
-      'Admin',
-    ])
+    expect(parseTableRow('| CONTOSO\\\\jdoe | Admin |')).toEqual(['CONTOSO\\jdoe', 'Admin'])
   })
 
   it('handles rows without outer pipes', () => {
@@ -106,9 +103,6 @@ describe('escapeTableCell', () => {
 
   it('round-trips through the parser', () => {
     const value = 'John Doe | Contoso'
-    expect(parseTableRow(`| ${escapeTableCell(value)} | E3 |`)).toEqual([
-      value,
-      'E3',
-    ])
+    expect(parseTableRow(`| ${escapeTableCell(value)} | E3 |`)).toEqual([value, 'E3'])
   })
 })

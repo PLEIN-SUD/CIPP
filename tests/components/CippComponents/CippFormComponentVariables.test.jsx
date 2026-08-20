@@ -35,7 +35,9 @@ describe('CippFormComponent — textFieldWithVariables', () => {
 
   it('shows the value the form holds', () => {
     renderWithProviders(<Harness defaultValue="%tenantname% — %reportdate%" />)
-    expect(screen.getByRole('textbox', { name: 'Footer Text' })).toHaveValue('%tenantname% — %reportdate%')
+    expect(screen.getByRole('textbox', { name: 'Footer Text' })).toHaveValue(
+      '%tenantname% — %reportdate%'
+    )
   })
 
   it('accepts typed text, including percent signs', async () => {
@@ -48,10 +50,11 @@ describe('CippFormComponent — textFieldWithVariables', () => {
   })
 
   it('renders helper text and placeholder', () => {
-    renderWithProviders(
-      <Harness helperText="Type % for variables" placeholder="%tenantname%" />
-    )
+    renderWithProviders(<Harness helperText="Type % for variables" placeholder="%tenantname%" />)
     expect(screen.getByText('Type % for variables')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Footer Text' })).toHaveAttribute('placeholder', '%tenantname%')
+    expect(screen.getByRole('textbox', { name: 'Footer Text' })).toHaveAttribute(
+      'placeholder',
+      '%tenantname%'
+    )
   })
 })

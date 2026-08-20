@@ -47,13 +47,11 @@ const catalogPolicy = () => ({
     {
       '@odata.type': '#microsoft.graph.deviceManagementConfigurationSetting',
       settingInstance: {
-        '@odata.type':
-          '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
+        '@odata.type': '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
         settingDefinitionId:
           'device_vendor_msft_policy_config_localpoliciessecurityoptions_interactivelogon_machineinactivitylimit_v2',
         simpleSettingValue: {
-          '@odata.type':
-            '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue',
+          '@odata.type': '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue',
           value: 300,
         },
       },
@@ -61,23 +59,17 @@ const catalogPolicy = () => ({
     {
       '@odata.type': '#microsoft.graph.deviceManagementConfigurationSetting',
       settingInstance: {
-        '@odata.type':
-          '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance',
-        settingDefinitionId:
-          'device_vendor_msft_policy_config_defender_allowrealtimemonitoring',
+        '@odata.type': '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance',
+        settingDefinitionId: 'device_vendor_msft_policy_config_defender_allowrealtimemonitoring',
         choiceSettingValue: {
-          '@odata.type':
-            '#microsoft.graph.deviceManagementConfigurationChoiceSettingValue',
-          value:
-            'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_1',
+          '@odata.type': '#microsoft.graph.deviceManagementConfigurationChoiceSettingValue',
+          value: 'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_1',
           children: [
             {
-              '@odata.type':
-                '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
+              '@odata.type': '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
               settingDefinitionId: 'group_child_setting',
               simpleSettingValue: {
-                '@odata.type':
-                  '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
+                '@odata.type': '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
                 value: 'child-value',
               },
             },
@@ -93,8 +85,7 @@ const catalogPolicy = () => ({
         settingDefinitionId: 'collection_setting',
         simpleSettingCollectionValue: [
           {
-            '@odata.type':
-              '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
+            '@odata.type': '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
             value: 'app-one',
           },
         ],
@@ -108,16 +99,14 @@ const catalogPolicy = () => ({
         settingDefinitionId: 'group_parent',
         groupSettingCollectionValue: [
           {
-            '@odata.type':
-              '#microsoft.graph.deviceManagementConfigurationGroupSettingValue',
+            '@odata.type': '#microsoft.graph.deviceManagementConfigurationGroupSettingValue',
             children: [
               {
                 '@odata.type':
                   '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
                 settingDefinitionId: 'group_child_setting',
                 simpleSettingValue: {
-                  '@odata.type':
-                    '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
+                  '@odata.type': '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
                   value: 'grouped',
                 },
               },
@@ -132,9 +121,7 @@ const catalogPolicy = () => ({
 // Every @odata.type in the object, by JSON path — the properties Intune rejects a policy for losing.
 const collectODataTypes = (node, path = '', found = {}) => {
   if (Array.isArray(node)) {
-    node.forEach((item, index) =>
-      collectODataTypes(item, `${path}[${index}]`, found)
-    )
+    node.forEach((item, index) => collectODataTypes(item, `${path}[${index}]`, found))
     return found
   }
   if (node && typeof node === 'object') {
@@ -180,8 +167,7 @@ describe('applyIntuneSettingEdits', () => {
       600,
       {
         label: 'Disabled',
-        value:
-          'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_0',
+        value: 'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_0',
       },
       'new-child-value',
       [
@@ -208,48 +194,39 @@ describe('applyIntuneSettingEdits', () => {
     const edited = applyIntuneSettingEdits(original, leaves, [
       '600', // a number field hands back a string
       {
-        value:
-          'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_0',
+        value: 'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_0',
       },
       'new-child-value',
       [{ value: 'app-one' }, { value: 'app-two' }],
       'grouped-edited',
     ])
 
-    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(
-      600
-    )
+    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(600)
     expect(edited.settings[1].settingInstance.choiceSettingValue.value).toBe(
       'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_0'
     )
     expect(
-      edited.settings[1].settingInstance.choiceSettingValue.children[0]
-        .simpleSettingValue.value
+      edited.settings[1].settingInstance.choiceSettingValue.children[0].simpleSettingValue.value
     ).toBe('new-child-value')
     expect(
-      edited.settings[2].settingInstance.simpleSettingCollectionValue.map(
-        (item) => item.value
-      )
+      edited.settings[2].settingInstance.simpleSettingCollectionValue.map((item) => item.value)
     ).toEqual(['app-one', 'app-two'])
     expect(
-      edited.settings[3].settingInstance.groupSettingCollectionValue[0]
-        .children[0].simpleSettingValue.value
+      edited.settings[3].settingInstance.groupSettingCollectionValue[0].children[0]
+        .simpleSettingValue.value
     ).toBe('grouped-edited')
   })
 
   it('adds collection entries with the @odata.type of the existing ones', () => {
     const original = catalogPolicy()
     const leaves = buildIntuneSettingLeaves(original, getDefinition)
-    const collectionLeaf = leaves.find(
-      (leaf) => leaf.kind === 'simpleCollection'
-    )
+    const collectionLeaf = leaves.find((leaf) => leaf.kind === 'simpleCollection')
 
     const values = leaves.map(defaultValueForLeaf)
     values[collectionLeaf.index] = [{ value: 'app-one' }, { value: 'app-two' }]
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
-    const collection =
-      edited.settings[2].settingInstance.simpleSettingCollectionValue
+    const collection = edited.settings[2].settingInstance.simpleSettingCollectionValue
 
     expect(collection).toHaveLength(2)
     expect(collection[1]['@odata.type']).toBe(
@@ -260,11 +237,7 @@ describe('applyIntuneSettingEdits', () => {
   it('leaves the policy untouched when the form is submitted unchanged', () => {
     const original = catalogPolicy()
     const leaves = buildIntuneSettingLeaves(original, getDefinition)
-    const edited = applyIntuneSettingEdits(
-      original,
-      leaves,
-      leaves.map(defaultValueForLeaf)
-    )
+    const edited = applyIntuneSettingEdits(original, leaves, leaves.map(defaultValueForLeaf))
 
     expect(edited).toEqual(original)
   })
@@ -289,9 +262,7 @@ describe('applyIntuneSettingEdits', () => {
       undefined,
     ])
 
-    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(
-      300
-    )
+    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(300)
   })
 })
 
@@ -331,23 +302,15 @@ describe('buildIntunePropertyLeaves', () => {
     const leaves = buildIntunePropertyLeaves(original)
 
     const values = leaves.map(defaultValueForLeaf)
-    values[
-      leaves.find(
-        (leaf) => leaf.path.join('.') === 'passwordMinimumLength'
-      ).index
-    ] = '12'
-    values[
-      leaves.find((leaf) => leaf.path.join('.') === 'passwordRequired').index
-    ] = {
+    values[leaves.find((leaf) => leaf.path.join('.') === 'passwordMinimumLength').index] = '12'
+    values[leaves.find((leaf) => leaf.path.join('.') === 'passwordRequired').index] = {
       label: 'False',
       value: false,
     }
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
 
-    expect(edited['@odata.type']).toBe(
-      '#microsoft.graph.windows10GeneralConfiguration'
-    )
+    expect(edited['@odata.type']).toBe('#microsoft.graph.windows10GeneralConfiguration')
     expect(edited.passwordMinimumLength).toBe(12)
     expect(edited.passwordRequired).toBe(false)
     expect(edited.passwordBlockSimple).toBe(false)
@@ -375,13 +338,11 @@ describe('custom variables', () => {
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
 
-    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(
-      '%lockoutseconds%'
-    )
+    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe('%lockoutseconds%')
     // The value type is what the variable resolves to at deployment, so the declared type stays put.
-    expect(
-      edited.settings[0].settingInstance.simpleSettingValue['@odata.type']
-    ).toBe('#microsoft.graph.deviceManagementConfigurationIntegerSettingValue')
+    expect(edited.settings[0].settingInstance.simpleSettingValue['@odata.type']).toBe(
+      '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue'
+    )
   })
 
   it('stores a variable typed into a choice selector', () => {
@@ -391,9 +352,7 @@ describe('custom variables', () => {
     values[1] = { label: '%defendermode%', value: '%defendermode%' }
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
-    expect(edited.settings[1].settingInstance.choiceSettingValue.value).toBe(
-      '%defendermode%'
-    )
+    expect(edited.settings[1].settingInstance.choiceSettingValue.value).toBe('%defendermode%')
   })
 
   it('stores variables inside a collection alongside literal entries', () => {
@@ -404,13 +363,9 @@ describe('custom variables', () => {
     values[collection.index] = [{ value: 'app-one' }, { value: '%allowedapp%' }]
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
-    const entries =
-      edited.settings[2].settingInstance.simpleSettingCollectionValue
+    const entries = edited.settings[2].settingInstance.simpleSettingCollectionValue
 
-    expect(entries.map((entry) => entry.value)).toEqual([
-      'app-one',
-      '%allowedapp%',
-    ])
+    expect(entries.map((entry) => entry.value)).toEqual(['app-one', '%allowedapp%'])
     expect(entries[1]['@odata.type']).toBe(
       '#microsoft.graph.deviceManagementConfigurationStringSettingValue'
     )
@@ -424,9 +379,7 @@ describe('custom variables', () => {
     }
     const leaves = buildIntunePropertyLeaves(original)
     const values = leaves.map(defaultValueForLeaf)
-    values[
-      leaves.find((leaf) => leaf.path.join('.') === 'passwordRequired').index
-    ] = {
+    values[leaves.find((leaf) => leaf.path.join('.') === 'passwordRequired').index] = {
       label: '%requirepassword%',
       value: '%requirepassword%',
     }
@@ -442,23 +395,18 @@ describe('custom variables', () => {
     values[0] = '450'
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
-    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(
-      450
-    )
+    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(450)
   })
 
   it('replaces a stored variable with a literal number when it is typed over', () => {
     const original = catalogPolicy()
-    original.settings[0].settingInstance.simpleSettingValue.value =
-      '%lockoutseconds%'
+    original.settings[0].settingInstance.simpleSettingValue.value = '%lockoutseconds%'
     const leaves = buildIntuneSettingLeaves(original, getDefinition)
     const values = leaves.map(defaultValueForLeaf)
     values[0] = '900'
 
     const edited = applyIntuneSettingEdits(original, leaves, values)
-    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(
-      900
-    )
+    expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(900)
   })
 })
 
@@ -469,12 +417,10 @@ describe('numeric settings in a text field', () => {
       {
         '@odata.type': '#microsoft.graph.deviceManagementConfigurationSetting',
         settingInstance: {
-          '@odata.type':
-            '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
+          '@odata.type': '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
           settingDefinitionId: 'collection_setting',
           simpleSettingValue: {
-            '@odata.type':
-              '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue',
+            '@odata.type': '#microsoft.graph.deviceManagementConfigurationIntegerSettingValue',
             value: 0,
           },
         },
@@ -490,11 +436,7 @@ describe('numeric settings in a text field', () => {
   it('writes 0 back as a number', () => {
     const original = zeroPolicy()
     const leaves = buildIntuneSettingLeaves(original, getDefinition)
-    const edited = applyIntuneSettingEdits(
-      original,
-      leaves,
-      leaves.map(defaultValueForLeaf)
-    )
+    const edited = applyIntuneSettingEdits(original, leaves, leaves.map(defaultValueForLeaf))
 
     expect(edited.settings[0].settingInstance.simpleSettingValue.value).toBe(0)
     expect(edited).toEqual(original)
@@ -512,13 +454,11 @@ describe('settings with no value yet', () => {
       {
         '@odata.type': '#microsoft.graph.deviceManagementConfigurationSetting',
         settingInstance: {
-          '@odata.type':
-            '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
+          '@odata.type': '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
           settingDefinitionId:
             'device_vendor_msft_policy_config_localpoliciessecurityoptions_interactivelogon_machineinactivitylimit_v2',
           simpleSettingValue: {
-            '@odata.type':
-              '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
+            '@odata.type': '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
           },
         },
       },
@@ -537,17 +477,11 @@ describe('settings with no value yet', () => {
   it('leaves the policy untouched when the empty field is not edited', () => {
     const original = emptyPolicy()
     const leaves = buildIntuneSettingLeaves(original, getDefinition)
-    const edited = applyIntuneSettingEdits(
-      original,
-      leaves,
-      leaves.map(defaultValueForLeaf)
-    )
+    const edited = applyIntuneSettingEdits(original, leaves, leaves.map(defaultValueForLeaf))
 
     // No invented "value": "" - an untouched field round-trips exactly as imported.
     expect(edited).toEqual(original)
-    expect(
-      'value' in edited.settings[0].settingInstance.simpleSettingValue
-    ).toBe(false)
+    expect('value' in edited.settings[0].settingInstance.simpleSettingValue).toBe(false)
   })
 
   it('writes a value into the empty field once one is entered', () => {
@@ -556,8 +490,7 @@ describe('settings with no value yet', () => {
     const edited = applyIntuneSettingEdits(original, leaves, ['print1;print2'])
 
     expect(edited.settings[0].settingInstance.simpleSettingValue).toEqual({
-      '@odata.type':
-        '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
+      '@odata.type': '#microsoft.graph.deviceManagementConfigurationStringSettingValue',
       value: 'print1;print2',
     })
   })
@@ -573,13 +506,10 @@ describe('choice settings with no option selected', () => {
       {
         '@odata.type': '#microsoft.graph.deviceManagementConfigurationSetting',
         settingInstance: {
-          '@odata.type':
-            '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance',
-          settingDefinitionId:
-            'device_vendor_msft_policy_config_defender_allowrealtimemonitoring',
+          '@odata.type': '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance',
+          settingDefinitionId: 'device_vendor_msft_policy_config_defender_allowrealtimemonitoring',
           choiceSettingValue: {
-            '@odata.type':
-              '#microsoft.graph.deviceManagementConfigurationChoiceSettingValue',
+            '@odata.type': '#microsoft.graph.deviceManagementConfigurationChoiceSettingValue',
           },
         },
       },
@@ -597,15 +527,9 @@ describe('choice settings with no option selected', () => {
   it('does not invent an empty value when the selector is left alone', () => {
     const original = emptyChoicePolicy()
     const leaves = buildIntuneSettingLeaves(original, getDefinition)
-    const edited = applyIntuneSettingEdits(
-      original,
-      leaves,
-      leaves.map(defaultValueForLeaf)
-    )
+    const edited = applyIntuneSettingEdits(original, leaves, leaves.map(defaultValueForLeaf))
 
-    expect(
-      'value' in edited.settings[0].settingInstance.choiceSettingValue
-    ).toBe(false)
+    expect('value' in edited.settings[0].settingInstance.choiceSettingValue).toBe(false)
     expect(edited).toEqual(original)
   })
 
@@ -615,8 +539,7 @@ describe('choice settings with no option selected', () => {
     const edited = applyIntuneSettingEdits(original, leaves, [
       {
         label: 'Enabled',
-        value:
-          'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_1',
+        value: 'device_vendor_msft_policy_config_defender_allowrealtimemonitoring_1',
       },
     ])
 
@@ -636,8 +559,7 @@ describe('unset settings keep their declared type', () => {
       {
         '@odata.type': '#microsoft.graph.deviceManagementConfigurationSetting',
         settingInstance: {
-          '@odata.type':
-            '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
+          '@odata.type': '#microsoft.graph.deviceManagementConfigurationSimpleSettingInstance',
           settingDefinitionId: 'collection_setting',
           simpleSettingValue: { '@odata.type': valueODataType },
         },
@@ -651,9 +573,7 @@ describe('unset settings keep their declared type', () => {
     ['SecretSettingValue', 'secret'],
   ])('reads %s as %s', (odataSuffix, expected) => {
     const leaves = buildIntuneSettingLeaves(
-      emptyOfType(
-        `#microsoft.graph.deviceManagementConfiguration${odataSuffix}`
-      ),
+      emptyOfType(`#microsoft.graph.deviceManagementConfiguration${odataSuffix}`),
       getDefinition
     )
 
@@ -684,24 +604,15 @@ describe('setting categories', () => {
     ).toBe('localpoliciessecurityoptions')
     // admx_ is matched ahead of the generic policy_config_ rule, or every administrative template
     // would collapse into a single "admx" category.
-    expect(
-      categoryForSetting(
-        {},
-        'device_vendor_msft_policy_config_admx_eventlog_x_y'
-      )
-    ).toBe('eventlog')
-    expect(categoryForSetting({}, 'device_vendor_msft_bitlocker_x_y')).toBe(
-      'bitlocker'
+    expect(categoryForSetting({}, 'device_vendor_msft_policy_config_admx_eventlog_x_y')).toBe(
+      'eventlog'
     )
-    expect(
-      categoryForSetting({}, 'vendor_msft_firewall_mdmstore_domainprofile_x')
-    ).toBe('firewall')
+    expect(categoryForSetting({}, 'device_vendor_msft_bitlocker_x_y')).toBe('bitlocker')
+    expect(categoryForSetting({}, 'vendor_msft_firewall_mdmstore_domainprofile_x')).toBe('firewall')
   })
 
   it('never leaves a setting without a category', () => {
-    expect(categoryForSetting(undefined, 'totally_unexpected')).toBe(
-      UNCATEGORISED
-    )
+    expect(categoryForSetting(undefined, 'totally_unexpected')).toBe(UNCATEGORISED)
     expect(categoryForSetting(undefined, null)).toBe(UNCATEGORISED)
   })
 
@@ -727,12 +638,8 @@ describe('category keys', () => {
     const eventLog = { categoryId: 'cat-a', categoryName: 'Security' }
     const remoteDesktop = { categoryId: 'cat-b', categoryName: 'Security' }
 
-    expect(categoryForSetting(eventLog, 'x')).toBe(
-      categoryForSetting(remoteDesktop, 'x')
-    )
-    expect(categoryKeyForSetting(eventLog, 'x')).not.toBe(
-      categoryKeyForSetting(remoteDesktop, 'x')
-    )
+    expect(categoryForSetting(eventLog, 'x')).toBe(categoryForSetting(remoteDesktop, 'x'))
+    expect(categoryKeyForSetting(eventLog, 'x')).not.toBe(categoryKeyForSetting(remoteDesktop, 'x'))
   })
 
   it('ignores a category id that has no name, so unrelated settings do not fuse', () => {
@@ -741,18 +648,12 @@ describe('category keys', () => {
     // connectivity into a single section under whichever heading came first.
     const nameless = { categoryId: 'shared-nameless-id' }
 
-    expect(
-      categoryKeyForSetting(
-        nameless,
-        'device_vendor_msft_policy_config_printers_x'
-      )
-    ).toBe('printers')
-    expect(
-      categoryKeyForSetting(
-        nameless,
-        'device_vendor_msft_policy_config_fileexplorer_x'
-      )
-    ).toBe('fileexplorer')
+    expect(categoryKeyForSetting(nameless, 'device_vendor_msft_policy_config_printers_x')).toBe(
+      'printers'
+    )
+    expect(categoryKeyForSetting(nameless, 'device_vendor_msft_policy_config_fileexplorer_x')).toBe(
+      'fileexplorer'
+    )
   })
 
   it('gives every leaf a key, and keeps a nested child on its parent key', () => {

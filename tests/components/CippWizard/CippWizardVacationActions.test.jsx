@@ -96,15 +96,9 @@ describe('CippWizardVacationActions', () => {
 
       // The Conditional Access branch is the one that schedules the group membership
       // add/remove, so it must not be configurable while the toggle is off.
-      expect(
-        screen.queryByText(/uses group-based exclusions/i)
-      ).not.toBeInTheDocument()
-      expect(
-        screen.queryByText('Forward to Internal Address')
-      ).not.toBeInTheDocument()
-      expect(
-        screen.queryByText(/Out of office will be enabled/i)
-      ).not.toBeInTheDocument()
+      expect(screen.queryByText(/uses group-based exclusions/i)).not.toBeInTheDocument()
+      expect(screen.queryByText('Forward to Internal Address')).not.toBeInTheDocument()
+      expect(screen.queryByText(/Out of office will be enabled/i)).not.toBeInTheDocument()
     })
 
     it('reveals the policy picker once Conditional Access exclusion is enabled', async () => {
@@ -113,9 +107,7 @@ describe('CippWizardVacationActions', () => {
       await setField('enableCAExclusion', true)
 
       await waitFor(() =>
-        expect(
-          screen.getByText(/uses group-based exclusions/i)
-        ).toBeInTheDocument()
+        expect(screen.getByText(/uses group-based exclusions/i)).toBeInTheDocument()
       )
     })
 
@@ -125,9 +117,7 @@ describe('CippWizardVacationActions', () => {
       await setField('enableForwarding', true)
 
       await waitFor(() =>
-        expect(
-          screen.getByText('Forward to Internal Address')
-        ).toBeInTheDocument()
+        expect(screen.getByText('Forward to Internal Address')).toBeInTheDocument()
       )
     })
 
@@ -137,15 +127,11 @@ describe('CippWizardVacationActions', () => {
       await setField('enableForwarding', true)
 
       await waitFor(() =>
-        expect(
-          screen.getByText('Forward to Internal Address')
-        ).toBeInTheDocument()
+        expect(screen.getByText('Forward to Internal Address')).toBeInTheDocument()
       )
       // Enabling forwarding must not drag the Conditional Access branch in with it - that branch
       // is what schedules the group membership either side of the trip.
-      expect(
-        screen.queryByText(/uses group-based exclusions/i)
-      ).not.toBeInTheDocument()
+      expect(screen.queryByText(/uses group-based exclusions/i)).not.toBeInTheDocument()
       expect(formApi.getValues('enableCAExclusion')).toBeFalsy()
     })
   })
@@ -163,12 +149,8 @@ describe('CippWizardVacationActions', () => {
 
       // With no tenant chosen the internal picker renders its "pick a tenant" placeholder label;
       // its presence is what marks the internal branch as the one on screen.
-      await waitFor(() =>
-        expect(screen.getByText('Select a tenant first')).toBeInTheDocument()
-      )
-      expect(
-        screen.queryByText('External Email Address')
-      ).not.toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText('Select a tenant first')).toBeInTheDocument())
+      expect(screen.queryByText('External Email Address')).not.toBeInTheDocument()
     })
 
     it('asks for an external address when forwarding externally', async () => {
@@ -177,12 +159,8 @@ describe('CippWizardVacationActions', () => {
       await setField('enableForwarding', true)
       await setField('forwardOption', 'ExternalAddress')
 
-      await waitFor(() =>
-        expect(screen.getByText('External Email Address')).toBeInTheDocument()
-      )
-      expect(
-        screen.queryByText('Select a tenant first')
-      ).not.toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText('External Email Address')).toBeInTheDocument())
+      expect(screen.queryByText('Select a tenant first')).not.toBeInTheDocument()
     })
   })
 
@@ -204,11 +182,7 @@ describe('CippWizardVacationActions', () => {
         />
       )
 
-      await waitFor(() =>
-        expect(formApi.getValues('oooExternalMessage')).toBe(
-          'Existing external'
-        )
-      )
+      await waitFor(() => expect(formApi.getValues('oooExternalMessage')).toBe('Existing external'))
       expect(formApi.getValues('oooInternalMessage')).toBe('Mine, do not touch')
     })
 
@@ -227,11 +201,7 @@ describe('CippWizardVacationActions', () => {
         />
       )
 
-      await waitFor(() =>
-        expect(formApi.getValues('oooInternalMessage')).toBe(
-          'Existing internal'
-        )
-      )
+      await waitFor(() => expect(formApi.getValues('oooInternalMessage')).toBe('Existing internal'))
     })
   })
 })

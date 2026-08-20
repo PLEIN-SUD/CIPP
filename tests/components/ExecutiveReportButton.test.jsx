@@ -54,7 +54,7 @@ describe('ExecutiveReportButton', () => {
     renderWithProviders(<ExecutiveReportButton disabled />)
 
     const tooltipWarnings = warnSpy.mock.calls.filter((args) =>
-      String(args[0]).includes('disabled `button` child'),
+      String(args[0]).includes('disabled `button` child')
     )
     expect(tooltipWarnings).toEqual([])
     warnSpy.mockRestore()
@@ -70,7 +70,7 @@ describe('ExecutiveReportButton', () => {
     expect(
       await screen.findByRole('tooltip', {
         name: 'Generate Executive Report with preview and configuration',
-      }),
+      })
     ).toBeInTheDocument()
   })
 

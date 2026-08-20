@@ -35,10 +35,7 @@ export const settingsWith = (overrides = {}) => ({ ...defaultSettings, ...overri
 
 export function renderWithTheme(ui, options = {}) {
   const { theme = defaultTheme, ...renderOptions } = options
-  return render(
-    <ThemeProvider theme={theme}>{ui}</ThemeProvider>,
-    renderOptions
-  )
+  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>, renderOptions)
 }
 
 export function renderWithProviders(ui, options = {}) {

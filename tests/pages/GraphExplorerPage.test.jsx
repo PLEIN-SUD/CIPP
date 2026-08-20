@@ -12,7 +12,9 @@ import { api, getResult, paginatedResult, postResult } from '../mocks/api-call'
 // monaco never resolves in jsdom; canonical mock copied verbatim from CippCodeBlock.test.jsx
 vi.mock('@monaco-editor/react', () => ({
   Editor: ({ value, language }) => (
-    <div data-testid="monaco-editor" data-language={language}>{value}</div>
+    <div data-testid="monaco-editor" data-language={language}>
+      {value}
+    </div>
   ),
 }))
 
@@ -49,7 +51,9 @@ describe('Graph Explorer page', () => {
     await user.click(combo)
     await user.click(await screen.findByRole('option', { name: 'All users with email addresses' }))
     // selecting remounts the input (defaultValue change recomputes CippAutoComplete's memoized key), re-query instead of reusing combo
-    expect(screen.getByRole('combobox', { name: 'Select a query' })).toHaveValue('All users with email addresses')
+    expect(screen.getByRole('combobox', { name: 'Select a query' })).toHaveValue(
+      'All users with email addresses'
+    )
     await user.click(screen.getByRole('button', { name: 'View JSON' }))
     await screen.findByTestId('monaco-editor')
     await user.click(screen.getByRole('button', { name: 'View Table' }))

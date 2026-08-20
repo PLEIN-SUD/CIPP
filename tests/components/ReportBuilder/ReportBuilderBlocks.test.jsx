@@ -293,7 +293,9 @@ describe('block controls', () => {
 
   it('removes the block by index', async () => {
     const props = shell({ index: 1 })
-    renderWithProviders(<StructuredBlockCard block={createStructuredBlock('chart', 'b1')} {...props} />)
+    renderWithProviders(
+      <StructuredBlockCard block={createStructuredBlock('chart', 'b1')} {...props} />
+    )
 
     await userEvent.click(screen.getByRole('button', { name: 'Remove block' }))
 
@@ -302,7 +304,9 @@ describe('block controls', () => {
 
   it('moves the block by index', async () => {
     const props = shell({ index: 1 })
-    renderWithProviders(<StructuredBlockCard block={createStructuredBlock('chart', 'b1')} {...props} />)
+    renderWithProviders(
+      <StructuredBlockCard block={createStructuredBlock('chart', 'b1')} {...props} />
+    )
 
     await userEvent.click(screen.getByRole('button', { name: 'Move up' }))
 

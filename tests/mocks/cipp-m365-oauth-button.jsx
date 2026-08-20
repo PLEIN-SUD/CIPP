@@ -20,8 +20,7 @@ import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material'
 //   { outcome: 'nonServiceAccount', username? }     - token succeeds but for a
 //       non service account; mirrors the real behavior where onAuthSuccess
 //       STILL fires and only an advisory warning is shown
-const readConfig = () =>
-  (typeof window !== 'undefined' && window.__cippMockM365Auth) || {}
+const readConfig = () => (typeof window !== 'undefined' && window.__cippMockM365Auth) || {}
 
 const FAKE_DEVICE_CODE = 'STORYBOOK1'
 
@@ -47,7 +46,7 @@ export const CIPPM365OAuthButton = ({
   const [authError, setAuthError] = useState(null)
   // auto-start "retrieves" the code immediately; without it the first click does
   const [deviceCode, setDeviceCode] = useState(
-    useDeviceCode && autoStartDeviceLogon ? FAKE_DEVICE_CODE : null,
+    useDeviceCode && autoStartDeviceLogon ? FAKE_DEVICE_CODE : null
   )
 
   const handleClick = () => {

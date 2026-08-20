@@ -70,7 +70,12 @@ export const ToolbarPresetShape = {
   args: {
     component: 'card',
     onSubmitFilter: () => {},
-    selectedPreset: { id: 'saved-1', filterName: 'Devices by name', value: savedPreset.params, type: 'graph' },
+    selectedPreset: {
+      id: 'saved-1',
+      filterName: 'Devices by name',
+      value: savedPreset.params,
+      type: 'graph',
+    },
   },
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement)

@@ -6,7 +6,9 @@ import { renderWithTheme } from '../../test-utils'
 import { CippTenantModeDeploy } from '../../../src/components/CippWizard/CippTenantModeDeploy'
 import { ApiGetCall } from '../../../src/api/ApiCall'
 
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
+vi.mock('../../../src/api/ApiCall', async () =>
+  (await import('../../mocks/api-call')).apiCallMock()
+)
 import { api, getResult, paginatedResult, postResult } from '../../mocks/api-call'
 
 // shape from Invoke-ExecListAppId.ps1 $Results
@@ -87,7 +89,7 @@ describe('CippTenantModeDeploy', () => {
     expect(within(refreshWrapper()).getByRole('button')).toBeDisabled()
     // unwrapping the span puts the disabled button directly under Tooltip, mui warns and drops hover events
     const disabledChildWarnings = warnSpy.mock.calls.filter((args) =>
-      String(args[0]).includes('disabled `button` child to the Tooltip'),
+      String(args[0]).includes('disabled `button` child to the Tooltip')
     )
     expect(disabledChildWarnings).toEqual([])
     warnSpy.mockRestore()
@@ -140,7 +142,9 @@ describe('CippTenantModeDeploy', () => {
 
     expect(screen.getByText(/No partner tenant connected/)).toBeInTheDocument()
     expect(
-      screen.getByText('Please connect to your partner tenant first before adding separate tenants.'),
+      screen.getByText(
+        'Please connect to your partner tenant first before adding separate tenants.'
+      )
     ).toBeInTheDocument()
   })
 })

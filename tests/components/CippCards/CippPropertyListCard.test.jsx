@@ -11,9 +11,7 @@ const sampleItems = [
 
 describe('CippPropertyListCard', () => {
   it('renders title and property items', () => {
-    renderWithProviders(
-      <CippPropertyListCard title="User Details" propertyItems={sampleItems} />
-    )
+    renderWithProviders(<CippPropertyListCard title="User Details" propertyItems={sampleItems} />)
     expect(screen.getByText('User Details')).toBeInTheDocument()
     expect(screen.getByText('Display Name')).toBeInTheDocument()
     expect(screen.getByText('Alice Smith')).toBeInTheDocument()

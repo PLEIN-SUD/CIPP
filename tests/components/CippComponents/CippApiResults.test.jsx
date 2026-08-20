@@ -30,9 +30,7 @@ const emptyApiObject = {
 
 describe('CippApiResults', () => {
   it('renders nothing meaningful when apiObject has no data', () => {
-    const { container } = renderWithProviders(
-      <CippApiResults apiObject={emptyApiObject} />
-    )
+    const { container } = renderWithProviders(<CippApiResults apiObject={emptyApiObject} />)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(container.firstChild).toBeInTheDocument()
   })
@@ -98,11 +96,7 @@ describe('CippApiResults', () => {
   it('renders array of results from data.Results array', () => {
     const apiObject = {
       data: {
-        Results: [
-          'First result done',
-          'Second result failed',
-          'Third result success',
-        ],
+        Results: ['First result done', 'Second result failed', 'Third result success'],
       },
       isFetching: false,
       isSuccess: true,
@@ -136,10 +130,7 @@ describe('CippApiResults', () => {
   it('shows warning summary rollup for a mixed Results array', () => {
     const apiObject = {
       data: {
-        Results: [
-          'User created',
-          'License assignment failed',
-        ],
+        Results: ['User created', 'License assignment failed'],
       },
       isFetching: false,
       isSuccess: true,

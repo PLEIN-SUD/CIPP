@@ -94,6 +94,7 @@ export const WithActions = {
 ```
 
 **Tips:**
+
 - Use `within(canvasElement)` to scope queries to the story
 - Use `within(document.body)` for portaled content (dialogs, drawers, menus)
 - Use `waitFor()` for content that renders asynchronously
@@ -138,10 +139,12 @@ Unit tests don't go through MSW: they mock `src/api/ApiCall` with the shared fac
 ## Components That Need Special Setup
 
 ### Components using useSettings()
+
 Already handled, `preview.jsx` wraps all stories in `SettingsContext.Provider`
 with mock settings (tenant: `testdomain.com`, theme: `light`).
 
 ### Components using react-hook-form
+
 Use the `FormDecorator` from `tests/utils/form-decorator.jsx`:
 
 ```jsx
@@ -166,18 +169,21 @@ export const Default = {
 The decorator creates a `useForm()` context and passes `formControl` to your component via args.
 
 ### Components using useRouter()
+
 Already handled, `next/router` is aliased to a mock in `tests/mocks/next-router.js`
 that provides `useRouter()` with stub methods (`push`, `back`, `replace`, etc.).
 
 ## When to Use play() Tests vs Unit Tests
 
 **Use play() tests in stories when:**
+
 - Testing visual interactions (clicking buttons, opening menus, expanding accordions)
 - Testing components that need real browser layout (e.g. MRT's row virtualization)
 - Verifying that rendered output looks correct after user interaction
 - The test naturally belongs with the story that demonstrates the feature
 
 **Use vitest unit tests when:**
+
 - Testing logic-heavy behavior (conditional rendering, prop combinations, edge cases)
 - Testing many input variations quickly (unit tests in jsdom are faster than browser tests)
 - Testing components that don't need real DOM layout
@@ -210,12 +216,14 @@ describe('MyComponent', () => {
 ```
 
 **When to use which render helper:**
+
 - `renderWithTheme`: component only needs MUI ThemeProvider
 - `renderWithProviders`: component needs Redux, React Query, SettingsContext, or all of the above
 
 ## Architecture Notes
 
 ### Why @storybook/react-vite instead of @storybook/nextjs?
+
 `@storybook/nextjs` uses webpack + babel under the hood. Many dependencies in this project are
 ESM-only (heroicons, MUI v7, tiptap, etc.), and webpack's babel transpilation fails on them
 without explicit per-package config. The codebase also uses JSX syntax in `.js` files, which
@@ -225,16 +233,19 @@ manually mocking Next.js modules (router, navigation, head, image, link) via Vit
 `.storybook/main.mjs`.
 
 ### Why .js files need JSX loader config?
+
 The codebase uses JSX syntax in `.js` files (not `.jsx`). Vite's esbuild only handles JSX
 in `.jsx` files by default, so both `.storybook/main.mjs` and `vitest.config.mjs` override the
 esbuild loader to treat `.js` files as JSX.
 
 ### How storybook tests contribute to coverage
+
 The `@storybook/addon-vitest` plugin converts stories into vitest browser tests
 (Playwright/Chromium). Running `yarn test:coverage` includes both unit tests (jsdom) and
 storybook tests (real browser), with coverage merged into a single report.
 
 ### Suppressed warnings explained
+
 - **`MODULE_LEVEL_DIRECTIVE`** in `.storybook/main.mjs`: Libraries like `@mui/material` include
   `"use client"` directives for React Server Components. These are harmless in Storybook
   (everything is client-side) but Rollup treats them as warnings during build.

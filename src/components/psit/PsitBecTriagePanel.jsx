@@ -27,6 +27,7 @@ import {
   buildSignals,
   buildVerdict,
   formatUtc,
+  partitionDeterminations,
 } from '../../utils/psit-bec-signals'
 
 const VERDICT_CHOICES = [
@@ -63,9 +64,17 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
 
   const signals = useMemo(() => buildSignals(becData, userData), [becData, userData])
   // Memoised so the derived verdict and lookup below do not rebuild on every render.
-  const stored = useMemo(
-    () => psitAsArray(triageRequest.data?.Determinations),
-    [triageRequest.data]
+  // Split, not just read: an answer given before the current collection's window opened is
+  // history. Otherwise a second compromise from the same address inherits the answer given to the
+  // first one and gets filed as noise without anyone being asked.
+  const partitioned = useMemo(
+    () => partitionDeterminations(psitAsArray(triageRequest.data?.Determinations), becData),
+    [triageRequest.data, becData]
+  )
+  const stored = partitioned.current
+  const staleById = useMemo(
+    () => new Map(partitioned.stale.map((entry) => [entry.SignalId, entry])),
+    [partitioned.stale]
   )
   const verdict = useMemo(() => buildVerdict(signals, stored), [signals, stored])
 
@@ -176,6 +185,23 @@ export const PsitBecTriagePanel = ({ userData, becData, tenantFilter }) => {
                       {signal.detail}
                     </Typography>
                     <Typography variant="body2">{signal.question}</Typography>
+                    {staleById.has(signal.id) && (
+                      /* The previous answer is shown, never applied: it was given about earlier
+                         events. Re-answering is a decision, not a formality. */
+                      <Typography variant="body2" color="warning.main">
+                        Réponse précédente, antérieure à cette collecte :{' '}
+                        {VERDICT_CHOICES.find(
+                          (choice) => choice.value === staleById.get(signal.id).Verdict
+                        )?.label || staleById.get(signal.id).Verdict}{' '}
+                        — {staleById.get(signal.id).Analyst || 'N/D'} le{' '}
+                        {formatUtc(staleById.get(signal.id).DecidedUtc)}
+                        {staleById.get(signal.id).Justification
+                          ? ` : ${staleById.get(signal.id).Justification}`
+                          : ''}
+                        . Elle ne compte pas dans le verdict : à confirmer ou à revoir pour les
+                        événements de cette collecte.
+                      </Typography>
+                    )}
                     <ToggleButtonGroup
                       exclusive
                       size="small"

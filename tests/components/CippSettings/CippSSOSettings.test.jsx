@@ -5,7 +5,9 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test-utils'
 import { CippSSOSettings } from '../../../src/components/CippSettings/CippSSOSettings'
 
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
+vi.mock('../../../src/api/ApiCall', async () =>
+  (await import('../../mocks/api-call')).apiCallMock()
+)
 import { api, getResult, paginatedResult, postResult } from '../../mocks/api-call'
 
 // not under test, pulls clipboard/codeblock trees
@@ -95,9 +97,7 @@ describe('CippSSOSettings sign-in URL state', () => {
     renderWithProviders(<CippSSOSettings />)
     expect(chipRoot('cippabc.azurewebsites.net')).toHaveClass('MuiChip-colorDefault')
     expect(chipRoot('cipp.contoso.com')).not.toHaveClass('MuiChip-colorWarning')
-    expect(
-      screen.queryByText(/bound to this instance but not registered/)
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/bound to this instance but not registered/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh Sign-in URLs' })).not.toHaveClass(
       'MuiButton-colorWarning'
     )

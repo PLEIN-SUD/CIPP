@@ -100,13 +100,15 @@ describe('fromReportSettings', () => {
       watermarkText: 'DRAFT',
       watermarkEnabled: true,
     }
-    expect(toReportSettings(fromReportSettings(stored, [{ id: 'p1', name: 'Client Facing' }]))).toEqual(
-      { size: 'LETTER', orientation: 'landscape', brandingPresetId: 'p1' }
-    )
+    expect(
+      toReportSettings(fromReportSettings(stored, [{ id: 'p1', name: 'Client Facing' }]))
+    ).toEqual({ size: 'LETTER', orientation: 'landscape', brandingPresetId: 'p1' })
   })
 
   it('shows a chosen preset by name', () => {
-    const form = fromReportSettings({ brandingPresetId: 'p1' }, [{ id: 'p1', name: 'Client Facing' }])
+    const form = fromReportSettings({ brandingPresetId: 'p1' }, [
+      { id: 'p1', name: 'Client Facing' },
+    ])
     expect(form.brandingPresetId).toEqual({ label: 'Client Facing', value: 'p1' })
   })
 
@@ -182,9 +184,8 @@ describe('what the not-a-preset option is called', () => {
     // The branding page labels this scope "Default". The report dropdowns called the same thing
     // "Global branding settings", so whether an operator met it on the settings page or in a
     // report decided what it was named. One constant now, and both read it.
-    const { DEFAULT_BRANDING_OPTION } = await import(
-      '../../../src/components/ReportBuilder/reportSettings'
-    )
+    const { DEFAULT_BRANDING_OPTION } =
+      await import('../../../src/components/ReportBuilder/reportSettings')
     expect(DEFAULT_BRANDING_OPTION).toEqual({ label: 'Default', value: '' })
   })
 
@@ -219,10 +220,12 @@ describe('serialiseBlock', () => {
   })
 
   it('keeps scorecard and progress rows', () => {
-    expect(serialiseBlock({ type: 'scorecard', stats: [{ label: 'Users', value: '5' }] }).stats)
-      .toHaveLength(1)
-    expect(serialiseBlock({ type: 'progress', items: [{ label: 'MFA', value: 90 }] }).items)
-      .toHaveLength(1)
+    expect(
+      serialiseBlock({ type: 'scorecard', stats: [{ label: 'Users', value: '5' }] }).stats
+    ).toHaveLength(1)
+    expect(
+      serialiseBlock({ type: 'progress', items: [{ label: 'MFA', value: 90 }] }).items
+    ).toHaveLength(1)
   })
 
   it('keeps hero fields', () => {

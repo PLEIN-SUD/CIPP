@@ -70,29 +70,27 @@ const makeSandbox = () => ({ partnerConnected: false, setupDone: false })
 
 const sandboxHandlers = (sandbox, { liveMe = false } = {}) => [
   http.get('*/.auth/me', () =>
-    HttpResponse.json(principal(['anonymous', 'authenticated', 'admin'])),
+    HttpResponse.json(principal(['anonymous', 'authenticated', 'admin']))
   ),
   http.get('*/api/me', () =>
     HttpResponse.json(
       meResponse(['anonymous', 'authenticated', 'admin'], {
         complete: liveMe ? sandbox.setupDone : false,
         samAppPresent: liveMe ? sandbox.setupDone : false,
-      }),
-    ),
+      })
+    )
   ),
   http.get('*/api/ExecListAppId', () =>
-    HttpResponse.json(sandbox.partnerConnected ? connectedAppId : freshAppId),
+    HttpResponse.json(sandbox.partnerConnected ? connectedAppId : freshAppId)
   ),
   http.post('*/api/ExecCreateSamApp', () =>
-    HttpResponse.json({ severity: 'success', message: 'SAM application created (mocked)' }),
+    HttpResponse.json({ severity: 'success', message: 'SAM application created (mocked)' })
   ),
   http.post('*/api/ExecUpdateRefreshToken', () => {
     sandbox.partnerConnected = true
     return HttpResponse.json({ Results: 'Refresh token updated (mocked)' })
   }),
-  http.post('*/api/ExecAddTenant', () =>
-    HttpResponse.json({ Results: 'Tenant added (mocked)' }),
-  ),
+  http.post('*/api/ExecAddTenant', () => HttpResponse.json({ Results: 'Tenant added (mocked)' })),
   http.get('*/api/ListCommunityRepos', () => HttpResponse.json({ Results: [] })),
   http.post('*/api/ExecCombinedSetup', () => {
     sandbox.setupDone = true
@@ -109,8 +107,8 @@ const renderGate = () => (
       <Alert severity="success">
         <Typography variant="subtitle2">app content</Typography>
         <Typography variant="body2">
-          The setup gate has lifted - this placeholder stands in for the real CIPP app, which is
-          now accessible.
+          The setup gate has lifted - this placeholder stands in for the real CIPP app, which is now
+          accessible.
         </Typography>
       </Alert>
     </Box>
@@ -188,7 +186,7 @@ const connectPartnerTenant = async (canvas) => {
     () => {
       expect(canvas.getByText('Contoso Partner')).toBeInTheDocument()
     },
-    { timeout: 5000 },
+    { timeout: 5000 }
   )
 }
 
@@ -228,7 +226,7 @@ export const FreshInstall = gateStory(async (canvas, step) => {
   await step('fresh install offers First Setup and Manual only', async () => {
     expect(canvas.getByText('Manually enter credentials')).toBeInTheDocument()
     expect(
-      canvas.queryByText('Refresh Tokens for existing application registration'),
+      canvas.queryByText('Refresh Tokens for existing application registration')
     ).not.toBeInTheDocument()
     expect(canvas.queryByText('Add a tenant')).not.toBeInTheDocument()
   })
@@ -311,7 +309,7 @@ export const StepApplicationAuthError = gateStory(
       errorMessage:
         'AADSTS70020: The provided device code has expired. Please restart the sign-in flow.',
     },
-  },
+  }
 )
 
 export const StepApplicationWrongAccount = gateStory(
@@ -332,7 +330,7 @@ export const StepApplicationWrongAccount = gateStory(
       })
     })
   },
-  { mockAuth: { outcome: 'nonServiceAccount' } },
+  { mockAuth: { outcome: 'nonServiceAccount' } }
 )
 
 export const StepApplicationSamCreateError = gateStory(
@@ -354,10 +352,10 @@ export const StepApplicationSamCreateError = gateStory(
           severity: 'error',
           message:
             'Failed to add a password to the CIPP-SAM application: an app management policy in your tenant blocks password addition (AADSTS7000112). Exempt CIPP from the policy or switch to certificate authentication.',
-        }),
+        })
       ),
     ],
-  },
+  }
 )
 
 export const StepTenantsConnectError = gateStory(
@@ -369,7 +367,7 @@ export const StepTenantsConnectError = gateStory(
         () => {
           expect(canvas.getByText(/AADSTS70008/)).toBeInTheDocument()
         },
-        { timeout: 5000 },
+        { timeout: 5000 }
       )
       expect(canvas.getByRole('button', { name: 'Next Step' })).toBeDisabled()
       // still on the unconnected state, retry available
@@ -384,11 +382,11 @@ export const StepTenantsConnectError = gateStory(
             Results:
               'Failed to update refresh token: AADSTS70008: The provided authorization code or refresh token has expired.',
           },
-          { status: 500 },
-        ),
+          { status: 500 }
+        )
       ),
     ],
-  },
+  }
 )
 
 export const AppExistsTokensMissing = {
@@ -397,12 +395,12 @@ export const AppExistsTokensMissing = {
     msw: {
       handlers: [
         http.get('*/.auth/me', () =>
-          HttpResponse.json(principal(['anonymous', 'authenticated', 'admin'])),
+          HttpResponse.json(principal(['anonymous', 'authenticated', 'admin']))
         ),
         http.get('*/api/me', () =>
           HttpResponse.json(
-            meResponse(['anonymous', 'authenticated', 'admin'], { samAppPresent: true }),
-          ),
+            meResponse(['anonymous', 'authenticated', 'admin'], { samAppPresent: true })
+          )
         ),
         http.get('*/api/ExecListAppId', () => HttpResponse.json(connectedAppId)),
       ],
@@ -413,7 +411,7 @@ export const AppExistsTokensMissing = {
     await step('existing app registration adds the token-reset option', async () => {
       await waitFor(() => {
         expect(
-          canvas.getByText('Refresh Tokens for existing application registration'),
+          canvas.getByText('Refresh Tokens for existing application registration')
         ).toBeInTheDocument()
       })
       expect(canvas.getByText('First Setup')).toBeInTheDocument()
@@ -428,10 +426,10 @@ export const NonAdminHold = {
     msw: {
       handlers: [
         http.get('*/.auth/me', () =>
-          HttpResponse.json(principal(['anonymous', 'authenticated', 'editor'])),
+          HttpResponse.json(principal(['anonymous', 'authenticated', 'editor']))
         ),
         http.get('*/api/me', () =>
-          HttpResponse.json(meResponse(['anonymous', 'authenticated', 'editor'])),
+          HttpResponse.json(meResponse(['anonymous', 'authenticated', 'editor']))
         ),
       ],
     },
@@ -484,7 +482,7 @@ export const WizardCompletionFlow = {
         () => {
           expect(canvas.getByRole('button', { name: 'Enter CIPP' })).toBeEnabled()
         },
-        { timeout: 5000 },
+        { timeout: 5000 }
       )
     })
     await step('Enter CIPP lifts the gate into the app', async () => {
@@ -493,7 +491,7 @@ export const WizardCompletionFlow = {
         () => {
           expect(canvas.getByText('app content')).toBeInTheDocument()
         },
-        { timeout: 5000 },
+        { timeout: 5000 }
       )
       expect(canvas.queryByText('Welcome to CIPP')).not.toBeInTheDocument()
     })

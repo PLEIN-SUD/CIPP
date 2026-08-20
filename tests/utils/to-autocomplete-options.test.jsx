@@ -23,18 +23,18 @@ describe('toAutoCompleteOptions', () => {
   })
 
   it('resolves bare values back to their labelled option', () => {
-    expect(toAutoCompleteOptions(['FullAccess', 'SendAs', 'SendOnBehalf'], permissionOptions)).toEqual(
-      permissionOptions
-    )
+    expect(
+      toAutoCompleteOptions(['FullAccess', 'SendAs', 'SendOnBehalf'], permissionOptions)
+    ).toEqual(permissionOptions)
   })
 
   it('wraps a single stored value into a list', () => {
     expect(toAutoCompleteOptions('FullAccess', permissionOptions)).toEqual([
       { label: 'Full Access', value: 'FullAccess' },
     ])
-    expect(toAutoCompleteOptions({ label: 'Send As', value: 'SendAs' }, permissionOptions)).toEqual([
-      { label: 'Send As', value: 'SendAs' },
-    ])
+    expect(toAutoCompleteOptions({ label: 'Send As', value: 'SendAs' }, permissionOptions)).toEqual(
+      [{ label: 'Send As', value: 'SendAs' }]
+    )
   })
 
   it('labels values that are not in the option list, so nothing disappears', () => {

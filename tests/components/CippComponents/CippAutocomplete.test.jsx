@@ -7,8 +7,18 @@ import { CippAutoComplete } from '../../../src/components/CippComponents/CippAut
 import { ApiGetCallWithPagination } from '../../../src/api/ApiCall'
 
 vi.mock('../../../src/api/ApiCall', () => ({
-  ApiGetCall: vi.fn(() => ({ isSuccess: false, isFetching: false, data: undefined, refetch: vi.fn() })),
-  ApiPostCall: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false })),
+  ApiGetCall: vi.fn(() => ({
+    isSuccess: false,
+    isFetching: false,
+    data: undefined,
+    refetch: vi.fn(),
+  })),
+  ApiPostCall: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
   ApiGetCallWithPagination: vi.fn(() => ({
     isSuccess: false,
     isFetching: false,
@@ -35,7 +45,12 @@ function KeyChangeHarness({ multiple }) {
       >
         change-default
       </button>
-      <CippAutoComplete multiple={multiple} options={OPTIONS} onChange={() => {}} defaultValue={def} />
+      <CippAutoComplete
+        multiple={multiple}
+        options={OPTIONS}
+        onChange={() => {}}
+        defaultValue={def}
+      />
     </>
   )
 }
@@ -97,7 +112,13 @@ describe('CippAutoComplete', () => {
             <CippAutoComplete
               multiple={false}
               onChange={() => {}}
-              api={{ url, labelField: 'displayName', valueField: 'id', dataKey: 'Results', queryKey: 'k' }}
+              api={{
+                url,
+                labelField: 'displayName',
+                valueField: 'id',
+                dataKey: 'Results',
+                queryKey: 'k',
+              }}
             />
           </>
         )
@@ -117,10 +138,15 @@ describe('CippAutoComplete', () => {
     it('single select fires onChange with the option object', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
-      renderWithProviders(<CippAutoComplete multiple={false} options={OPTIONS} onChange={onChange} />)
+      renderWithProviders(
+        <CippAutoComplete multiple={false} options={OPTIONS} onChange={onChange} />
+      )
       await user.click(screen.getByRole('combobox'))
       await user.click(await screen.findByRole('option', { name: 'Alpha' }))
-      expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ label: 'Alpha', value: 'a' }), undefined)
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ label: 'Alpha', value: 'a' }),
+        undefined
+      )
     })
 
     it('multi select accumulates an array', async () => {
@@ -162,16 +188,26 @@ describe('CippAutoComplete', () => {
     it('creatable offers and creates a manual option', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
-      renderWithProviders(<CippAutoComplete multiple={false} options={OPTIONS} onChange={onChange} />)
+      renderWithProviders(
+        <CippAutoComplete multiple={false} options={OPTIONS} onChange={onChange} />
+      )
       await user.type(screen.getByRole('combobox'), 'zzz')
       await user.click(await screen.findByRole('option', { name: 'Add option: "zzz"' }))
-      expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ label: 'zzz', value: 'zzz' }), undefined)
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ label: 'zzz', value: 'zzz' }),
+        undefined
+      )
     })
 
     it('creatable=false offers no manual option', async () => {
       const user = userEvent.setup()
       renderWithProviders(
-        <CippAutoComplete multiple={false} creatable={false} options={OPTIONS} onChange={() => {}} />
+        <CippAutoComplete
+          multiple={false}
+          creatable={false}
+          options={OPTIONS}
+          onChange={() => {}}
+        />
       )
       await user.type(screen.getByRole('combobox'), 'zzz')
       await waitFor(() => {
@@ -184,12 +220,20 @@ describe('CippAutoComplete', () => {
       const onCreateOption = vi.fn((item) => ({ ...item, label: `custom:${item.label}` }))
       const user = userEvent.setup()
       renderWithProviders(
-        <CippAutoComplete multiple={false} options={OPTIONS} onChange={onChange} onCreateOption={onCreateOption} />
+        <CippAutoComplete
+          multiple={false}
+          options={OPTIONS}
+          onChange={onChange}
+          onCreateOption={onCreateOption}
+        />
       )
       await user.type(screen.getByRole('combobox'), 'zzz')
       await user.click(await screen.findByRole('option', { name: 'Add option: "zzz"' }))
       expect(onCreateOption).toHaveBeenCalled()
-      expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ label: 'custom:zzz', value: 'zzz' }), undefined)
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ label: 'custom:zzz', value: 'zzz' }),
+        undefined
+      )
     })
   })
 
@@ -199,7 +243,9 @@ describe('CippAutoComplete', () => {
         isSuccess: true,
         isFetching: false,
         isError: false,
-        data: { pages: [{ Results: [{ displayName: 'Alice', id: '1', userPrincipalName: 'a@x.com' }] }] },
+        data: {
+          pages: [{ Results: [{ displayName: 'Alice', id: '1', userPrincipalName: 'a@x.com' }] }],
+        },
         fetchNextPage: vi.fn(),
         refetch: vi.fn(),
       })
@@ -240,7 +286,12 @@ describe('CippAutoComplete', () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
       renderWithProviders(
-        <CippAutoComplete multiple={false} creatable={false} onChange={onChange} api={{ url: '/api/X', queryKey: 'x' }} />
+        <CippAutoComplete
+          multiple={false}
+          creatable={false}
+          onChange={onChange}
+          api={{ url: '/api/X', queryKey: 'x' }}
+        />
       )
       await user.click(screen.getByRole('combobox'))
       const options = await screen.findAllByRole('option')
@@ -252,7 +303,12 @@ describe('CippAutoComplete', () => {
     it('preselectedValue fires onChange exactly once', async () => {
       const onChange = vi.fn()
       renderWithProviders(
-        <CippAutoComplete multiple={false} options={OPTIONS} onChange={onChange} preselectedValue="b" />
+        <CippAutoComplete
+          multiple={false}
+          options={OPTIONS}
+          onChange={onChange}
+          preselectedValue="b"
+        />
       )
       await waitFor(() => {
         expect(onChange).toHaveBeenCalledTimes(1)
@@ -269,7 +325,13 @@ describe('CippAutoComplete', () => {
         fetchNextPage: vi.fn(),
         refetch: vi.fn(),
       })
-      renderWithProviders(<CippAutoComplete multiple={false} onChange={() => {}} api={{ url: '/api/X', queryKey: 'x' }} />)
+      renderWithProviders(
+        <CippAutoComplete
+          multiple={false}
+          onChange={() => {}}
+          api={{ url: '/api/X', queryKey: 'x' }}
+        />
+      )
       expect(screen.getByRole('combobox')).toBeDisabled()
     })
   })
@@ -297,7 +359,13 @@ describe('CippAutoComplete', () => {
     it('removeOptions filters values out', async () => {
       const user = userEvent.setup()
       renderWithProviders(
-        <CippAutoComplete multiple={false} creatable={false} options={OPTIONS} removeOptions={['b']} onChange={() => {}} />
+        <CippAutoComplete
+          multiple={false}
+          creatable={false}
+          options={OPTIONS}
+          removeOptions={['b']}
+          onChange={() => {}}
+        />
       )
       await user.click(screen.getByRole('combobox'))
       const options = await screen.findAllByRole('option')

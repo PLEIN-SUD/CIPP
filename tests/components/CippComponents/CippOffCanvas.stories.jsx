@@ -103,5 +103,4 @@ export const InteractiveOffCanvas = {
       </>
     )
   },
-
 }

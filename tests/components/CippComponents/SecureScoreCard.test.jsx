@@ -16,7 +16,7 @@ describe('SecureScoreCard', () => {
     renderWithTheme(<SecureScoreCard data={scoreData} isLoading={false} />)
 
     const sizeWarnings = warnSpy.mock.calls.filter((args) =>
-      String(args[0]).includes('should be greater than 0'),
+      String(args[0]).includes('should be greater than 0')
     )
     expect(sizeWarnings).toEqual([])
     warnSpy.mockRestore()
@@ -27,7 +27,7 @@ describe('SecureScoreCard', () => {
 
     expect(screen.getByText('Secure Score')).toBeInTheDocument()
     expect(
-      screen.getByText('The Secure Score measures your security posture across your tenant.'),
+      screen.getByText('The Secure Score measures your security posture across your tenant.')
     ).toBeInTheDocument()
   })
 

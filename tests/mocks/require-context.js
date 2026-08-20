@@ -45,9 +45,7 @@ function createContext(directory, useSubdirectories = true, regExp = /^\.\//) {
 }
 
 const requireShim = () => {
-  throw new Error(
-    'require polyfill: only require.context is supported in tests'
-  )
+  throw new Error('require polyfill: only require.context is supported in tests')
 }
 requireShim.context = createContext
 

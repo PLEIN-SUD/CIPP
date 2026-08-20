@@ -15,10 +15,16 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { Add, DeleteOutline } from '@mui/icons-material'
+import { Add, DeleteOutline, ArchiveOutlined } from '@mui/icons-material'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
 import { psitAsArray } from '../../utils/psit-as-array'
-import { VERDICT_STATUS, buildSignals, buildVerdict, formatUtc } from '../../utils/psit-bec-signals'
+import {
+  VERDICT_STATUS,
+  buildSignals,
+  buildVerdict,
+  formatUtc,
+  partitionDeterminations,
+} from '../../utils/psit-bec-signals'
 import {
   DATA_CATEGORIES,
   DATA_SUBJECT_CATEGORIES,
@@ -61,10 +67,16 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
   })
 
   const signals = useMemo(() => buildSignals(becData, userData), [becData, userData])
-  const verdict = useMemo(() => buildVerdict(signals, triage), [signals, triage])
+  // Only determinations that still speak for this collection count towards the verdict; see
+  // partitionDeterminations.
+  const liveTriage = useMemo(
+    () => partitionDeterminations(triage, becData).current,
+    [triage, becData]
+  )
+  const verdict = useMemo(() => buildVerdict(signals, liveTriage), [signals, liveTriage])
   const exposure = useMemo(
-    () => buildExposure(becData, signals, triage, userData),
-    [becData, signals, triage, userData]
+    () => buildExposure(becData, signals, liveTriage, userData),
+    [becData, signals, liveTriage, userData]
   )
 
   const stored = useMemo(() => incidentRequest.data?.Incident || {}, [incidentRequest.data])
@@ -74,6 +86,8 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
   // Local state holds only edits; everything displayed falls back to the stored record. Same
   // reason as the triage panel: mirroring server state through an effect loops.
   const [edits, setEdits] = useState({})
+  const [closing, setClosing] = useState(false)
+  const [closureNote, setClosureNote] = useState('')
   const value = (field, fallback = '') => edits[field] ?? stored?.[field] ?? fallback
   // psitAsArray, not `?? []`: the worker serialises a one-row list as a bare object, and this
   // is what `list(field).map(...)` blew up on.
@@ -107,6 +121,22 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
         acknowledgedUtc: value('AcknowledgedUtc'),
       },
     })
+  }
+
+  const handleClose = () => {
+    saveRequest.mutate({
+      url: '/api/PSITExecBecIncident',
+      data: {
+        tenantFilter,
+        userId,
+        userPrincipalName: userData?.userPrincipalName,
+        action: 'close',
+        closureNote,
+      },
+    })
+    setEdits({})
+    setClosing(false)
+    setClosureNote('')
   }
 
   const addRow = (field, row) => set(field, [...list(field), row])
@@ -469,6 +499,80 @@ export const PsitBecIncidentPanel = ({ userData, becData, tenantFilter, triage =
                 </Button>
               </Stack>
             </>
+          )}
+
+          {psitAsArray(stored?.PreviousCases).length > 0 && (
+            <Stack spacing={1}>
+              <Typography variant="subtitle2">Antécédents sur cette boîte</Typography>
+              {psitAsArray(stored.PreviousCases).map((previous) => (
+                <Alert key={previous.Reference} severity="warning" variant="outlined">
+                  <AlertTitle sx={{ mb: 0 }}>
+                    {previous.Reference}
+                    {previous.AutotaskTicket ? ` — ticket ${previous.AutotaskTicket}` : ''}
+                  </AlertTitle>
+                  <Typography variant="body2">
+                    Détection{' '}
+                    {previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'} —
+                    clos le {previous.ClosedUtc ? formatUtc(previous.ClosedUtc) : 'N/D'} par{' '}
+                    {previous.ClosedBy || 'N/D'}
+                    {previous.ClosureNote ? ` : ${previous.ClosureNote}` : ''}
+                  </Typography>
+                </Alert>
+              ))}
+              <Typography variant="body2" color="text.secondary">
+                Les qualifications de ces dossiers sont archivées avec eux : elles ne pèsent pas sur
+                le verdict courant.
+              </Typography>
+            </Stack>
+          )}
+
+          {stored?.Reference && (
+            <Stack spacing={1}>
+              <Typography variant="subtitle2">Clôture du dossier</Typography>
+              {closing ? (
+                <>
+                  <Alert severity="warning">
+                    <AlertTitle>Clore {stored.Reference} ?</AlertTitle>
+                    Le dossier et ses qualifications sont archivés et restent consultables. La fiche
+                    est ensuite vide : la prochaine sauvegarde ouvre un dossier neuf, avec une
+                    nouvelle référence. Rien n'est hérité — c'est le but, pour qu'une seconde
+                    compromission ne reprenne ni la date de détection, ni les tiers, ni l'accusé de
+                    réception du dossier précédent.
+                  </Alert>
+                  <TextField
+                    label="Note de clôture (facultative)"
+                    size="small"
+                    fullWidth
+                    placeholder="ex. confinée, rapport remis et validé par le client"
+                    value={closureNote}
+                    onChange={(event) => setClosureNote(event.target.value)}
+                  />
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      disabled={saveRequest.isPending}
+                      onClick={handleClose}
+                    >
+                      Confirmer la clôture
+                    </Button>
+                    <Button onClick={() => setClosing(false)}>Annuler</Button>
+                  </Stack>
+                </>
+              ) : (
+                <Stack direction="row">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    startIcon={<ArchiveOutlined />}
+                    onClick={() => setClosing(true)}
+                  >
+                    Clore le dossier
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
           )}
 
           <Stack direction="row" spacing={2} alignItems="center">

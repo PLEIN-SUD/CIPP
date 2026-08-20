@@ -9,7 +9,11 @@ const TutorialProbe = () => {
   return (
     <>
       <div data-testid="ids">{tutorials.map((t) => t.id).join(',')}</div>
-      <div data-testid="home">{getTutorialsForPage('/').map((t) => t.id).join(',')}</div>
+      <div data-testid="home">
+        {getTutorialsForPage('/')
+          .map((t) => t.id)
+          .join(',')}
+      </div>
     </>
   )
 }

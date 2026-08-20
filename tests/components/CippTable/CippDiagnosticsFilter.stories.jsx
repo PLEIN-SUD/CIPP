@@ -5,8 +5,16 @@ import CippDiagnosticsFilter from '../../../src/components/CippTable/CippDiagnos
 const mswHandlers = [
   http.get('/api/ListDiagnosticsPresets', () => {
     return HttpResponse.json([
-      { GUID: 'a1b2c3d4-1234-5678-9012-abcdef123456', name: 'Exchange Health Check', query: 'traces | where message contains "Exchange"' },
-      { GUID: 'b2c3d4e5-2345-6789-0123-bcdef1234567', name: 'License Report', query: 'traces | where message contains "License"' },
+      {
+        GUID: 'a1b2c3d4-1234-5678-9012-abcdef123456',
+        name: 'Exchange Health Check',
+        query: 'traces | where message contains "Exchange"',
+      },
+      {
+        GUID: 'b2c3d4e5-2345-6789-0123-bcdef1234567',
+        name: 'License Report',
+        query: 'traces | where message contains "License"',
+      },
     ])
   }),
   http.post('/api/ExecDiagnosticsPresets', () => {

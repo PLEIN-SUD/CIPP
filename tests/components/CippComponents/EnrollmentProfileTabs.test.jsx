@@ -8,7 +8,9 @@ import { AppleADEEnrollmentProfiles } from '../../../src/components/CippComponen
 // appleFilters presets must carry type: 'column', untyped presets land the
 // [{id, value}] array in the global filter slot ("[object Object]", zero rows)
 
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
+vi.mock('../../../src/api/ApiCall', async () =>
+  (await import('../../mocks/api-call')).apiCallMock()
+)
 import { api, getResult, postResult } from '../../mocks/api-call'
 
 // fixture mirrors Invoke-ListAppleEnrollmentProfiles.ps1: Results.Tokens from graph

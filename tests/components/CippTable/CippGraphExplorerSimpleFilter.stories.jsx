@@ -50,7 +50,9 @@ export const PresetPickedAndRun = {
       })
       await userEvent.click(combo)
       const body = within(canvasElement.ownerDocument.body)
-      await userEvent.click(await body.findByRole('option', { name: 'All users with email addresses' }))
+      await userEvent.click(
+        await body.findByRole('option', { name: 'All users with email addresses' })
+      )
     })
 
     await step('Run enables and accepts the click', async () => {

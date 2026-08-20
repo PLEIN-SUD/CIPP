@@ -27,6 +27,7 @@ import {
   formatUtc,
   getAnalysisWindow,
   groupSignInsByIp,
+  partitionDeterminations,
 } from '../../utils/psit-bec-signals'
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
@@ -110,17 +111,21 @@ export const PsitBecReportFrDocument = ({
   }
 
   const window = getAnalysisWindow(becData)
+  // Determinations decided before this window opened no longer speak for it: on a second
+  // compromise of the same mailbox they would file a fresh signal as noise on the strength of a
+  // months-old answer. They are shown as history instead.
+  const { current: liveTriage, stale: staleTriage } = partitionDeterminations(triage, becData)
   const signals = buildSignals(becData, userData)
-  const verdict = buildVerdict(signals, triage)
+  const verdict = buildVerdict(signals, liveTriage)
   const timeline = buildTimeline(becData)
   const outOfWindow = timeline.context || []
   const signInGroups = groupSignInsByIp(becData?.SuspectUserSignIns || [])
   const mail = classifySentMessages(becData, userData)
-  const exposure = buildExposure(becData, signals, triage, userData)
+  const exposure = buildExposure(becData, signals, liveTriage, userData)
   const iocs = buildIocs(becData, userData)
 
   const determinations = new Map(
-    psitAsArray(triage).map((entry) => [String(entry?.SignalId), entry])
+    psitAsArray(liveTriage).map((entry) => [String(entry?.SignalId), entry])
   )
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const qualified = signals.filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
@@ -348,10 +353,54 @@ export const PsitBecReportFrDocument = ({
         <PsitBecAssessmentSection
           verdict={verdict}
           signals={signals}
-          triage={triage}
+          triage={liveTriage}
           language="fr"
           compact
         />
+
+        {(incident?.PreviousCases || []).length > 0 && (
+          <Section title="Antécédents sur cette boîte">
+            <AlertBox title={`${incident.PreviousCases.length} dossier(s) antérieur(s)`}>
+              {psitAsArray(incident.PreviousCases)
+                .map(
+                  (previous) =>
+                    `• ${previous.Reference}${
+                      previous.AutotaskTicket ? ` — ticket ${previous.AutotaskTicket}` : ''
+                    }\n  Détection : ${
+                      previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'
+                    } — clos le ${
+                      previous.ClosedUtc ? formatUtc(previous.ClosedUtc) : 'N/D'
+                    } par ${previous.ClosedBy || 'N/D'}`
+                )
+                .join('\n')}
+            </AlertBox>
+            <Paragraph>
+              Une compromission répétée de la même boîte est un constat en soi : elle interroge la
+              remédiation précédente, l'existence d'une persistance non couverte par cette collecte
+              (voir « Couverture et limites »), et le facteur humain.
+            </Paragraph>
+          </Section>
+        )}
+
+        {staleTriage.length > 0 && (
+          <Section title="Qualifications antérieures à la fenêtre">
+            <Note>
+              {staleTriage.length} qualification(s) enregistrée(s) avant le{' '}
+              {formatUtc(window.startUtc)} ne sont pas appliquées à cette collecte : une réponse
+              donnée sur un événement passé ne vaut pas pour un événement nouveau, même à la même
+              adresse. Les signaux concernés sont de nouveau présentés comme des questions.
+              {'\n'}
+              {staleTriage
+                .map(
+                  (determination) =>
+                    `• ${determination.SignalId} : ${
+                      VERDICT_WORDS[determination.Verdict] || determination.Verdict
+                    } — ${determination.Analyst || 'N/D'}, ${formatUtc(determination.DecidedUtc)}`
+                )
+                .join('\n')}
+            </Note>
+          </Section>
+        )}
 
         <Section title="Suites à donner">
           {verdict.status === VERDICT_STATUS.COMPROMISED ? (

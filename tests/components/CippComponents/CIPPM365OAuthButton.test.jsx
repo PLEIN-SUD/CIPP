@@ -3,7 +3,9 @@ import { screen, fireEvent, act } from '@testing-library/react'
 import { renderWithTheme } from '../../test-utils'
 import { CIPPM365OAuthButton } from '../../../src/components/CippComponents/CIPPM365OAuthButton'
 
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
+vi.mock('../../../src/api/ApiCall', async () =>
+  (await import('../../mocks/api-call')).apiCallMock()
+)
 import { api, getResult } from '../../mocks/api-call'
 
 // only rendered for promptBeforeAuth / device-code paths, cut their import trees
@@ -66,7 +68,9 @@ describe('CIPPM365OAuthButton popup flow', () => {
     fireEvent.click(authButton())
 
     expect(screen.getByText(/blocked by the browser/)).toBeInTheDocument()
-    expect(onAuthError).toHaveBeenCalledWith(expect.objectContaining({ errorCode: 'popup_blocked' }))
+    expect(onAuthError).toHaveBeenCalledWith(
+      expect.objectContaining({ errorCode: 'popup_blocked' })
+    )
     // not stuck on "Authenticating..." - immediately retryable
     expect(screen.getByRole('button', { name: 'Login with Microsoft' })).toBeEnabled()
   })

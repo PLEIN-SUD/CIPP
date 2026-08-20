@@ -29,26 +29,18 @@ vi.mock('../../../src/api/ApiCall', () => ({
 // and domain selectors, and the data-table stack. None of them take part in group handling, and
 // loading them all is enough to exhaust the test worker, so they are stubbed out. The group field
 // itself stays real - it is the thing under test.
-vi.mock(
-  '../../../src/components/CippComponents/CippFormLicenseSelector',
-  () => ({
-    CippFormLicenseSelector: () => (
-      <div data-testid="CippFormLicenseSelector" />
-    ),
-    default: () => <div data-testid="CippFormLicenseSelector" />,
-  })
-)
+vi.mock('../../../src/components/CippComponents/CippFormLicenseSelector', () => ({
+  CippFormLicenseSelector: () => <div data-testid="CippFormLicenseSelector" />,
+  default: () => <div data-testid="CippFormLicenseSelector" />,
+}))
 vi.mock('../../../src/components/CippComponents/CippFormUserSelector', () => ({
   CippFormUserSelector: () => <div data-testid="CippFormUserSelector" />,
   default: () => <div data-testid="CippFormUserSelector" />,
 }))
-vi.mock(
-  '../../../src/components/CippComponents/CippFormDomainSelector',
-  () => ({
-    CippFormDomainSelector: () => <div data-testid="CippFormDomainSelector" />,
-    default: () => <div data-testid="CippFormDomainSelector" />,
-  })
-)
+vi.mock('../../../src/components/CippComponents/CippFormDomainSelector', () => ({
+  CippFormDomainSelector: () => <div data-testid="CippFormDomainSelector" />,
+  default: () => <div data-testid="CippFormDomainSelector" />,
+}))
 vi.mock('../../../src/components/CippTable/CippDataTable', () => ({
   CippDataTable: () => <div data-testid="CippDataTable" />,
   default: () => <div data-testid="CippDataTable" />,
@@ -153,8 +145,7 @@ const selectTemplate = (template) =>
     })
   })
 
-const groupNames = () =>
-  (formApi.getValues('AddToGroups') || []).map((g) => g.label)
+const groupNames = () => (formApi.getValues('AddToGroups') || []).map((g) => g.label)
 
 describe('CippAddEditUser - Add to Groups', () => {
   beforeEach(() => {
@@ -184,9 +175,7 @@ describe('CippAddEditUser - Add to Groups', () => {
 
       await selectTemplate(template)
 
-      await waitFor(() =>
-        expect(groupNames()).toEqual(['All Office', 'All-Users'])
-      )
+      await waitFor(() => expect(groupNames()).toEqual(['All Office', 'All-Users']))
       const groups = formApi.getValues('AddToGroups')
       expect(groups[0].addedFields.groupType).toBe('Distribution List')
       expect(groups[1].addedFields.groupType).toBe('Security')
@@ -233,9 +222,7 @@ describe('CippAddEditUser - Add to Groups', () => {
       await selectTemplate(template)
 
       await waitFor(() => expect(groupNames()).toHaveLength(4))
-      expect(
-        formApi.getValues('AddToGroups').map((g) => g.addedFields.groupType)
-      ).toEqual([
+      expect(formApi.getValues('AddToGroups').map((g) => g.addedFields.groupType)).toEqual([
         'Microsoft 365',
         'Distribution list',
         'Mail-Enabled Security',
@@ -372,9 +359,7 @@ describe('CippAddEditUser - Add to Groups', () => {
         ])
       })
 
-      await waitFor(() =>
-        expect(groupNames()).toEqual(['All-Users', 'SG-Office-LAX'])
-      )
+      await waitFor(() => expect(groupNames()).toEqual(['All-Users', 'SG-Office-LAX']))
     })
 
     it('keeps several manually appended groups', async () => {
@@ -418,10 +403,7 @@ describe('CippAddEditUser - Add to Groups', () => {
       // Appended one at a time, the way the field is actually filled in.
       for (const extra of extras) {
         await act(() => {
-          formApi.setValue('AddToGroups', [
-            ...formApi.getValues('AddToGroups'),
-            extra,
-          ])
+          formApi.setValue('AddToGroups', [...formApi.getValues('AddToGroups'), extra])
         })
       }
 
@@ -460,9 +442,7 @@ describe('CippAddEditUser - Add to Groups', () => {
       await act(() => {
         formApi.setValue(
           'AddToGroups',
-          formApi
-            .getValues('AddToGroups')
-            .filter((g) => g.value !== 'group-ieq-team')
+          formApi.getValues('AddToGroups').filter((g) => g.value !== 'group-ieq-team')
         )
       })
 
@@ -502,9 +482,7 @@ describe('CippAddEditUser - Add to Groups', () => {
         formApi.setValue('surname', 'Seck')
       })
 
-      await waitFor(() =>
-        expect(groupNames()).toEqual(['All-Users', 'SG-Office-LAX'])
-      )
+      await waitFor(() => expect(groupNames()).toEqual(['All-Users', 'SG-Office-LAX']))
     })
 
     it('keeps a group picked through the autocomplete itself', async () => {
@@ -534,9 +512,7 @@ describe('CippAddEditUser - Add to Groups', () => {
       })
       await user.click(option)
 
-      await waitFor(() =>
-        expect(groupNames()).toEqual(['All-Users', 'SG-Office-LAX'])
-      )
+      await waitFor(() => expect(groupNames()).toEqual(['All-Users', 'SG-Office-LAX']))
       expect(screen.getByText('SG-Office-LAX')).toBeInTheDocument()
     })
   })

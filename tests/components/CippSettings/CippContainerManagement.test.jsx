@@ -5,7 +5,9 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test-utils'
 import { CippContainerManagement } from '../../../src/components/CippSettings/CippContainerManagement'
 
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
+vi.mock('../../../src/api/ApiCall', async () =>
+  (await import('../../mocks/api-call')).apiCallMock()
+)
 import { api, getResult, paginatedResult, postResult } from '../../mocks/api-call'
 
 // stable references, fresh literals per call spin CippAutoComplete's mapping effect
@@ -14,7 +16,8 @@ api.paginated = paginatedResult()
 api.post = postResult()
 
 // Status shape from Invoke-ExecContainerManagement.ps1 (Action=Status)
-const BUILD_PATTERN = '^(preview|feat|fix|refactor|perf|chore|build|revert)-[a-z0-9][a-z0-9._-]{0,54}$'
+const BUILD_PATTERN =
+  '^(preview|feat|fix|refactor|perf|chore|build|revert)-[a-z0-9][a-z0-9._-]{0,54}$'
 
 const statusResults = (channel) => ({
   CurrentVersion: '8.0.0',
@@ -46,7 +49,11 @@ const channelListResults = [
   { label: 'dev', value: 'dev', group: 'Standard channels' },
   { label: 'nightly', value: 'nightly', group: 'Standard channels' },
   { label: 'feat-new-widget', value: 'feat-new-widget', group: 'Branch builds (latest)' },
-  { label: 'fix-sso-thing-a1b2c3d', value: 'fix-sso-thing-a1b2c3d', group: 'Branch builds (pinned)' },
+  {
+    label: 'fix-sso-thing-a1b2c3d',
+    value: 'fix-sso-thing-a1b2c3d',
+    group: 'Branch builds (pinned)',
+  },
 ]
 
 const PINNED_PRETTY = 'fix-sso-thing — pinned a1b2c3d'
@@ -102,7 +109,9 @@ describe('CippContainerManagement branch-build flagging', () => {
     renderWithProviders(<CippContainerManagement />)
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: 'Release Channel' })).toHaveValue('Latest (Stable)')
+      expect(screen.getByRole('combobox', { name: 'Release Channel' })).toHaveValue(
+        'Latest (Stable)'
+      )
     })
     expect(screen.queryByText(ALERT_RE)).not.toBeInTheDocument()
 

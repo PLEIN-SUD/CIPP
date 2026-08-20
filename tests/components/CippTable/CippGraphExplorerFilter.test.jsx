@@ -9,7 +9,14 @@ import { ApiGetCall } from '../../../src/api/ApiCall'
 
 vi.mock('../../../src/api/ApiCall', () => ({
   ApiGetCall: vi.fn(),
-  ApiPostCall: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false, data: undefined, error: null })),
+  ApiPostCall: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    data: undefined,
+    error: null,
+  })),
   ApiGetCallWithPagination: vi.fn(() => ({
     isSuccess: false,
     isFetching: false,
@@ -105,9 +112,13 @@ describe('CippGraphExplorerFilter', () => {
     await user.type(nameBox, '!')
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: 'Select a preset' })).toHaveValue('Renamed Preset')
+      expect(screen.getByRole('combobox', { name: 'Select a preset' })).toHaveValue(
+        'Renamed Preset'
+      )
     })
-    expect(screen.getByRole('textbox', { name: 'Endpoint' })).toHaveValue('/devices/registeredOwners')
+    expect(screen.getByRole('textbox', { name: 'Endpoint' })).toHaveValue(
+      '/devices/registeredOwners'
+    )
   }, 30000)
 
   describe('preset normalization into the form', () => {
@@ -176,7 +187,12 @@ describe('CippGraphExplorerFilter', () => {
         <CippGraphExplorerFilter
           onSubmitFilter={vi.fn()}
           component="card"
-          selectedPreset={{ id: 'saved-1', filterName: 'Saved Object Select', value: savedObjectSelect.params, type: 'graph' }}
+          selectedPreset={{
+            id: 'saved-1',
+            filterName: 'Saved Object Select',
+            value: savedObjectSelect.params,
+            type: 'graph',
+          }}
         />
       )
       await waitFor(() => {
@@ -189,7 +205,12 @@ describe('CippGraphExplorerFilter', () => {
         <CippGraphExplorerFilter
           onSubmitFilter={vi.fn()}
           component="card"
-          selectedPreset={{ id: 'nope', filterName: 'Ad hoc', value: { endpoint: '/servicePrincipals', $select: '' }, type: 'graph' }}
+          selectedPreset={{
+            id: 'nope',
+            filterName: 'Ad hoc',
+            value: { endpoint: '/servicePrincipals', $select: '' },
+            type: 'graph',
+          }}
         />
       )
       await waitFor(() => {
@@ -199,13 +220,21 @@ describe('CippGraphExplorerFilter', () => {
 
     it('switching between two option-shape presets applies the second (dep-array regression)', async () => {
       const optionA = { label: BUILTIN.name, value: BUILTIN.id, addedFields: BUILTIN }
-      const optionB = { label: 'Saved Object Select', value: 'saved-1', addedFields: savedObjectSelect }
+      const optionB = {
+        label: 'Saved Object Select',
+        value: 'saved-1',
+        addedFields: savedObjectSelect,
+      }
       function Harness() {
         const [preset, setPreset] = useState(optionA)
         return (
           <>
             <button onClick={() => setPreset(optionB)}>swap-preset</button>
-            <CippGraphExplorerFilter onSubmitFilter={vi.fn()} component="card" selectedPreset={preset} />
+            <CippGraphExplorerFilter
+              onSubmitFilter={vi.fn()}
+              component="card"
+              selectedPreset={preset}
+            />
           </>
         )
       }
@@ -226,7 +255,9 @@ describe('CippGraphExplorerFilter', () => {
     it('joins $select, unwraps version, strips form-only fields', async () => {
       const onSubmitFilter = vi.fn()
       const user = userEvent.setup()
-      renderWithProviders(<CippGraphExplorerFilter onSubmitFilter={onSubmitFilter} component="card" />)
+      renderWithProviders(
+        <CippGraphExplorerFilter onSubmitFilter={onSubmitFilter} component="card" />
+      )
       await pickPreset(user, BUILTIN.name)
       await waitFor(() => {
         expect(screen.getByRole('textbox', { name: 'Endpoint' })).toHaveValue('/users')
@@ -241,7 +272,15 @@ describe('CippGraphExplorerFilter', () => {
         $select: 'userPrincipalName,mail,proxyAddresses',
         version: 'beta',
       })
-      for (const key of ['manualPagination', 'id', 'name', 'IsShared', 'reportTemplate', 'ReverseTenantLookupProperty', '$filter']) {
+      for (const key of [
+        'manualPagination',
+        'id',
+        'name',
+        'IsShared',
+        'reportTemplate',
+        'ReverseTenantLookupProperty',
+        '$filter',
+      ]) {
         expect(payload).not.toHaveProperty(key)
       }
     })
@@ -249,7 +288,9 @@ describe('CippGraphExplorerFilter', () => {
     it('keeps ReverseTenantLookupProperty when the lookup switch is on', async () => {
       const onSubmitFilter = vi.fn()
       const user = userEvent.setup()
-      renderWithProviders(<CippGraphExplorerFilter onSubmitFilter={onSubmitFilter} component="card" />)
+      renderWithProviders(
+        <CippGraphExplorerFilter onSubmitFilter={onSubmitFilter} component="card" />
+      )
       await pickPreset(user, BUILTIN.name)
       await waitFor(() => {
         expect(screen.getByRole('textbox', { name: 'Endpoint' })).toHaveValue('/users')
@@ -268,7 +309,9 @@ describe('CippGraphExplorerFilter', () => {
     it('empty form submits only the version default (empty $select key absent)', async () => {
       const onSubmitFilter = vi.fn()
       const user = userEvent.setup()
-      renderWithProviders(<CippGraphExplorerFilter onSubmitFilter={onSubmitFilter} component="card" />)
+      renderWithProviders(
+        <CippGraphExplorerFilter onSubmitFilter={onSubmitFilter} component="card" />
+      )
       await user.click(screen.getByRole('button', { name: 'Apply Filter' }))
       await waitFor(() => {
         expect(onSubmitFilter).toHaveBeenCalledTimes(1)

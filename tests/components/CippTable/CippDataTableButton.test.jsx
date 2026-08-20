@@ -73,9 +73,7 @@ describe('CippDataTableButton', () => {
   })
 
   it('shows disabled button for empty data', () => {
-    renderWithProviders(
-      <CippDataTableButton title="No Data" data={null} />
-    )
+    renderWithProviders(<CippDataTableButton title="No Data" data={null} />)
     const button = screen.getByRole('button')
     expect(button).toHaveTextContent('No items')
     expect(button).toBeDisabled()

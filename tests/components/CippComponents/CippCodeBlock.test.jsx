@@ -5,7 +5,9 @@ import { CippCodeBlock } from '../../../src/components/CippComponents/CippCodeBl
 
 vi.mock('@monaco-editor/react', () => ({
   Editor: ({ value, language }) => (
-    <div data-testid="monaco-editor" data-language={language}>{value}</div>
+    <div data-testid="monaco-editor" data-language={language}>
+      {value}
+    </div>
   ),
 }))
 
@@ -23,9 +25,7 @@ describe('CippCodeBlock', () => {
   })
 
   it('renders code in editor mode (type="editor")', async () => {
-    renderWithProviders(
-      <CippCodeBlock code="const y = 2;" language="javascript" type="editor" />
-    )
+    renderWithProviders(<CippCodeBlock code="const y = 2;" language="javascript" type="editor" />)
     const editor = await screen.findByTestId('monaco-editor')
     expect(editor).toBeInTheDocument()
     // language prop is forwarded to monaco
@@ -50,9 +50,7 @@ describe('CippCodeBlock', () => {
   })
 
   it('renders copy button', () => {
-    renderWithProviders(
-      <CippCodeBlock code="const z = 3;" language="javascript" />
-    )
+    renderWithProviders(<CippCodeBlock code="const z = 3;" language="javascript" />)
     expect(screen.getByRole('button')).toBeInTheDocument()
   })
 })

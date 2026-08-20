@@ -137,7 +137,9 @@ export const MaintenanceUpcoming = {
 
     await step('dismiss hides it', async () => {
       const banner = canvas.getByLabelText('Maintenance notice')
-      within(banner).getByRole('button', { name: /dismiss maintenance notice/i }).click()
+      within(banner)
+        .getByRole('button', { name: /dismiss maintenance notice/i })
+        .click()
       await waitFor(() => {
         expect(canvas.queryByLabelText('Maintenance notice')).toBeNull()
       })

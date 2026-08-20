@@ -5,6 +5,7 @@ import {
   buildSignals,
   buildTimeline,
   buildVerdict,
+  partitionDeterminations,
   classifySentMessages,
   firstUnauthorisedAccessUtc,
   formatUtc,
@@ -431,5 +432,55 @@ describe('buildTimeline', () => {
     // One session per address rather than one line per request.
     expect(timeline.filter((event) => event.kind === 'signin')).toHaveLength(2)
     expect(timeline.some((event) => event.label.includes('Session depuis 203.0.113.42'))).toBe(true)
+  })
+})
+
+describe('partitionDeterminations', () => {
+  const becData = { ExtractedAt: '2026-11-02T10:00:00Z', AnalysisWindowDays: 7 }
+
+  it('keeps an answer given during the window', () => {
+    const { current, stale } = partitionDeterminations(
+      [
+        {
+          SignalId: 'signin-ip:203.0.113.42',
+          Verdict: 'expected',
+          DecidedUtc: '2026-10-30T08:00:00Z',
+        },
+      ],
+      becData
+    )
+    expect(current).toHaveLength(1)
+    expect(stale).toHaveLength(0)
+  })
+
+  it('files an answer older than the window as history, not as a verdict', () => {
+    // The trap this exists for: the same address returns in November and inherits the answer given
+    // in August, which files a fresh signal as noise without anyone being asked.
+    const { current, stale, windowStartUtc } = partitionDeterminations(
+      [
+        {
+          SignalId: 'signin-ip:203.0.113.42',
+          Verdict: 'expected',
+          DecidedUtc: '2026-08-20T13:02:00Z',
+        },
+      ],
+      becData
+    )
+    expect(current).toHaveLength(0)
+    expect(stale).toHaveLength(1)
+    expect(windowStartUtc).toBe('2026-10-26T10:00:00Z')
+  })
+
+  it('treats a determination with no timestamp as current: a missing date is a data problem', () => {
+    const { current } = partitionDeterminations([{ SignalId: 'x', Verdict: 'expected' }], becData)
+    expect(current).toHaveLength(1)
+  })
+
+  it('accepts a single determination that arrived as a bare object', () => {
+    const { current } = partitionDeterminations(
+      { SignalId: 'x', Verdict: 'expected', DecidedUtc: '2026-10-30T08:00:00Z' },
+      becData
+    )
+    expect(current).toHaveLength(1)
   })
 })

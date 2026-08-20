@@ -45,6 +45,9 @@ import { useDialog } from '../hooks/use-dialog'
 import { CippUniversalSearchV2 } from '../components/CippCards/CippUniversalSearchV2'
 import { CippOffCanvas } from '../components/CippComponents/CippOffCanvas'
 import { CippLicenseDetailsDrawer } from '../components/CippComponents/CippLicenseDetailsDrawer'
+// PSIT-CUSTOM-BEGIN: Plein Sud branding next to the CIPP logo
+import { PsitBrandLogo } from '../components/psit/PsitBrandLogo'
+// PSIT-CUSTOM-END
 
 import { BANNER_HEIGHT_VAR, TOP_NAV_HEIGHT } from './constants'
 
@@ -291,6 +294,9 @@ export const TopNav = (props) => {
           >
             <Logo />
           </Box>
+          {/* PSIT-CUSTOM-BEGIN: Plein Sud branding next to the CIPP logo */}
+          {!mdDown && <PsitBrandLogo height={18} />}
+          {/* PSIT-CUSTOM-END */}
           {!mdDown && (
             <Box data-tutorial="tenant-selector">
               <CippTenantSelector

@@ -18,6 +18,9 @@ import { PropertyList } from '../../../../../components/property-list'
 import { PropertyListItem } from '../../../../../components/property-list-item'
 import { CippHead } from '../../../../../components/CippComponents/CippHead'
 import { BECRemediationReportButton } from '../../../../../components/BECRemediationReportButton'
+// PSIT-CUSTOM-BEGIN: French edition of the same report, for client delivery
+import { PsitBecReportFrButton } from '../../../../../components/psit/PsitBecReportFr'
+// PSIT-CUSTOM-END
 import { CippDataTable } from '../../../../../components/CippTable/CippDataTable'
 import { getBecIntuneDeviceActions } from '../../../../../components/CippComponents/CippIntuneDeviceActions.jsx'
 
@@ -1017,6 +1020,13 @@ const Page = () => {
                           becData={becPollingCall.data}
                           tenantName={userSettingsDefaults.currentTenant}
                         />
+                        {/* PSIT-CUSTOM-BEGIN: French edition of the same report, for client delivery */}
+                        <PsitBecReportFrButton
+                          userData={userRequest.data[0]}
+                          becData={becPollingCall.data}
+                          tenantName={userSettingsDefaults.currentTenant}
+                        />
+                        {/* PSIT-CUSTOM-END */}
                         <Button
                           onClick={() => {
                             const blob = new Blob([JSON.stringify(becPollingCall.data, null, 2)], {

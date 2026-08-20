@@ -251,6 +251,37 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).toContain("n'est pas un tiers à prévenir")
   })
 
+  it('states that the collection window bounds the start of the exposure', () => {
+    const { container } = render()
+    expect(container.textContent).toContain('Borne de début limitée par la collecte')
+    expect(container.textContent).toContain('Un accès antérieur ne serait pas visible')
+  })
+
+  it('refuses to present an empty third-party list drawn from a partial trace as good news', () => {
+    const { container } = render({
+      becData: {
+        ...compromisedBecData,
+        // One collected row against 241 reported recipients, and it is internal: the annex ends up
+        // empty while the real exposure is unknown.
+        SentMessages: [
+          {
+            MessageTraceId: 'm1',
+            Subject: 'Re: planning',
+            RecipientAddress: 'colleague@contoso.test',
+            Received: '2026-08-19T07:11:00Z',
+            Internal: true,
+            SystemGenerated: false,
+          },
+        ],
+        SentMessageAnalysis: { TotalRecipients: 241, RepeatedSubjects: [], Bursts: [] },
+      },
+    })
+
+    expect(container.textContent).toContain("Liste non exploitable en l'état")
+    expect(container.textContent).toContain("ne vaut pas absence d'envoi")
+    expect(container.textContent).not.toContain('Aucun destinataire signalé')
+  })
+
   it('warns on its own first page when generated without a retained compromise', () => {
     const { container } = render({ becData: cleanBecData })
     expect(container.textContent).toContain('sans compromission retenue')

@@ -39,6 +39,7 @@ import {
   buildVerdict,
   firstUnauthorisedAccessUtc,
   formatUtc,
+  getAnalysisWindow,
 } from '../../utils/psit-bec-signals'
 import {
   INCIDENT_STATUS_LABELS,
@@ -75,6 +76,7 @@ export const PsitBecIncidentReportDocument = ({
     day: 'numeric',
   })
 
+  const window = getAnalysisWindow(becData)
   const signals = buildSignals(becData, userData)
   const verdict = buildVerdict(signals, triage)
   const timeline = buildTimeline(becData)
@@ -317,6 +319,12 @@ export const PsitBecIncidentReportDocument = ({
             {firstAccessUtc
               ? formatUtc(firstAccessUtc)
               : "non déterminé : aucun signal de connexion n'a été retenu"}
+            {'\n'}
+            {/* The DPO reads this section, and this is the sentence that keeps the date from being
+                quoted as the start of the intrusion. */}
+            Borne de début limitée par la collecte : elle porte sur la fenêtre du{' '}
+            {formatUtc(window.startUtc)} au {formatUtc(window.endUtc)}, dans la limite de rétention
+            des journaux Microsoft. Un accès antérieur ne serait pas visible.
           </InfoBox>
         </Section>
 
@@ -533,6 +541,15 @@ export const PsitBecIncidentReportDocument = ({
                 </Note>
               )}
             </>
+          ) : thirdParties.truncated ? (
+            /* An empty list drawn from a partial sample is not good news, and a green box would be
+               read as one. */
+            <AlertBox title="Liste non exploitable en l'état">
+              Aucun tiers ne ressort de l'échantillon, mais la collecte n'a retourné que{' '}
+              {thirdParties.collectedRecipients} lignes de suivi sur {thirdParties.totalRecipients}.
+              Cette absence ne vaut pas absence d'envoi : le suivi complet des messages doit être
+              extrait avant de conclure sur les tiers.
+            </AlertBox>
           ) : (
             <ClearBox title="Aucun destinataire signalé">
               Aucun envoi externe correspondant à un schéma signalé n'a été relevé sur la fenêtre

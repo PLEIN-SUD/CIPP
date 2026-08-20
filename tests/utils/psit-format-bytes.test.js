@@ -3,7 +3,7 @@ import {
   psitFormatByteField,
   psitIsByteKey,
 } from '../../src/utils/psit-format-bytes'
-import { getAlertItemFields } from '../../src/utils/format-alert-item'
+import { describeAlertItem, getAlertItemFields } from '../../src/utils/format-alert-item'
 
 describe('psitFormatBytes', () => {
   it('picks the unit that reads best and trims trailing zeros', () => {
@@ -65,19 +65,18 @@ describe('psitFormatByteField', () => {
   })
 })
 
-describe('getAlertItemFields with byte fields', () => {
-  const quotaAlert = {
-    Message: 'user@contoso.test: Mailbox is more than 90% full. Mailbox is 95% full',
-    Owner: 'user@contoso.test',
-    RecipientType: 'User',
-    UsagePercent: 95,
-    StorageUsedInBytes: 50982040315,
-    ProhibitSendReceiveQuotaInBytes: 53687091200,
-  }
+const quotaAlert = {
+  Message: 'user@contoso.test: Mailbox is more than 90% full. Mailbox is 95% full',
+  Owner: 'user@contoso.test',
+  RecipientType: 'User',
+  UsagePercent: 95,
+  StorageUsedInBytes: 50982040315,
+  ProhibitSendReceiveQuotaInBytes: 53687091200,
+}
 
+describe('getAlertItemFields with byte fields', () => {
   it('humanizes the sizes and leaves the other fields untouched', () => {
-    const fields = getAlertItemFields(quotaAlert)
-    expect(fields).toEqual([
+    expect(getAlertItemFields(quotaAlert)).toEqual([
       { label: 'Message', value: quotaAlert.Message },
       { label: 'Owner', value: 'user@contoso.test' },
       { label: 'Recipient Type', value: 'User' },
@@ -85,5 +84,28 @@ describe('getAlertItemFields with byte fields', () => {
       { label: 'Storage Used', value: '47.48 GB' },
       { label: 'Prohibit Send Receive Quota', value: '50 GB' },
     ])
+  })
+
+  it('keeps working on the truncated ContentPreview JSON path', () => {
+    const preview = '{"Owner":"user@contoso.test","StorageUsedInBytes":50982040315,"Usage'
+    expect(getAlertItemFields(null, preview)).toEqual([
+      { label: 'Owner', value: 'user@contoso.test' },
+      { label: 'Storage Used', value: '47.48 GB' },
+    ])
+  })
+})
+
+describe('describeAlertItem with byte fields', () => {
+  it('humanizes sizes in the dashboard card detail line', () => {
+    const { title, detail } = describeAlertItem(quotaAlert)
+    expect(title).toBe(quotaAlert.Message)
+    expect(detail).toBe('Owner: user@contoso.test · Recipient Type: User')
+  })
+
+  it('humanizes sizes when a byte field is all there is, without repeating it', () => {
+    expect(describeAlertItem({ StorageUsedInBytes: 50982040315 })).toEqual({
+      title: 'Storage Used: 47.48 GB',
+      detail: '',
+    })
   })
 })

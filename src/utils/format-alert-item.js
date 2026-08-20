@@ -98,8 +98,11 @@ const pickDetail = (item, title) => {
     // PSIT-CUSTOM-BEGIN: humanize byte-valued alert fields
     const psitByteField = psitFormatByteField(key, value)
     if (psitByteField) {
-      parts.push(`${psitByteField.label}: ${psitByteField.value}`)
-      if (parts.length >= 2) break
+      const psitText = `${psitByteField.label}: ${psitByteField.value}`
+      if (psitText !== title) {
+        parts.push(psitText)
+        if (parts.length >= 2) break
+      }
       continue
     }
     // PSIT-CUSTOM-END

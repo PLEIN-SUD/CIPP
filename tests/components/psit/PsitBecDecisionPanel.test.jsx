@@ -6,6 +6,12 @@ import { PsitBecDecisionPanel } from '../../../src/components/psit/PsitBecDecisi
 import { PsitBecArchivedEvidenceButton } from '../../../src/components/psit/PsitBecArchivedEvidenceButton'
 import { ApiGetCall } from '../../../src/api/ApiCall'
 
+// Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
+// timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
+// which is upstream: no divergence, and the value travels with the tests that need it.
+vi.setConfig({ testTimeout: 60000 })
+
+
 vi.mock('../../../src/api/ApiCall', () => ({
   ApiGetCall: vi.fn(() => ({
     data: undefined,
@@ -24,10 +30,19 @@ vi.mock('../../../src/api/ApiCall', () => ({
 }))
 
 vi.mock('@react-pdf/renderer', () => {
+  // `render` is honoured, not ignored: react-pdf calls it with the page counters, and a component
+  // that only rendered `children` made every title using a render callback vanish from the assertions
+  // while the real PDF printed it. First page of its own flow, which is the common case.
   const passthrough =
     (tag) =>
-    ({ children }) =>
-      React.createElement(tag, null, children)
+    ({ children, render }) =>
+      React.createElement(
+        tag,
+        null,
+        typeof render === 'function'
+          ? render({ pageNumber: 1, totalPages: 1, subPageNumber: 1, subPageTotalPages: 1 })
+          : children
+      )
   return {
     Document: passthrough('div'),
     Page: passthrough('div'),

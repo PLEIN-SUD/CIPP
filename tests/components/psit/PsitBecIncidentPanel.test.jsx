@@ -5,6 +5,12 @@ import { renderWithProviders } from '../../test-utils'
 import { PsitBecIncidentPanel } from '../../../src/components/psit/PsitBecIncidentPanel'
 import { ApiGetCall, ApiPostCall } from '../../../src/api/ApiCall'
 
+// Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
+// timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
+// which is upstream: no divergence, and the value travels with the tests that need it.
+vi.setConfig({ testTimeout: 60000 })
+
+
 vi.mock('../../../src/api/ApiCall', () => ({
   ApiGetCall: vi.fn(() => ({
     data: undefined,
@@ -126,7 +132,7 @@ describe('PsitBecIncidentPanel', () => {
     render()
 
     expect(
-      screen.getByText(/PSIT-BEC-20260820-AB12 — dernière mise à jour par s\.miro@pleinsudit\.com/)
+      screen.getByText(/PSIT-BEC-20260820-AB12, dernière mise à jour par s\.miro@pleinsudit\.com/)
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Ticket Autotask')).toHaveValue('T20260820.0042')
   })
@@ -178,6 +184,69 @@ describe('PsitBecIncidentPanel', () => {
       deliveredTo: 'Direction financière',
       acknowledgedBy: 'DAF',
     })
+  })
+
+  it('constrains the case fields the reports print, and defaults the marking', async () => {
+    const mutate = vi.fn()
+    ApiPostCall.mockImplementation(() => ({
+      mutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    }))
+
+    render({ becData: compromisedBecData })
+
+    // TLP is a document property with the strictest default, not a template constant.
+    expect(screen.getByLabelText('Marquage de diffusion (TLP)')).toHaveTextContent(
+      'TLP:AMBER+STRICT'
+    )
+
+    // The channel is a closed list on both surfaces: a free field is how "Pigeon voyageur" was
+    // printed in a client annex.
+    await userEvent.type(screen.getByLabelText('Tickets liés (optionnel)'), 'T20260821.0002')
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer la fiche/ }))
+
+    const payload = mutate.mock.calls[0][0].data
+    expect(payload.tlp).toBe('TLP:AMBER+STRICT')
+    expect(payload.relatedTickets).toEqual(['T20260821.0002'])
+  })
+
+  it('flags an unusual ticket without refusing it', async () => {
+    render()
+    const field = screen.getByLabelText('Ticket Autotask')
+
+    await userEvent.type(field, 'ticket 42')
+    expect(screen.getByText(/Forme inhabituelle/)).toBeInTheDocument()
+    // Indicative only: the save stays available.
+    expect(screen.getByRole('button', { name: /Enregistrer la fiche/ })).toBeEnabled()
+  })
+
+  it('asks what the access was followed by instead of deducing it', async () => {
+    render({ becData: compromisedBecData })
+
+    const field = screen.getByLabelText("Effet observé de l'accès")
+    await userEvent.click(field)
+    expect(await screen.findByRole('option', { name: 'Envoi en masse' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Détournement de fils' })).toBeInTheDocument()
+
+    // "Autre" opens a short free field, injected into the same sentence template.
+    await userEvent.click(screen.getByRole('option', { name: 'Autre (à préciser)' }))
+    expect(
+      await screen.findByLabelText('Préciser (une ligne, reprise telle quelle dans le résumé)')
+    ).toBeInTheDocument()
+  })
+
+  it('warns about the banned lexicon in a free field, without blocking', async () => {
+    render({ becData: compromisedBecData })
+
+    await userEvent.type(
+      screen.getByLabelText('Note de synthèse (complément, après le paragraphe composé)'),
+      'envoi de spam massif'
+    )
+
+    expect(screen.getByText(/« spam »/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Enregistrer la fiche/ })).toBeEnabled()
   })
 
   it('renders nothing while the collection is still running', () => {

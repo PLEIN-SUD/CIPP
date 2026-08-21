@@ -6,6 +6,7 @@ import { PsitBecIncidentPanel } from './PsitBecIncidentPanel'
 import { PsitBecReportFrButton } from './PsitBecReportFr'
 import { PsitBecIncidentReportButton } from './PsitBecIncidentReport'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { cardinal } from '../../utils/psit-report-prose'
 import {
   VERDICT_STATUS,
   buildSignals,
@@ -83,7 +84,7 @@ export const PsitBecDecisionPanel = ({
                 means. And no "listées sous cette carte": the checks moved beside this rail, and on
                 a narrow viewport they are below it again. */}
             {openQuestions > 0
-              ? `${openQuestions} question(s) sans réponse : tant qu'elles le sont, les rapports n'affichent aucun niveau de risque.`
+              ? `${cardinal(openQuestions, 'question')} sans réponse : tant qu'elle l'est, les rapports n'affichent aucun niveau de risque.`
               : verdict.detail}
           </Typography>
           <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>

@@ -23,6 +23,8 @@ import ExpandMoreIcon from '@heroicons/react/24/outline/ChevronDownIcon'
 import { SvgIcon } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { cardinal } from '../../utils/psit-report-prose'
+import { lexiconWarnings } from '../../utils/psit-report-prose'
 import {
   SIGNAL_CLASS,
   VERDICT_STATUS,
@@ -167,7 +169,7 @@ export const PsitBecTriagePanel = ({
           {established.length > 0 && (
             <>
               <Typography variant="subtitle2" gutterBottom>
-                Établi par la donnée — aucune qualification requise
+                Établi par la donnée : aucune qualification requise
               </Typography>
               <Stack spacing={1} sx={{ mb: 2 }}>
                 {established.map((signal) => (
@@ -202,7 +204,7 @@ export const PsitBecTriagePanel = ({
                             label={`${
                               VERDICT_CHOICES.find((choice) => choice.value === saved.Verdict)
                                 ?.label || saved.Verdict
-                            } — ${saved.Analyst} le ${formatUtc(saved.DecidedUtc)}`}
+                            }, ${saved.Analyst} le ${formatUtc(saved.DecidedUtc)}`}
                           />
                         ) : (
                           <Chip size="small" color="warning" label="sans réponse" />
@@ -220,7 +222,7 @@ export const PsitBecTriagePanel = ({
                           {VERDICT_CHOICES.find(
                             (choice) => choice.value === staleById.get(signal.id).Verdict
                           )?.label || staleById.get(signal.id).Verdict}{' '}
-                          — {staleById.get(signal.id).Analyst || 'N/D'} le{' '}
+                          par {staleById.get(signal.id).Analyst || 'N/D'} le{' '}
                           {formatUtc(staleById.get(signal.id).DecidedUtc)}
                           {staleById.get(signal.id).Justification
                             ? ` : ${staleById.get(signal.id).Justification}`
@@ -275,7 +277,7 @@ export const PsitBecTriagePanel = ({
                 >
                   {saveRequest.isPending
                     ? 'Enregistrement...'
-                    : `Enregistrer ${pending.length || ''} qualification(s)`}
+                    : `Enregistrer ${cardinal(pending.length, 'qualification')}`}
                 </Button>
                 {saveRequest.isSuccess && (
                   <Typography variant="body2" color="success.main">
@@ -305,7 +307,7 @@ export const PsitBecTriagePanel = ({
                 }
               >
                 <Typography variant="subtitle2">
-                  Écarté du verdict ({noise.length}) — conservé pour audit
+                  Écarté du verdict ({noise.length}) : conservé pour audit
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>

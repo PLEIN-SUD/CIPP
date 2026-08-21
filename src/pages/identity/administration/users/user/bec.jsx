@@ -131,12 +131,7 @@ const Page = () => {
     // The !restart guard keeps a refresh from being cancelled: between clicking Refresh Data
     // and the overwrite call resolving, the polling cache still holds the previous run, which
     // would otherwise read as "done" and stop the loading state.
-    if (
-      !restart &&
-      becPollingCall.isSuccess &&
-      becPollingCall.data &&
-      !becPollingCall.data?.Waiting
-    ) {
+    if (!restart && becPollingCall.isSuccess && becPollingCall.data && !becPollingCall.data?.Waiting) {
       setIsLoading(false)
     }
   }, [becPollingCall.dataUpdatedAt, becInitialCall])
@@ -236,7 +231,9 @@ const Page = () => {
         )
       }
       if (analysis?.Bursts?.length > 0) {
-        parts.push(`${analysis.Bursts.length} short burst(s) of high-volume sending were detected`)
+        parts.push(
+          `${analysis.Bursts.length} short burst(s) of high-volume sending were detected`
+        )
       }
       const foreignCount = becPollingCall.data.LocationAnalysis?.ForeignSentMessageCount || 0
       if (foreignCount > 0) {
@@ -736,9 +733,7 @@ const Page = () => {
                     <Box mt={2} sx={{ maxHeight: 300, overflowY: 'auto' }}>
                       <PropertyList>
                         {[...becPollingCall.data.MailboxPermissionChanges]
-                          .sort(
-                            (a, b) => (b?.TargetsSuspect === true) - (a?.TargetsSuspect === true)
-                          )
+                          .sort((a, b) => (b?.TargetsSuspect === true) - (a?.TargetsSuspect === true))
                           .map((permission, index) => (
                             <PropertyListItem
                               key={index}
@@ -802,9 +797,7 @@ const Page = () => {
                               sx={checkItemSx}
                               label={`${burst?.MessageCount} message(s) to ${burst?.RecipientCount} recipient(s) within ${burst?.WindowMinutes} minutes`}
                               value={`Starting ${burst?.WindowStart}${
-                                burst?.TopSubject
-                                  ? ` | Most common subject: ${burst.TopSubject}`
-                                  : ''
+                                burst?.TopSubject ? ` | Most common subject: ${burst.TopSubject}` : ''
                               }`}
                             />
                           ))}

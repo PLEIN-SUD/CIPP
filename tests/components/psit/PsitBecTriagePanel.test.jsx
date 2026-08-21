@@ -5,6 +5,12 @@ import { renderWithProviders } from '../../test-utils'
 import { PsitBecTriagePanel } from '../../../src/components/psit/PsitBecTriagePanel'
 import { ApiGetCall, ApiPostCall } from '../../../src/api/ApiCall'
 
+// Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
+// timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
+// which is upstream: no divergence, and the value travels with the tests that need it.
+vi.setConfig({ testTimeout: 60000 })
+
+
 vi.mock('../../../src/api/ApiCall', () => ({
   ApiGetCall: vi.fn(() => ({
     data: undefined,
@@ -66,7 +72,7 @@ describe('PsitBecTriagePanel', () => {
 
     expect(screen.getByText('À qualifier')).toBeInTheDocument()
     expect(
-      screen.getByText(/1 connexion\(s\) réussie\(s\) depuis 203\.0\.113\.42/)
+      screen.getByText(/1 connexion réussie depuis 203\.0\.113\.42/)
     ).toBeInTheDocument()
     expect(screen.getByText(/derrière un VPN ou un roaming/)).toBeInTheDocument()
     // The spray attempts are present but filed as noise, not as a question.
@@ -139,7 +145,7 @@ describe('PsitBecTriagePanel', () => {
     )
 
     expect(
-      screen.getByText(/Attendu — s\.miro@pleinsudit\.com le 2026-08-20 12:00 UTC/)
+      screen.getByText(/Attendu, s\.miro@pleinsudit\.com le 2026-08-20 12:00 UTC/)
     ).toBeInTheDocument()
   })
 

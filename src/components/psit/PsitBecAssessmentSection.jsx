@@ -23,7 +23,7 @@ const STRINGS = {
     verdictTitle: (label) => `Conclusion : ${label}`,
     establishedTitle: 'Signaux établis par la donnée',
     qualifiedTitle: 'Qualifications enregistrées',
-    openTitle: 'Questions ouvertes — le verdict en dépend',
+    openTitle: 'Questions ouvertes : le verdict en dépend',
     noneQualified:
       "Aucune qualification enregistrée à ce jour. Le rapport n'affiche pas de niveau de risque : le sens des signaux ci-dessus dépend de faits qui n'ont pas encore été confirmés.",
     verdicts: { expected: 'attendu', unexpected: 'inattendu', undetermined: 'indéterminé' },
@@ -41,7 +41,7 @@ const STRINGS = {
     verdictTitle: (label) => `Conclusion: ${label}`,
     establishedTitle: 'Signals settled by the data',
     qualifiedTitle: 'Recorded determinations',
-    openTitle: 'Open questions — the verdict depends on them',
+    openTitle: 'Open questions: the verdict depends on them',
     noneQualified:
       'No determination recorded yet. This report states no risk level: the meaning of the signals above depends on facts that have not been confirmed.',
     verdicts: { expected: 'expected', unexpected: 'unexpected', undetermined: 'undetermined' },

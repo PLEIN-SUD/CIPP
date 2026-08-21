@@ -21,6 +21,7 @@ import { Add, DeleteOutline, ArchiveOutlined } from '@mui/icons-material'
 import ExpandMoreIcon from '@heroicons/react/24/outline/ChevronDownIcon'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { cardinal, lexiconWarnings, phrase } from '../../utils/psit-report-prose'
 import { PsitBecArchivedEvidenceButton } from './PsitBecArchivedEvidenceButton'
 import {
   VERDICT_STATUS,
@@ -43,6 +44,29 @@ import {
 // rather than hand-written. The Autotask ticket is always editable - it is the client-facing
 // reference and belongs on the investigation report too - while the incident-specific fields
 // (article 33.3 exposure, containment, third parties) only appear once a compromise is retained.
+
+// Constrained values. The enumerations are enforced by the API as well: a channel posted straight
+// to the endpoint is how "Pigeon voyageur" reached a client annex.
+const TLP_VALUES = ['TLP:CLEAR', 'TLP:GREEN', 'TLP:AMBER', 'TLP:AMBER+STRICT', 'TLP:RED']
+
+const CHANNEL_LABELS = {
+  courriel: 'Courriel',
+  telephone: 'Téléphone',
+  portail: 'Portail de déclaration',
+  courrier: 'Courrier',
+}
+
+const EFFECT_LABELS = {
+  'mass-send': 'Envoi en masse',
+  'thread-hijack': 'Détournement de fils',
+  both: 'Envoi en masse et détournement de fils',
+  'access-only': 'Accès sans envoi observé',
+  other: 'Autre (à préciser)',
+}
+
+// Indicative only: an unusual ticket is flagged, never refused. Rigidity here would block a save on
+// a numbering scheme that changed.
+const TICKET_PATTERN = /^T\d{8}\.\d{4}$/
 
 const toLocalInput = (utcValue) => {
   if (!utcValue) return ''
@@ -126,6 +150,10 @@ export const PsitBecIncidentPanel = ({
         executiveNote: value('ExecutiveNote'),
         externalActions: list('ExternalActions'),
         thirdPartiesNotified: list('ThirdPartiesNotified'),
+        tlp: value('Tlp', 'TLP:AMBER+STRICT'),
+        effectDescription: value('EffectDescription'),
+        effectDescriptionOther: value('EffectDescriptionOther'),
+        relatedTickets: list('RelatedTickets'),
         deliveredTo: value('DeliveredTo'),
         deliveredUtc: value('DeliveredUtc'),
         deliveryChannel: value('DeliveryChannel'),
@@ -174,7 +202,7 @@ export const PsitBecIncidentPanel = ({
         title="Fiche de dossier"
         subheader={
           stored?.Reference
-            ? `${stored.Reference} — dernière mise à jour par ${stored.UpdatedBy || 'N/D'} le ${formatUtc(
+            ? `${stored.Reference}, dernière mise à jour par ${stored.UpdatedBy || 'N/D'} le ${formatUtc(
                 stored.UpdatedUtc
               )}`
             : "Aucune fiche ouverte : l'enregistrement en créera une avec sa référence"
@@ -217,10 +245,49 @@ export const PsitBecIncidentPanel = ({
                 size="small"
                 fullWidth
                 placeholder="ex. T20260820.0042"
-                helperText="Référence métier, reprise sur les deux rapports."
+                error={
+                  Boolean(value('AutotaskTicket')) && !TICKET_PATTERN.test(value('AutotaskTicket'))
+                }
+                helperText={
+                  value('AutotaskTicket') && !TICKET_PATTERN.test(value('AutotaskTicket'))
+                    ? 'Forme inhabituelle (attendu T20260820.0042). Vérifiez la saisie ; ce contrôle ne bloque pas.'
+                    : 'Référence client, reprise sur les deux rapports et sur le nom du fichier PDF.'
+                }
                 value={value('AutotaskTicket')}
                 onChange={(event) => set('AutotaskTicket', event.target.value)}
               />
+              <TextField
+                label="Tickets liés (optionnel)"
+                size="small"
+                fullWidth
+                placeholder="T20260820.0043, T20260821.0002"
+                helperText="Séparés par des virgules. Affichés sous le ticket principal."
+                value={list('RelatedTickets').join(', ')}
+                onChange={(event) =>
+                  set(
+                    'RelatedTickets',
+                    event.target.value
+                      .split(',')
+                      .map((ticket) => ticket.trim())
+                      .filter(Boolean)
+                  )
+                }
+              />
+              <TextField
+                select
+                label="Marquage de diffusion (TLP)"
+                size="small"
+                fullWidth
+                helperText="Porté par la couverture et par chaque page des deux rapports du dossier."
+                value={value('Tlp', 'TLP:AMBER+STRICT')}
+                onChange={(event) => set('Tlp', event.target.value)}
+              >
+                {TLP_VALUES.map((tlp) => (
+                  <MenuItem key={tlp} value={tlp}>
+                    {tlp}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Stack>
 
             {isCompromised && (
@@ -239,7 +306,7 @@ export const PsitBecIncidentPanel = ({
                     />
                     <TextField
                       type="datetime-local"
-                      label="Confinement (vide si non confinée)"
+                      label="Confinement (vide si aucune action)"
                       size="small"
                       fullWidth
                       InputLabelProps={{ shrink: true }}
@@ -262,11 +329,45 @@ export const PsitBecIncidentPanel = ({
                     </TextField>
                   </Stack>
                   <TextField
-                    label="Note de synthèse (reprise en tête du rapport)"
+                    select
+                    label="Effet observé de l'accès"
+                    size="small"
+                    fullWidth
+                    helperText={
+                      phrase('effect', value('EffectDescription')) ||
+                      "Saisi, jamais déduit : la collecte ne distingue pas un fil détourné d'un envoi en masse, et le résumé l'affirme."
+                    }
+                    value={value('EffectDescription')}
+                    onChange={(event) => set('EffectDescription', event.target.value)}
+                  >
+                    {Object.entries(EFFECT_LABELS).map(([key, label]) => (
+                      <MenuItem key={key} value={key}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  {value('EffectDescription') === 'other' && (
+                    <TextField
+                      label="Préciser (une ligne, reprise telle quelle dans le résumé)"
+                      size="small"
+                      fullWidth
+                      helperText="Enregistré au journal, pour enrichir la liste des valeurs proposées."
+                      value={value('EffectDescriptionOther')}
+                      onChange={(event) => set('EffectDescriptionOther', event.target.value)}
+                    />
+                  )}
+                  <TextField
+                    label="Note de synthèse (complément, après le paragraphe composé)"
                     size="small"
                     multiline
                     minRows={2}
                     fullWidth
+                    error={lexiconWarnings(value('ExecutiveNote')).length > 0}
+                    helperText={
+                      /* Le lint ne voit pas les données saisies ; ce panneau, si. */
+                      lexiconWarnings(value('ExecutiveNote')).join(' ') ||
+                      'Facultative. Le résumé du rapport est composé à partir des champs ci-dessus.'
+                    }
                     value={value('ExecutiveNote')}
                     onChange={(event) => set('ExecutiveNote', event.target.value)}
                   />
@@ -274,7 +375,7 @@ export const PsitBecIncidentPanel = ({
 
                 <Stack spacing={2}>
                   <Typography variant="subtitle2">
-                    Exposition des données — éléments de l'article 33.3 du RGPD
+                    Exposition des données : éléments de l'article 33.3 du RGPD
                   </Typography>
                   <Autocomplete
                     multiple
@@ -307,9 +408,12 @@ export const PsitBecIncidentPanel = ({
                       label="Nombre approximatif de personnes"
                       size="small"
                       fullWidth
-                      helperText={`Repère : ${exposure.correspondentFloor.distinct} correspondant(s) externe(s) distinct(s) sur la fenêtre${
+                      helperText={`Repère : ${cardinal(
+                        exposure.correspondentFloor.distinct,
+                        'correspondant'
+                      )} distinct sur la fenêtre${
                         exposure.correspondentFloor.truncated ? ', suivi partiel' : ''
-                      } — plancher observé, pas une estimation.`}
+                      }, plancher observé et non une estimation.`}
                       value={value('AffectedPersonsEstimate')}
                       onChange={(event) => set('AffectedPersonsEstimate', event.target.value)}
                     />
@@ -363,8 +467,8 @@ export const PsitBecIncidentPanel = ({
                         variant={action.done ? 'filled' : 'outlined'}
                         label={
                           action.done
-                            ? `${action.label} — ${action.firstUtc || 'date inconnue'}`
-                            : `${action.label} — non attestée`
+                            ? `${action.label} : ${action.firstUtc || 'date inconnue'}`
+                            : `${action.label} : non attestée`
                         }
                       />
                     ))}
@@ -453,12 +557,19 @@ export const PsitBecIncidentPanel = ({
                       onChange={(event) => set('DeliveredUtc', toUtcFromInput(event.target.value))}
                     />
                     <TextField
+                      select
                       label="Canal"
                       size="small"
-                      placeholder="courriel, remise en main propre"
+                      sx={{ minWidth: 200 }}
                       value={value('DeliveryChannel')}
                       onChange={(event) => set('DeliveryChannel', event.target.value)}
-                    />
+                    >
+                      {Object.entries(CHANNEL_LABELS).map(([key, label]) => (
+                        <MenuItem key={key} value={key}>
+                          {label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   </Stack>
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                     <TextField
@@ -513,14 +624,21 @@ export const PsitBecIncidentPanel = ({
                         }
                       />
                       <TextField
+                        select
                         label="Canal"
                         size="small"
-                        placeholder="téléphone, courriel"
+                        sx={{ minWidth: 180 }}
                         value={row?.Channel || ''}
                         onChange={(event) =>
                           patchRow('ThirdPartiesNotified', index, { Channel: event.target.value })
                         }
-                      />
+                      >
+                        {Object.entries(CHANNEL_LABELS).map(([key, label]) => (
+                          <MenuItem key={key} value={key}>
+                            {label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                       <IconButton
                         aria-label="Supprimer le tiers"
                         onClick={() => removeRow('ThirdPartiesNotified', index)}
@@ -549,11 +667,11 @@ export const PsitBecIncidentPanel = ({
                   <Alert key={previous.Reference} severity="warning" variant="outlined">
                     <AlertTitle sx={{ mb: 0 }}>
                       {previous.Reference}
-                      {previous.AutotaskTicket ? ` — ticket ${previous.AutotaskTicket}` : ''}
+                      {previous.AutotaskTicket ? `, ticket ${previous.AutotaskTicket}` : ''}
                     </AlertTitle>
                     <Typography variant="body2">
                       Détection{' '}
-                      {previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'} —
+                      {previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'},
                       clos le {previous.ClosedUtc ? formatUtc(previous.ClosedUtc) : 'N/D'} par{' '}
                       {previous.ClosedBy || 'N/D'}
                       {previous.ClosureNote ? ` : ${previous.ClosureNote}` : ''}
@@ -581,10 +699,10 @@ export const PsitBecIncidentPanel = ({
                     <Alert severity="warning">
                       <AlertTitle>Clore {stored.Reference} ?</AlertTitle>
                       Le dossier et ses qualifications sont archivés et restent consultables. La
-                      fiche est ensuite vide : la prochaine sauvegarde ouvre un dossier neuf, avec
-                      une nouvelle référence. Rien n'est hérité — c'est le but, pour qu'une seconde
-                      compromission ne reprenne ni la date de détection, ni les tiers, ni l'accusé
-                      de réception du dossier précédent.
+                      fiche est ensuite vide, et la prochaine sauvegarde ouvre un dossier neuf avec
+                      une nouvelle référence. Rien n'est hérité, pour qu'une seconde compromission
+                      ne reprenne ni la date de détection, ni les tiers, ni l'accusé de réception du
+                      dossier précédent.
                     </Alert>
                     <TextField
                       label="Note de clôture (facultative)"

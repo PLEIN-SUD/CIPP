@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test-utils'
 import { PsitBecCollectionStatus } from '../../../src/components/psit/PsitBecCollectionStatus'
 
+// Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
+// timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
+// which is upstream: no divergence, and the value travels with the tests that need it.
+vi.setConfig({ testTimeout: 60000 })
+
+
 describe('PsitBecCollectionStatus', () => {
   it('stays out of the way when the collection is usable', () => {
     const { container } = renderWithProviders(

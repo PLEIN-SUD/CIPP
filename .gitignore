@@ -42,3 +42,9 @@ __*
 AzuriteConfig
 # Claude/Cursor worktrees and local AI tooling
 .claude/
+
+# PSIT: generated demonstration renders (node scripts run by tests/render)
+psit/render-samples/
+psit/parity/
+# Contournement local de la casse Tests/ vs tests/ heritee d upstream : machine-dependant.
+vitest.local-casefix.config.mjs

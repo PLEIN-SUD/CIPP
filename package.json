@@ -20,6 +20,8 @@
     "start": "next start",
     "export": "next export",
     "lint": "npx eslint .",
+    "psit-lint": "node scripts/psit-report-lint.mjs",
+    "psit-lint-baseline": "node scripts/psit-report-lint.mjs --init-baseline",
     "lint-fix": "npx eslint . --fix",
     "prettier": "prettier --write '**/*.{js,jsx,json}'",
     "start-swa": "swa start --swa-config-location .vscode http://127.0.0.1:3000 --api-location http://127.0.0.1:7071 --verbose=silly",

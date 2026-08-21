@@ -170,14 +170,14 @@ const remediation = {
       Action: 'PasswordReset',
       Count: 1,
       FirstUtc: '2026-08-20T13:00:00Z',
-      Operator: 's.miro@pleinsudit.com',
+      Operator: 'analyste@example.test',
       HasFailure: false,
     },
     {
       Action: 'SessionsRevoked',
       Count: 1,
       FirstUtc: '2026-08-20T13:01:00Z',
-      Operator: 's.miro@pleinsudit.com',
+      Operator: 'analyste@example.test',
       HasFailure: true,
     },
   ],
@@ -189,16 +189,16 @@ const triageCases = {
     {
       SignalId: 'signin-ip:203.0.113.42',
       Verdict: 'unexpected',
-      Analyst: 's.miro@pleinsudit.com',
+      Analyst: 'analyste@example.test',
       DecidedUtc: '2026-08-20T13:02:00Z',
       Justification: 'titulaire du compte en France',
     },
   ],
   'tout attendu': [
-    { SignalId: 'signin-ip:203.0.113.42', Verdict: 'expected', Analyst: 's.miro@pleinsudit.com', DecidedUtc: '2026-08-20T13:02:00Z' },
-    { SignalId: 'rule-filing:classement', Verdict: 'expected', Analyst: 's.miro@pleinsudit.com', DecidedUtc: '2026-08-20T13:03:00Z' },
-    { SignalId: 'mail-pattern', Verdict: 'expected', Analyst: 's.miro@pleinsudit.com', DecidedUtc: '2026-08-20T13:04:00Z' },
-    { SignalId: 'mfa-recent', Verdict: 'expected', Analyst: 's.miro@pleinsudit.com', DecidedUtc: '2026-08-20T13:05:00Z' },
+    { SignalId: 'signin-ip:203.0.113.42', Verdict: 'expected', Analyst: 'analyste@example.test', DecidedUtc: '2026-08-20T13:02:00Z' },
+    { SignalId: 'rule-filing:classement', Verdict: 'expected', Analyst: 'analyste@example.test', DecidedUtc: '2026-08-20T13:03:00Z' },
+    { SignalId: 'mail-pattern', Verdict: 'expected', Analyst: 'analyste@example.test', DecidedUtc: '2026-08-20T13:04:00Z' },
+    { SignalId: 'mfa-recent', Verdict: 'expected', Analyst: 'analyste@example.test', DecidedUtc: '2026-08-20T13:05:00Z' },
   ],
 }
 

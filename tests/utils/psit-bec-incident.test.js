@@ -196,7 +196,7 @@ describe('buildExposure', () => {
     const exposure = buildExposure(
       becData,
       signals,
-      [{ SignalId: target.id, Verdict: 'unexpected', Analyst: 's.miro' }],
+      [{ SignalId: target.id, Verdict: 'unexpected', Analyst: 'analyste' }],
       userData
     )
 
@@ -237,14 +237,14 @@ describe('buildContainment', () => {
           Action: 'PasswordReset',
           Count: 1,
           FirstUtc: '2026-08-20T13:00:00Z',
-          Operator: 's.miro@pleinsudit.com',
+          Operator: 'analyste@example.test',
           HasFailure: false,
         },
         {
           Action: 'SessionsRevoked',
           Count: 1,
           FirstUtc: '2026-08-20T13:01:00Z',
-          Operator: 's.miro@pleinsudit.com',
+          Operator: 'analyste@example.test',
           HasFailure: true,
         },
       ],
@@ -252,7 +252,7 @@ describe('buildContainment', () => {
 
     const password = containment.find((action) => action.key === 'PasswordReset')
     expect(password.done).toBe(true)
-    expect(password.operator).toBe('s.miro@pleinsudit.com')
+    expect(password.operator).toBe('analyste@example.test')
 
     const sessions = containment.find((action) => action.key === 'SessionsRevoked')
     expect(sessions.hasFailure).toBe(true)

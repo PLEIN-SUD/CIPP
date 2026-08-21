@@ -94,7 +94,7 @@ const incident = {
   AffectedPersonsEstimate: 'environ 1 200',
   AffectedPersonsBasis: 'base clients de la boite',
   LikelyConsequences: 'Detournement de paiement',
-  UpdatedBy: 's.miro@pleinsudit.com',
+  UpdatedBy: 'analyste@example.test',
   UpdatedUtc: '2026-08-20T14:00:00Z',
   CreatedUtc: '2026-08-20T09:30:00Z',
 }
@@ -103,7 +103,7 @@ const triage = [
   {
     SignalId: 'signin-ip:203.0.113.42',
     Verdict: 'unexpected',
-    Analyst: 's.miro@pleinsudit.com',
+    Analyst: 'analyste@example.test',
     DecidedUtc: '2026-08-20T13:02:00Z',
     Justification: 'titulaire du compte en France, confirme par telephone',
   },
@@ -226,12 +226,12 @@ describe('rendered PDF, incident report', () => {
     ['qualification en cours', [], 'incident-verdict-a-qualifier'],
     [
       'faux positif retenu',
-      [{ SignalId: 'signin-ip:203.0.113.42', Verdict: 'expected', Analyst: 's.miro' }],
+      [{ SignalId: 'signin-ip:203.0.113.42', Verdict: 'expected', Analyst: 'analyste' }],
       'incident-verdict-faux-positif',
     ],
     [
       'indeterminee',
-      [{ SignalId: 'signin-ip:203.0.113.42', Verdict: 'undetermined', Analyst: 's.miro' }],
+      [{ SignalId: 'signin-ip:203.0.113.42', Verdict: 'undetermined', Analyst: 'analyste' }],
       'incident-verdict-indetermine',
     ],
   ])(

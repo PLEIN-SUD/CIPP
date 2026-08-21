@@ -35,7 +35,7 @@ const baseBecData = {
   ExtractedAt: '2026-08-20T10:32:00Z',
   NewRules: [
     {
-      Name: 'classement@classement.net',
+      Name: 'classement@classement.test',
       MoveToFolder: 'DOSSIERS',
       Description: "move the message to folder 'DOSSIERS'",
     },
@@ -205,7 +205,7 @@ describe('buildVerdict', () => {
   it('clears the case when every question is answered as expected', () => {
     const triage = signals
       .filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
-      .map((signal) => ({ SignalId: signal.id, Verdict: 'expected', Analyst: 's.miro' }))
+      .map((signal) => ({ SignalId: signal.id, Verdict: 'expected', Analyst: 'analyste' }))
 
     const verdict = buildVerdict(signals, triage)
     expect(verdict.status).toBe(VERDICT_STATUS.CLEAN)
@@ -219,7 +219,7 @@ describe('buildVerdict', () => {
       .map((signal) => ({
         SignalId: signal.id,
         Verdict: signal.id === target.id ? 'unexpected' : 'expected',
-        Analyst: 's.miro',
+        Analyst: 'analyste',
       }))
 
     const verdict = buildVerdict(signals, triage)
@@ -230,7 +230,7 @@ describe('buildVerdict', () => {
   it('stays open when a question could not be answered', () => {
     const triage = signals
       .filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
-      .map((signal) => ({ SignalId: signal.id, Verdict: 'undetermined', Analyst: 's.miro' }))
+      .map((signal) => ({ SignalId: signal.id, Verdict: 'undetermined', Analyst: 'analyste' }))
 
     const verdict = buildVerdict(signals, triage)
     expect(verdict.status).toBe(VERDICT_STATUS.UNDETERMINED)
@@ -399,7 +399,7 @@ describe('firstUnauthorisedAccessUtc', () => {
     const signals = buildSignals(baseBecData, userData)
     const target = signals.find((signal) => signal.id.startsWith('signin-ip:'))
     const stamp = firstUnauthorisedAccessUtc(baseBecData, signals, [
-      { SignalId: target.id, Verdict: 'unexpected', Analyst: 's.miro' },
+      { SignalId: target.id, Verdict: 'unexpected', Analyst: 'analyste' },
     ])
     expect(stamp).toBe('2026-08-18T20:42:00Z')
   })

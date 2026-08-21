@@ -120,7 +120,7 @@ describe('PsitBecDecisionPanel', () => {
           {
             SignalId: 'rule-filing:classement',
             Verdict: 'undetermined',
-            Analyst: 's.miro',
+            Analyst: 'analyste',
             DecidedUtc: new Date().toISOString(),
           },
         ]}
@@ -162,7 +162,7 @@ describe('PsitBecDecisionPanel', () => {
           {
             SignalId: 'rule-filing:classement',
             Verdict: 'expected',
-            Analyst: 's.miro',
+            Analyst: 'analyste',
             DecidedUtc: new Date().toISOString(),
           },
         ]}

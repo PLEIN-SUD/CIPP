@@ -120,7 +120,7 @@ describe('PsitBecIncidentPanel', () => {
         Incident: {
           Reference: 'PSIT-BEC-20260820-AB12',
           AutotaskTicket: 'T20260820.0042',
-          UpdatedBy: 's.miro@pleinsudit.com',
+          UpdatedBy: 'analyste@example.test',
           UpdatedUtc: '2026-08-20T14:00:00Z',
         },
       },
@@ -132,7 +132,7 @@ describe('PsitBecIncidentPanel', () => {
     render()
 
     expect(
-      screen.getByText(/PSIT-BEC-20260820-AB12, dernière mise à jour par s\.miro@pleinsudit\.com/)
+      screen.getByText(/PSIT-BEC-20260820-AB12, dernière mise à jour par analyste@example\.test/)
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Ticket Autotask')).toHaveValue('T20260820.0042')
   })

@@ -380,6 +380,71 @@ function initBaselines() {
   }
 }
 
+// Fixtures and scripts under the PSIT prefix. This repository is a PUBLIC fork: a real address in
+// a test fixture is published, indexed and searchable, and it stays reachable in the history of the
+// commit that added it. Nothing here is a stand-in for judgement, but a promise is not a mechanism.
+const PSIT_FIXTURE_GLOBS = ['tests/', 'scripts/psit-']
+
+// Domains a fixture may legitimately use: the reserved TLDs of RFC 2606, plus the two Microsoft
+// documentation domains upstream's own fixtures are full of.
+const FIXTURE_DOMAINS = /\.(test|example|invalid|localhost)$|^(contoso|fabrikam)\.(com|test|onmicrosoft\.com)$|^example\.(com|net|org)$/
+
+// Literal strings that must never appear in a fixture, whatever the shape around them.
+const BANNED_IN_FIXTURES = [
+  { pattern: /pleinsudit/i, why: "the fork owner's own domain: use a reserved domain" },
+  { pattern: /\bs[.\\]*\s*miro\b/i, why: 'a real person: use a role name' },
+]
+
+/**
+ * Personal and production data in PSIT fixtures.
+ *
+ * Scans the raw text rather than the AST: an address can sit in a regular expression, a comment or
+ * a template literal, and all three are published just the same.
+ */
+// The file that tests the ban has to contain what is banned, exactly as the prose module holds the
+// banned lexicon it enforces. Same exemption, same reason, stated once.
+const FIXTURE_EXCLUDED = ['tests/utils/psit-report-lint-guard.test.js']
+
+/** Tracked PSIT fixtures and scripts, from git rather than a glob walk. */
+const psitFixtureFiles = () =>
+  execFileSync('git', ['ls-files', '-z', ...PSIT_FIXTURE_GLOBS], { encoding: 'utf8' })
+    .split('\0')
+    .filter((file) => file && /psit/i.test(file) && !FIXTURE_EXCLUDED.includes(file))
+
+const checkFixtures = (files) => {
+  const problems = []
+  for (const file of files) {
+    let source
+    try {
+      source = readFileSync(file, 'utf8')
+    } catch {
+      continue
+    }
+    source.split(/\r?\n/).forEach((line, index) => {
+      for (const { pattern, why } of BANNED_IN_FIXTURES) {
+        if (pattern.test(line)) {
+          problems.push({ file, line: index + 1, rule: 'no-personal-data', why, text: line.trim() })
+        }
+      }
+      for (const address of line.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) || []) {
+        const domain = address.slice(address.indexOf('@') + 1).toLowerCase()
+        if (!FIXTURE_DOMAINS.test(domain)) {
+          problems.push({
+            file,
+            line: index + 1,
+            rule: 'no-real-domain',
+            why: `${domain} is not a reserved fixture domain (RFC 2606, or contoso/fabrikam)`,
+            text: line.trim(),
+          })
+        }
+      }
+    })
+  }
+  return problems
+}
+
+export const PSIT_FIXTURE_CHECK = checkFixtures
+
 export const PSIT_UPSTREAM_FILES = UPSTREAM_FILES
 
 function checkDivergence() {
@@ -509,14 +574,20 @@ function main() {
     process.exit(process.exitCode ?? 0)
   }
 
-  const problems = [...checkProse(PROSE_FILES), ...(skipDivergence ? [] : checkDivergence())]
+  const problems = [
+    ...checkProse(PROSE_FILES),
+    ...checkFixtures(psitFixtureFiles()),
+    ...(skipDivergence ? [] : checkDivergence()),
+  ]
   report(problems)
 }
 
 function report(problems) {
 
   if (problems.length === 0) {
-    console.log(`psit-report-lint: ${PROSE_FILES.length} modules, prose and divergence clean.`)
+    console.log(
+      `psit-report-lint: ${PROSE_FILES.length} modules, prose, fixtures and divergence clean.`
+    )
     process.exit(0)
   }
 

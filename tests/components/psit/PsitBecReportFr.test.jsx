@@ -222,7 +222,7 @@ describe('PsitBecReportFrDocument structure', () => {
         {
           SignalId: 'signin-ip:203.0.113.42',
           Verdict: 'unexpected',
-          Analyst: 's.miro@pleinsudit.com',
+          Analyst: 'analyste@example.test',
           DecidedUtc: '2026-08-20T13:02:00Z',
           Justification: "l'utilisateur n'est pas en Italie",
         },
@@ -236,7 +236,7 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).not.toContain('Qualifications enregistrées')
     // The analyst is not named in the body: the determination is carried by the firm, and the
     // nominative trail stays in the raw export.
-    expect(text).not.toContain('s.miro@pleinsudit.com')
+    expect(text).not.toContain('analyste@example.test')
     expect(text).toContain("portée par l'analyste PLEIN SUD IT")
   })
 
@@ -255,7 +255,7 @@ describe('PsitBecReportFrDocument structure', () => {
         {
           SignalId: 'signin-ip:203.0.113.42',
           Verdict: 'expected',
-          Analyst: 's.miro@pleinsudit.com',
+          Analyst: 'analyste@example.test',
           DecidedUtc: '2026-01-05T09:00:00Z',
           Justification: 'déplacement confirmé',
         },
@@ -279,7 +279,7 @@ describe('PsitBecReportFrDocument structure', () => {
             AutotaskTicket: 'T20260820.0042',
             DetectedUtc: '2026-08-20T09:00:00Z',
             ClosedUtc: '2026-08-25T16:00:00Z',
-            ClosedBy: 's.miro@pleinsudit.com',
+            ClosedBy: 'analyste@example.test',
           },
         ],
       },
@@ -322,7 +322,7 @@ describe('PsitBecReportFrDocument structure', () => {
         {
           SignalId: 'signin-ip:203.0.113.42',
           Verdict: 'unexpected',
-          Analyst: 's.miro@pleinsudit.com',
+          Analyst: 'analyste@example.test',
           DecidedUtc: '2026-08-20T13:02:00Z',
           Justification: "l'utilisateur n'est pas en Italie",
         },

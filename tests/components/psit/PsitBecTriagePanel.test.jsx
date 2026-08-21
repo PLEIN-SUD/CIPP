@@ -129,7 +129,7 @@ describe('PsitBecTriagePanel', () => {
           {
             SignalId: 'signin-ip:203.0.113.42',
             Verdict: 'expected',
-            Analyst: 's.miro@pleinsudit.com',
+            Analyst: 'analyste@example.test',
             DecidedUtc: '2026-08-20T12:00:00Z',
             Justification: 'Déplacement client confirmé',
           },
@@ -145,7 +145,7 @@ describe('PsitBecTriagePanel', () => {
     )
 
     expect(
-      screen.getByText(/Attendu, s\.miro@pleinsudit\.com le 2026-08-20 12:00 UTC/)
+      screen.getByText(/Attendu, analyste@example\.test le 2026-08-20 12:00 UTC/)
     ).toBeInTheDocument()
   })
 

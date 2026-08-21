@@ -1,5 +1,6 @@
 // @vitest-environment node
 import {
+  PSIT_FIXTURE_CHECK,
   PSIT_UPSTREAM_FILES,
   archiveBaselines,
   baselineStamp,
@@ -9,6 +10,57 @@ import {
 // The guard on --init-baseline. What it prevents: taking a baseline from a working tree that still
 // holds uncommitted work, which would record our own PSIT blocks as "the upstream version" and turn
 // the divergence check green on a state nobody reviewed.
+
+// This repository is a public fork. A real address in a fixture is published, indexed, and stays
+// reachable in the history of the commit that added it, so the ban is mechanical rather than a
+// convention: it went wrong once, on the fork owner's own address, across ten files.
+describe('PSIT_FIXTURE_CHECK', () => {
+  const { writeFileSync, mkdtempSync } = require('node:fs')
+  const { join } = require('node:path')
+  const { tmpdir } = require('node:os')
+
+  const withFixture = (content) => {
+    const dir = mkdtempSync(join(tmpdir(), 'psit-fixture-'))
+    const file = join(dir, 'psit-sample.test.js')
+    writeFileSync(file, content, 'utf8')
+    return file
+  }
+
+  it("refuses the fork owner's own domain, wherever it sits", () => {
+    const problems = PSIT_FIXTURE_CHECK([
+      withFixture("const a = 'someone@pleinsudit.com'" + String.fromCharCode(10)),
+    ])
+    expect(problems.map((problem) => problem.rule)).toContain('no-personal-data')
+  })
+
+  it('refuses it inside a regular expression too, where a plain search misses it', () => {
+    // How two of them survived the first pass: escaped dots in a screen.getByText(/.../) matcher.
+    const problems = PSIT_FIXTURE_CHECK([
+      withFixture(`expect(x).toMatch(/s\\.miro@pleinsudit\\.com/)`),
+    ])
+    expect(problems.length).toBeGreaterThan(0)
+  })
+
+  it('refuses an address on a real TLD, even an invented one', () => {
+    const problems = PSIT_FIXTURE_CHECK([withFixture("Name: 'classement@classement.net'")])
+    expect(problems.map((problem) => problem.rule)).toContain('no-real-domain')
+  })
+
+  it('accepts the reserved domains and the documentation ones', () => {
+    const problems = PSIT_FIXTURE_CHECK([
+      withFixture(
+        [
+          "const a = 'p.martin@contoso.test'",
+          "const b = 'analyste@example.test'",
+          "const c = 'buyer@client.test'",
+          "const d = 'attacker@evil.test'",
+          "const e = 'adele@contoso.com'",
+        ].join(String.fromCharCode(10))
+      ),
+    ])
+    expect(problems).toEqual([])
+  })
+})
 
 describe('uncommittedUpstreamFiles', () => {
   const files = ['src/components/CippPdf/ReportDocument.jsx', 'src/layouts/top-nav.js']

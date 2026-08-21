@@ -106,7 +106,7 @@ const incident = {
   AffectedPersonsEstimate: 'environ 1 200',
   AffectedPersonsBasis: 'base candidats de la boîte',
   LikelyConsequences: 'Usurpation d’identité et détournement de paiement',
-  UpdatedBy: 's.miro@pleinsudit.com',
+  UpdatedBy: 'analyste@example.test',
   UpdatedUtc: '2026-08-20T14:00:00Z',
 }
 
@@ -116,7 +116,7 @@ const remediation = {
       Action: 'PasswordReset',
       Count: 1,
       FirstUtc: '2026-08-20T13:00:00Z',
-      Operator: 's.miro@pleinsudit.com',
+      Operator: 'analyste@example.test',
       HasFailure: false,
     },
   ],
@@ -286,7 +286,7 @@ describe('PsitBecIncidentReportDocument', () => {
     }
     const { container } = render({
       becData: withOldMfa,
-      triage: [{ SignalId: 'signin-ip:77.83.112.47', Verdict: 'unexpected', Analyst: 's.miro' }],
+      triage: [{ SignalId: 'signin-ip:77.83.112.47', Verdict: 'unexpected', Analyst: 'analyste' }],
     })
 
     expect(container.textContent).toContain(
@@ -427,7 +427,7 @@ describe('PsitBecIncidentReportDocument', () => {
         EffectDescription: 'mass-send',
         ExecutiveNote: 'Compte utilisé pour relancer des fournisseurs.',
       },
-      triage: [{ SignalId: 'rule-exfil:copie', Verdict: 'unexpected', Analyst: 's.miro' }],
+      triage: [{ SignalId: 'rule-exfil:copie', Verdict: 'unexpected', Analyst: 'analyste' }],
     })
     const text = container.textContent
 

@@ -156,6 +156,35 @@ Les trois premières varient avec les données : elles gardent un titre unique. 
 déborde même sur un dossier ordinaire, ce qui est acceptable — c'est la section la plus dense du
 rapport et son découpage manuel figerait une coupure qui n'a pas de sens éditorial.
 
+## Jeux d'essai : aucune donnée personnelle, jamais
+
+**Ce dépôt est un fork public.** Une adresse réelle dans une fixture est publiée, indexée par
+la recherche de code, et reste accessible dans l'historique du commit qui l'a ajoutée. La supprimer
+ensuite ne la retire pas du passé.
+
+C'est arrivé : l'adresse du propriétaire du fork servait d'opérateur et d'analyste dans dix
+fichiers de fixtures des deux dépôts, 73 occurrences. Repérée par lui, pas par un contrôle.
+
+Le contrôle existe maintenant, dans `psit-report-lint` :
+
+- `no-personal-data` — le domaine du fork et tout nom de personne réelle sont bannis des
+  fixtures PSIT, **y compris dans une expression régulière ou un commentaire** : deux occurrences
+  avaient survécu au premier passage parce que les points étaient échappés ;
+- `no-real-domain` — une adresse de fixture doit être sur un domaine réservé : `.test`,
+  `.example`, `.invalid`, `.localhost`, `example.com/net/org`, ou les domaines de documentation
+  Microsoft `contoso` et `fabrikam` dont les fixtures upstream sont pleines. Il a déjà attrapé un
+  nom de règle inventé qui tombait sur un TLD réel.
+
+Pour un opérateur ou un analyste, écrire un **rôle** et non une personne :
+`analyste@example.test`. Le nom de l'entreprise dans le rapport lui-même
+(« Entité émettrice : PLEIN SUD IT ») est une mention de marque du produit, pas une donnée
+personnelle : elle reste.
+
+Ce que le contrôle **ne** couvre pas : les métadonnées d'auteur des commits, qui portent
+nécessairement une adresse et sont la pratique normale de git ; et le contenu déjà poussé. Retirer
+une donnée de l'historique d'un dépôt public demande une réécriture et un force-push, avec les
+conséquences que ça implique pour quiconque a cloné : c'est une décision, pas une correction.
+
 ## Ajouter un test : forcer la casse du chemin
 
 Le dépôt contient **deux répertoires qui ne diffèrent que par la casse**, hérités d'upstream :

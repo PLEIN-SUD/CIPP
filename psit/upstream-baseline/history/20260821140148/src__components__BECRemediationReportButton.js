@@ -12,8 +12,7 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { PictureAsPdf, Download, Close } from '@mui/icons-material'
-import { PDFDownloadLink } from '@react-pdf/renderer'
-import { CippPdfPreview } from './CippPdf/CippPdfPreview'
+import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import { useReportVariables } from './CippPdf/useReportVariables'
 import { useBrandingSettings } from './CippPdf/useBrandingSettings'
 import {
@@ -1269,12 +1268,7 @@ export const BECRemediationReportButton = ({ userData, becData, tenantName }) =>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
           {hasData && (
-            <CippPdfPreview
-              width="100%"
-              height="100%"
-              title={`BEC Remediation Report - ${tenantName}`}
-              fileName={`BEC_Remediation_Report_${tenantName}.pdf`}
-            >
+            <PDFViewer width="100%" height="100%">
               <BECRemediationReportDocument
                 userData={userData}
                 becData={becData}
@@ -1282,7 +1276,7 @@ export const BECRemediationReportButton = ({ userData, becData, tenantName }) =>
                 tenantName={tenantName}
                 variables={variables}
               />
-            </CippPdfPreview>
+            </PDFViewer>
           )}
         </DialogContent>
         <DialogActions>

@@ -19,6 +19,11 @@ import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
+import {
+  breachSentence,
+  breachSuggestsPasswordReset,
+  readBreachExposure,
+} from '../../utils/psit-bec-breach'
 import { psitAsArray } from '../../utils/psit-as-array'
 import {
   agree,
@@ -204,6 +209,11 @@ export const PsitBecIncidentReportDocument = ({
         )} parmi les destinataires des envois signalés, à vérifier en priorité.`
       : "Aucun tiers destinataire d'un envoi signalé n'a été relevé."
   // Rows for the chronology tables. Built here so the page holds layout only.
+  // The breach snapshot, read once. Nothing is looked up here: the check ran at collection and
+  // this reads what it wrote, so two generations of the same dossier say the same thing.
+  const breachExposure = readBreachExposure(becData)
+  const breachText = breachSentence(breachExposure, userData?.userPrincipalName)
+
   // Which source addresses the strip paints as unexpected. Same derivation the rest of the report
   // uses - a retained sign-in signal, established by the data or qualified by the analyst - so the
   // colour on the strip and the verdict in "Constats et base probante" cannot disagree.
@@ -823,8 +833,27 @@ export const PsitBecIncidentReportDocument = ({
           </BulletList>
         </Section>
 
+        {/* Context, before the hardening list it bears on. Always rendered once the feature is
+            live: the fourth state replaces the silence, because a missing paragraph reads as "we
+            found nothing" and that is not what an unavailable service means. Aggregate only - the
+            breaches themselves are named in the investigation report, not here. */}
+        <Section title="Exposition publique de l'identifiant">
+          <InfoBox title="Compromissions de données publiques" wrap={false}>
+            {breachText}
+          </InfoBox>
+        </Section>
+
         <Section title="Réduction du risque de récidive">
           <BulletList>
+            {/* Only when an exposure was actually found: recommending a reset on the strength of a
+                check that never ran would dress a failure up as a finding. */}
+            {breachSuggestsPasswordReset(breachExposure) ? (
+              <Bullet marker="·" label="Réinitialisation des mots de passe réutilisés :">
+                {' '}
+                l'adresse figure dans des compromissions publiques, donc tout mot de passe partagé
+                entre ce compte et un service tiers doit être changé, pas seulement celui du compte.
+              </Bullet>
+            ) : null}
             <Bullet label="Authentification résistante à l'hameçonnage :">
               {' '}
               clés de sécurité ou Windows Hello Entreprise pour les comptes exposés, à défaut MFA

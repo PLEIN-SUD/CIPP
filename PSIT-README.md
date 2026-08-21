@@ -251,6 +251,83 @@ n'est pas modifié par elle. La parité de valeurs le confirme (`scripts/psit-va
 quatrième état de qualification pour un signal établi mais légitime, avec la trace de qui l'a
 déclaré légitime et sur quelle base ?
 
+## Exposition publique de l'identifiant
+
+Le dossier porte un bloc `BreachExposure` : les compromissions de données publiques référencées
+pour l'UPN et ses alias SMTP, **prises à la collecte** et rendues depuis ce snapshot. Deux
+générations du même dossier produisent le même rapport ; une recherche au rendu ferait dépendre
+le document du jour où on l'imprime et de la disponibilité d'un tiers.
+
+### Deux endpoints, un seul utilisable ici
+
+| Chemin | Appel réel | Ce qu'il rend |
+|---|---|---|
+| **par compte** (celui-ci) | `haveibeenpwned.com/api/v3/breachedaccount/{compte}?truncateResponse=false` | métadonnées de brèche, **aucun mot de passe** |
+| par domaine (jamais appelé) | proxy CyberDrain `geoipdb.azurewebsites.net/api/Breach?func=domain` | `email`, **fragment de mot de passe**, `sources` |
+
+Le champ `password` que la page Breach lookup affiche sous « Partial Password Available » vient du
+**second** chemin. Le périmètre interdit le domaine entier de toute façon, donc rien de sensible
+n'arrive ; la normalisation est néanmoins une **liste blanche de quatre champs**
+(`Name`, `BreachDate`, `DataClasses`, `Password`) et non une liste noire, pour qu'un changement
+d'API ne puisse pas faire entrer autre chose. `Password` est **dérivé** des catégories de données,
+jamais copié d'une valeur reçue.
+
+### Quatre états, et pourquoi quatre
+
+« Non référencé » et « on n'a pas pu vérifier » sont deux faits différents. Le second imprimé
+comme le premier est une **fausse affirmation** dans un document que le client peut remettre à un
+assureur. Et un dossier collecté avant cette fonctionnalité n'a pas de bloc du tout, ce qui est un
+troisième cas encore : il ne doit pas se lire comme un résultat propre.
+
+L'encart est **toujours rendu** une fois la fonctionnalité livrée. Un bloc qui disparaît quand le
+service est en panne se lit comme « rien à signaler » pour tout le monde sauf celui qui a écrit
+le code.
+
+Les trois branches d'échec de `Get-HIBPRequest` sont distinguées, et la deuxième est un piège :
+
+| Situation | Retour du service | Traité comme |
+|---|---|---|
+| 404 | `@()` | état 3, aucune exposition référencée |
+| 429 | **un objet**, `@{ Wait; 'rate-limit' }` | état 4, quota |
+| autre | `throw` | état 4, non configuré (401) ou indisponible |
+
+Le 429 renvoie un **objet et non un tableau** : `@($Raw)` en fait un tableau d'un élément qui
+ressemble exactement à une brèche. Et un `hashtable` n'expose pas ses clés dans
+`PSObject.Properties` — lire les propriétés seules laissait passer un quota atteint comme une
+absence d'exposition. Les deux formes sont testées.
+
+### Ce que chaque document dit
+
+- **Rapport d'incident (client)** : agrégé seulement — nombre, plage d'années, catégories de
+  données. **Aucun nom de brèche.** Savoir quels services une personne a utilisés ne relève pas du
+  responsable de traitement. La recommandation « réinitialisation des mots de passe réutilisés »
+  n'apparaît que dans les états 1 et 2 : la produire sur la foi d'une vérification qui n'a pas eu
+  lieu habillerait une panne en constat.
+- **Rapport d'investigation (technique)** : le détail par brèche, seul endroit où elles sont
+  nommées, avec les adresses effectivement interrogées — un rapport qui ne peut pas dire ce qu'il a
+  examiné affirme une couverture que personne ne peut reconstituer.
+
+### Les logos : une image invalide **bloque** le rendu
+
+`@react-pdf/renderer` **ne lève pas** sur un PNG malformé, il **se bloque**. Deux rendus sont
+restés à leur délai de 120 secondes sans erreur, jusqu'à ce que zlib laisse remonter un
+`Z_DATA_ERROR` depuis une promesse jamais résolue. Dans le navigateur, c'est un rapport qui ne
+s'affiche jamais.
+
+D'où la validation **à la collecte**, où un logo refusé ne coûte rien : signature PNG en tête,
+chunk `IEND` en queue. Ça ne prouve pas que chaque pixel est intact, mais ça attrape la troncature,
+qui est le mode de défaillance réaliste et celui qui bloque.
+
+Trois autres garde-fous, parce qu'une décoration ne doit jamais faire échouer une collecte : plafond
+par image, plafond global, et échec silencieux — pas de logo, pas de message. Les logos sont
+récupérés **une fois par brèche dédupliquée**, pas une fois par recherche.
+
+### Ce que le garde-fou de divergence ne couvre pas
+
+`Push-BECRun.ps1` est un fichier upstream **du dépôt CIPP-API**, où le contrôle de divergence
+n'existe pas : il ne surveille que les fichiers du front. Les trois blocs `PSIT-CUSTOM-*` y sont
+donc à relire à la main à chaque synchronisation upstream de l'API.
+
 ## La frise de chronologie
 
 Une bande horizontale au-dessus du tableau des connexions : **une piste par adresse source, un

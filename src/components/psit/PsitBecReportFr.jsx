@@ -12,7 +12,7 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { PictureAsPdf, Download, Close } from '@mui/icons-material'
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
+import { PDFViewer, PDFDownloadLink, Image } from '@react-pdf/renderer'
 import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
@@ -31,6 +31,7 @@ import {
 } from '../../utils/psit-bec-signals'
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
+import { BREACH_STATE, readBreachExposure } from '../../utils/psit-bec-breach'
 import { psitAsArray } from '../../utils/psit-as-array'
 import {
   andMore,
@@ -299,6 +300,10 @@ export const PsitBecReportFrDocument = ({
   const ticket = incident?.AutotaskTicket || 'ticket non renseigné'
   const relatedTickets = psitAsArray(incident?.RelatedTickets)
   const marking = tlpLabel(incident?.Tlp)
+
+  // The one document where a breach is named. The client report stays aggregate: which services an
+  // employee used is not the controller's business, the count and the kinds of data are.
+  const breachExposure = readBreachExposure(becData)
 
   const qualificationOf = (signalId) => {
     const determination = determinations.get(signalId)
@@ -1006,6 +1011,70 @@ export const PsitBecReportFrDocument = ({
               </InfoBox>
             </Section>
           )}
+        </ContentPage>
+      )}
+
+      {/* ANNEXE : EXPOSITION PUBLIQUE */}
+      {breachExposure.state !== BREACH_STATE.UNCHECKED && breachExposure.count > 0 && (
+        <ContentPage
+          title="Annexe : exposition publique de l'identifiant"
+          subtitle="Compromissions de données publiques référencées pour les adresses du dossier"
+        >
+          <Section>
+            <Paragraph>
+              Les adresses interrogées sont{' '}
+              {enumerate(breachExposure.addresses, { empty: 'non enregistrées' })}. Le détail
+              ci-dessous ne figure pas dans le rapport d'incident remis au client : le nombre et les
+              catégories de données y suffisent, et savoir quels services une personne a utilisés ne
+              relève pas du responsable de traitement.{' '}
+              <Bold>
+                Une exposition est un facteur de risque de réutilisation de mot de passe, pas le
+                vecteur d'accès de cet incident.
+              </Bold>{' '}
+              Aucun mot de passe ni fragment n'est collecté : la colonne indique seulement si la
+              compromission a exposé des mots de passe, d'après les catégories de données déclarées.
+            </Paragraph>
+          </Section>
+
+          <Section title="Compromissions référencées">
+            <DataTable
+              columns={[
+                {
+                  header: '',
+                  key: 'logo',
+                  width: 1,
+                  // `render` is upstream's own per-column escape hatch, so the logo needs no change
+                  // to the primitive. The image is a data URI stored at collection: no network at
+                  // render, which is what keeps the report reproducible and keeps the breach list of
+                  // a client from leaking to a CDN every time someone prints it.
+                  render: (row) =>
+                    row.logo ? <Image src={row.logo} style={{ width: 9, height: 9 }} /> : null,
+                },
+                { header: 'Compromission', key: 'name', width: 4, bold: true },
+                { header: 'Date', key: 'date', width: 2 },
+                { header: 'Mots de passe', key: 'password', width: 2 },
+                { header: 'Catégories de données', key: 'classes', width: 6 },
+              ]}
+              rows={breachExposure.breaches.map((entry) => ({
+                logo: entry.logo,
+                name: entry.name,
+                date: entry.breachDate ? dateTable(entry.breachDate) : 'non renseignée',
+                password: entry.password ? 'exposés' : 'non exposés',
+                classes: enumerate(entry.dataClasses, { empty: 'non renseignées' }),
+              }))}
+              limit={30}
+              emptyText="Aucune compromission référencée."
+            />
+            <Note>
+              {`${counted(breachExposure.passwordCount, 'compromission')} sur ${
+                breachExposure.count
+              } ${
+                breachExposure.passwordCount > 1 ? 'exposent' : 'expose'
+              } des mots de passe. Vérification effectuée ${dateProse(
+                breachExposure.checkedUtc
+              )} via ${breachExposure.source || 'source non enregistrée'}.`}
+            </Note>
+          </Section>
         </ContentPage>
       )}
 

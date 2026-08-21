@@ -36,6 +36,7 @@ const PROSE_FILES = [
   'src/utils/psit-bec-signals.js',
   'src/utils/psit-bec-incident.js',
   'src/utils/psit-bec-iocs.js',
+  'src/utils/psit-bec-breach.js',
   'src/utils/psit-bec-collection.js',
   'src/utils/psit-report-timeline.js',
 ]

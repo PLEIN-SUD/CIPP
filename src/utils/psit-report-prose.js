@@ -22,6 +22,7 @@ const NOUNS = {
   appareil: { one: 'appareil', many: 'appareils', gender: 'm' },
   application: { one: 'application', many: 'applications', gender: 'f' },
   compte: { one: 'compte', many: 'comptes', gender: 'm' },
+  compromission: { one: 'compromission de donn\u00e9es publiques', many: 'compromissions de donn\u00e9es publiques', gender: 'f' },
   connexion: { one: 'connexion', many: 'connexions', gender: 'f' },
   correspondant: { one: 'correspondant externe', many: 'correspondants externes', gender: 'm' },
   destinataire: { one: 'destinataire', many: 'destinataires', gender: 'm' },
@@ -292,6 +293,23 @@ export const enumerate = (items, { conjunction = 'et', empty = 'aucun' } = {}) =
  * form for a boxed title. A missing variant falls back to `body`.
  */
 const PHRASES = {
+  // Public-breach exposure. Four states because "not referenced" and "we could not check" are
+  // different facts, and the second one printed as the first is a false statement in a document a
+  // client may hand to an insurer. The templates carry {upn}, {n}, {m}, {min}, {max}, {reason}.
+  breach: {
+    'exposed-passwords': {
+      body: "L'adresse {upn} figure dans {n} entre {min} et {max}, dont {m} exposant des mots de passe. Cette exposition constitue un facteur de risque de réutilisation de mot de passe ; elle n'établit pas le vecteur d'accès initial de l'incident.",
+    },
+    exposed: {
+      body: "L'adresse {upn} figure dans {n} entre {min} et {max}. Cette exposition constitue un facteur de risque de réutilisation de mot de passe ; elle n'établit pas le vecteur d'accès initial de l'incident.",
+    },
+    clear: {
+      body: "L'adresse ne figure pas dans les compromissions publiques référencées à la date de la vérification. L'absence de référencement ne vaut pas absence de compromission : la couverture des bases publiques est partielle.",
+    },
+    unchecked: {
+      body: "La vérification d'exposition n'a pas pu être effectuée ({reason}).",
+    },
+  },
   verdict: {
     compromised: {
       box: 'compromission retenue',

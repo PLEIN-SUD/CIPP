@@ -18,10 +18,21 @@ vi.mock('../../src/api/ApiCall', () => ({
 
 // jsdom can't run the real pdf renderer, passthrough stubs are enough for dialog assertions
 vi.mock('@react-pdf/renderer', () => {
+  // PSIT-CUSTOM-BEGIN: the double honours `render` instead of dropping it
+  // react-pdf calls `render` with the page counters. A double that only rendered `children` made
+  // every title using a render callback vanish from the assertions while the real PDF printed it.
+  // First page of its own flow, which is the common case.
   const passthrough =
     (tag) =>
-    ({ children }) =>
-      React.createElement(tag, null, children)
+    ({ children, render }) =>
+      React.createElement(
+        tag,
+        null,
+        typeof render === 'function'
+          ? render({ pageNumber: 1, totalPages: 1, subPageNumber: 1, subPageTotalPages: 1 })
+          : children
+      )
+  // PSIT-CUSTOM-END
   return {
     Document: passthrough('div'),
     Page: passthrough('div'),

@@ -38,7 +38,16 @@ export const Section = ({ title, children, ...props }) => {
   const { styles } = useReportStyles(props)
   return (
     <View style={styles.section}>
-      {title ? <Text style={styles.sectionTitle}>{title}</Text> : null}
+      {/* PSIT-CUSTOM-BEGIN: no orphan section title. `minPresenceAhead` reserves space below the
+          title so it never lands alone at the foot of a page. Deliberately not `wrap={false}` on
+          the section: a section legitimately runs past a page, and an unbreakable block taller
+          than a page is pushed whole to the next one and then overflows off it. */}
+      {title ? (
+        <Text style={styles.sectionTitle} minPresenceAhead={72}>
+          {title}
+        </Text>
+      ) : null}
+      {/* PSIT-CUSTOM-END */}
       {children}
     </View>
   )
@@ -110,7 +119,15 @@ export const ContentPage = ({ title, subtitle, children, ...props }) => {
         </View>
       ) : null}
       {children}
-      <PageFooter styles={styles} theme={theme} variables={variables} label={footerLabel} />
+      {/* PSIT-CUSTOM-BEGIN: page label in the report language */}
+      <PageFooter
+        styles={styles}
+        theme={theme}
+        variables={variables}
+        label={footerLabel}
+        language={report.language}
+      />
+      {/* PSIT-CUSTOM-END */}
     </ReportPage>
   )
 }
@@ -122,7 +139,9 @@ export const ContentPage = ({ title, subtitle, children, ...props }) => {
  * footer text comes from the branding template with its `%variable%` tokens filled in, which is how
  * the configurable footer reaches every report without each one knowing about branding settings.
  */
-export const PageFooter = ({ styles, label, theme, variables }) => {
+// PSIT-CUSTOM-BEGIN: `language` added, for the page label
+export const PageFooter = ({ styles, label, theme, variables, language }) => {
+  // PSIT-CUSTOM-END
   const templated = theme?.footer?.enabled
     ? applyFooterText(theme.footer.template, variables)
     : ''
@@ -146,7 +165,7 @@ export const PageFooter = ({ styles, label, theme, variables }) => {
            without it the number lays out but is never painted. */
         <Text
           style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+          render={/* PSIT-CUSTOM-BEGIN: French pagination, English default */ ({ pageNumber, totalPages }) => (language === 'fr' ? `Page ${pageNumber} sur ${totalPages}` : `Page ${pageNumber} of ${totalPages}`) /* PSIT-CUSTOM-END */}
         />
       ) : null}
     </View>
@@ -404,12 +423,23 @@ export const ProgressList = ({ items, ...props }) => {
 export const INFO_TONES = { ok: 'okBox', warn: 'warnBox' }
 const INFO_TONE_TITLES = { ok: 'okTitle', warn: 'warnTitle' }
 
-export const InfoBox = ({ title, colour, tone, tintTitle = false, children, ...props }) => {
+// PSIT-CUSTOM-BEGIN: `wrap` added - a box is one fact, so it is not split across a page break.
+// It stays a prop so an oversized box can opt back in rather than overflow off the page.
+export const InfoBox = ({
+  title,
+  colour,
+  tone,
+  tintTitle = false,
+  wrap = false,
+  children,
+  ...props
+}) => {
+// PSIT-CUSTOM-END
   const { styles } = useReportStyles(props)
   const toneStyle = INFO_TONES[tone] ? styles[INFO_TONES[tone]] : null
   const toneTitle = INFO_TONE_TITLES[tone] ? styles[INFO_TONE_TITLES[tone]] : null
   return (
-  <View style={[styles.infoBox, toneStyle ?? {}, colour ? { borderLeftColor: colour } : {}]}>
+  <View style={[styles.infoBox, toneStyle ?? {}, colour ? { borderLeftColor: colour } : {}]} /* PSIT-CUSTOM-BEGIN: unbreakable box */ wrap={wrap} /* PSIT-CUSTOM-END */>
     {title ? (
       <Text
         style={[
@@ -435,10 +465,12 @@ export const Note = ({ children, ...props }) => {
   return <Text style={styles.truncationNote}>{children}</Text>
 }
 
-export const AlertBox = ({ title, colour, children, ...props }) => {
+// PSIT-CUSTOM-BEGIN: `wrap` added, see InfoBox
+export const AlertBox = ({ title, colour, wrap = false, children, ...props }) => {
+// PSIT-CUSTOM-END
   const { styles } = useReportStyles(props)
   return (
-  <View style={[styles.alertBox, colour ? { borderColor: colour } : {}]}>
+  <View style={[styles.alertBox, colour ? { borderColor: colour } : {}]} /* PSIT-CUSTOM-BEGIN: unbreakable box */ wrap={wrap} /* PSIT-CUSTOM-END */>
     <Text style={[styles.alertTitle, colour ? { color: colour } : {}]}>{title}</Text>
     <Text style={styles.alertText}>{children}</Text>
   </View>
@@ -446,10 +478,12 @@ export const AlertBox = ({ title, colour, children, ...props }) => {
 }
 
 // The all-clear counterpart to AlertBox, for a check that found nothing.
-export const ClearBox = ({ title, children, ...props }) => {
+// PSIT-CUSTOM-BEGIN: `wrap` added, see InfoBox
+export const ClearBox = ({ title, wrap = false, children, ...props }) => {
+// PSIT-CUSTOM-END
   const { styles } = useReportStyles(props)
   return (
-  <View style={[styles.infoBox, styles.okBox]}>
+  <View style={[styles.infoBox, styles.okBox]} /* PSIT-CUSTOM-BEGIN: unbreakable box */ wrap={wrap} /* PSIT-CUSTOM-END */>
     <Text style={[styles.infoTitle, styles.okTitle]}>{title}</Text>
     <Text style={styles.infoText}>{children}</Text>
   </View>
@@ -613,7 +647,11 @@ export const DataTable = ({
       </View>
       {hidden > 0 ? (
         <Text style={styles.truncationNote}>
-          … and {hidden} more. Export the table from the report page for the full list.
+          {/* PSIT-CUSTOM-BEGIN: the truncation note follows the report language */}
+          {report.language === 'fr'
+            ? `${shown.length} lignes sur ${rows.length} figurent ici ; la liste complète est dans l'export de données du dossier.`
+            : `… and ${hidden} more. Export the table from the report page for the full list.`}
+          {/* PSIT-CUSTOM-END */}
         </Text>
       ) : null}
     </>

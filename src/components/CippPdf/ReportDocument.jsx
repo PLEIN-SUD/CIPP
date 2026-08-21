@@ -61,6 +61,19 @@ export const ReportDocument = ({
   size = DEFAULT_PAGE_SETUP.size,
   orientation = DEFAULT_PAGE_SETUP.orientation,
 
+  // PSIT-CUSTOM-BEGIN: report language and PDF metadata
+  // `language` drives the page label and the continuation label of every page of this report.
+  // English stays the default, so the upstream reports are untouched.
+  language = 'en',
+  // Written into the PDF Info dictionary. Visible to anyone opening the file properties, which is
+  // the point for the internal reference of a copy in circulation - and the reason the analyst's
+  // name never goes here.
+  documentTitle,
+  documentSubject,
+  documentKeywords,
+  documentAuthor,
+  // PSIT-CUSTOM-END
+
   children,
 }) => {
   const theme = createReportTheme(brandingSettings)
@@ -81,7 +94,9 @@ export const ReportDocument = ({
     reportdate: date,
   }
 
-  const context = { theme, styles, variables, logo, footerLabel, size, orientation, date }
+  // PSIT-CUSTOM-BEGIN: `language` reaches ContentPage through the context
+  const context = { theme, styles, variables, logo, footerLabel, size, orientation, date, language }
+  // PSIT-CUSTOM-END
 
   // Branding's cover note wins; a report's own wording is the fallback. Leave the prop undefined
   // when neither is set so CoverPage's default confidentiality line still appears. Variables are
@@ -93,7 +108,15 @@ export const ReportDocument = ({
 
   return (
     <ReportProvider value={context}>
-      <Document>
+      {/* PSIT-CUSTOM-BEGIN: PDF metadata, all optional so an upstream report is unchanged */}
+      <Document
+        title={documentTitle}
+        subject={documentSubject}
+        keywords={documentKeywords}
+        author={documentAuthor}
+        creator={documentAuthor}
+      >
+        {/* PSIT-CUSTOM-END */}
         {cover ? (
           <CoverPage
             styles={styles}

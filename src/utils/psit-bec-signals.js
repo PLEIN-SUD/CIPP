@@ -190,7 +190,9 @@ export const classifySentMessages = (becData = {}, userData = {}) => {
 }
 
 /**
- * Consecutive sign-ins from one address are one session, not twenty findings. A 30-minute gap
+ * Consecutive sign-ins from one address are one session, not twenty findings. Grouping is per
+ * address and independent of the order events arrive in: interleaving two addresses must not split
+ * either of them. A 30-minute gap
  * starts a new one, which is what turns three pages of near-identical chronology lines into the
  * two sessions they actually represent.
  */
@@ -200,23 +202,31 @@ export const buildSignInSessions = (signIns = [], gapMinutes = 30) => {
     .map((signIn) => ({ ...signIn, stamp: toUtc(signIn.CreatedDateTime) }))
     .sort((a, b) => a.stamp.localeCompare(b.stamp))
 
+  const gapMs = gapMinutes * 60 * 1000
   const sessions = []
+  // One open session per address, held by address rather than by arrival order.
+  //
+  // This used to extend a session only when it was the LAST one pushed, so two addresses active in
+  // alternation - a compromise while the account holder keeps working, which is the ordinary case -
+  // fragmented into one zero-length session per event. Six sign-ins over twenty minutes from two
+  // addresses produced six instantaneous sessions instead of two twenty-minute windows, and the
+  // chronology said so in writing.
+  const open = new Map()
+
   for (const signIn of successful) {
     const ip = String(signIn.IPAddress || 'inconnue')
-    const last = sessions.find(
-      (session) =>
-        session.ip === ip &&
-        new Date(signIn.stamp).getTime() - new Date(session.endUtc).getTime() <=
-          gapMinutes * 60 * 1000
-    )
-    const target = last && sessions[sessions.length - 1] === last ? last : null
-    if (target) {
-      target.endUtc = signIn.stamp
-      target.count += 1
-      if (signIn.AppDisplayName) target.apps.add(signIn.AppDisplayName)
-      if (signIn.City) target.cities.add(signIn.City)
+    const current = open.get(ip)
+    // `<=` on purpose: a sign-in exactly `gapMinutes` after the previous one continues the session.
+    const continues =
+      current && new Date(signIn.stamp).getTime() - new Date(current.endUtc).getTime() <= gapMs
+
+    if (continues) {
+      current.endUtc = signIn.stamp
+      current.count += 1
+      if (signIn.AppDisplayName) current.apps.add(signIn.AppDisplayName)
+      if (signIn.City) current.cities.add(signIn.City)
     } else {
-      sessions.push({
+      const session = {
         ip,
         country: signIn.Country || null,
         startUtc: signIn.stamp,
@@ -225,7 +235,9 @@ export const buildSignInSessions = (signIns = [], gapMinutes = 30) => {
         foreign: signIn.ForeignLocation === true,
         apps: new Set([signIn.AppDisplayName].filter(Boolean)),
         cities: new Set([signIn.City].filter(Boolean)),
-      })
+      }
+      sessions.push(session)
+      open.set(ip, session)
     }
   }
 

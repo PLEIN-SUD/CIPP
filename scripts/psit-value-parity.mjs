@@ -88,6 +88,26 @@ const userData = {
 }
 
 const signIn = (index) => {
+  // A second successful address, interleaved in time with the first: the account holder still
+  // working while the intruder is in. The fixture held only ONE successful address, which is exactly
+  // the shape where the old session grouping happened to be right - so it measured nothing about the
+  // dimension it was blind to. Eight sign-ins on the same three days, offset by four minutes from
+  // the first block so the two addresses alternate.
+  // Dense burst, inside the 30-minute threshold, so the grouping is actually exercised: the events
+  // of the two addresses have to alternate AND be close enough to belong to one session each.
+  if (index >= 22 && index < 30) {
+    const step = index - 22
+    const foreign = step % 2 === 0
+    return {
+      CreatedDateTime: `2026-08-20T07:${String(step * 5 + (foreign ? 0 : 2)).padStart(2, '0')}:00Z`,
+      IPAddress: foreign ? '203.0.113.42' : '203.0.113.77',
+      Country: foreign ? 'IT' : 'FR',
+      City: foreign ? 'Verone' : 'Marseille',
+      Status: 'Success',
+      AppDisplayName: foreign ? 'Microsoft Graph' : 'Outlook',
+      ForeignLocation: foreign,
+    }
+  }
   // 22 successes from one foreign address, the rest spread over failed spray sources: the shape the
   // dossier had.
   if (index < 22) {

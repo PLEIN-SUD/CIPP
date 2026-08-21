@@ -100,7 +100,7 @@ accords, formats de date, espaces insécables, dictionnaire de formulations. Deu
   la fine insécable que la typographie française demande vraiment devant un deux-points,
   imprime une barre oblique. Aucun avertissement, nulle part.
 
-D'où la règle de lint `cp1252-only`, et d'où l'usage de U+00A0 plutöt que U+202F dans
+D'où la règle de lint `cp1252-only`, et d'où l'usage de U+00A0 plutôt que U+202F dans
 `nbsp()`.
 
 ### Un piège d'outillage, pas de rendu
@@ -250,6 +250,53 @@ n'est pas modifié par elle. La parité de valeurs le confirme (`scripts/psit-va
 « tout attendu »). À traiter dans un dossier séparé, où la question de fond se pose : faut-il un
 quatrième état de qualification pour un signal établi mais légitime, avec la trace de qui l'a
 déclaré légitime et sur quelle base ?
+
+## Parité de valeurs : la référence et son historique
+
+`scripts/psit-value-parity.mjs` extrait les modules de calcul à deux commits, les exécute sur des
+fixtures identiques et compare 135 valeurs sur trois cas de qualification. Le critère est binaire :
+tout écart est un défaut bloquant, jusqu'à un arrondi.
+
+La référence par défaut (`--before`) **se déplace quand un calcul change délibérément**. Chaque
+déplacement se justifie ici, sinon le contrôle devient un rite : une référence qu'on déplace sans
+dire pourquoi ne prouve plus rien.
+
+| Référence | Depuis | Pourquoi |
+|---|---|---|
+| `ed40f7bdd` | mise en place | État précédant la révision rédactionnelle. Critère : la réécriture ne change aucune valeur. Tenu, 135 valeurs, zéro écart. |
+| `a48547664` | correction du regroupement en sessions | Cette correction change **une** valeur, volontairement. Garder l'ancienne référence la rapporterait comme un défaut à chaque exécution. |
+
+### Ce que la correction de session a changé
+
+Une seule mesure, dans les trois cas de qualification :
+
+| Mesure | Avant | Après | Raison |
+|---|---|---|---|
+| événements de chronologie | 16 | 10 | Les 8 événements de la rafale entrelacée produisaient 8 sessions ponctuelles ; ils en produisent 2, de durée réelle. |
+
+Rien d'autre ne bouge : ni verdict, ni compte de signal, ni chiffre d'exposition, ni horodatage, ni
+indicateur. La correction ne touche que la granularité des sessions de la chronologie, ce qui est
+exactement son objet.
+
+### La fixture avait un angle mort, et il portait précisément sur ça
+
+Les 22 connexions réussies du jeu de parité venaient **toutes d'une seule adresse**, c'est-à-dire
+la forme où l'ancien regroupement tombait juste par accident. Le script rapportait donc zéro écart
+sur une correction qui en produisait trois. La fixture porte désormais une **rafale dense
+entrelacée sur deux adresses**, à l'intérieur du seuil de 30 minutes.
+
+Leçon générale : **un contrôle vert sur une fixture qui n'exerce pas le chemin ne dit rien.**
+Avant de conclure d'une parité sans écart, vérifier que le jeu atteint le code modifié.
+
+### Interroger une référence antérieure
+
+```bash
+node scripts/psit-value-parity.mjs --before ed40f7bdd
+```
+
+Un module absent de la référence demandée est ignoré plutôt que fatal : c'est un fait sur ce
+commit, pas une erreur. Sans ça, déplacer la référence rendait l'historique injoignable, puisque
+`ed40f7bdd` précède le module de prose.
 
 ## Ce que les assertions ne voient pas
 

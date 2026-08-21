@@ -25,27 +25,27 @@ const readArg = (name, fallback) => {
   const index = args.indexOf(name)
   return index >= 0 ? args[index + 1] : fallback
 }
-const BEFORE = readArg('--before', 'ed40f7bdd')
+// Re-baselined on a48547664, the session-grouping fix. Until then the reference was ed40f7bdd, the
+// commit before the editorial revision, and the criterion was "the rewrite changed no value". That
+// criterion held: 135 values, zero difference. The session fix DID change one value on purpose, so
+// keeping the old reference would report it as a defect for ever. Documented in PSIT-README.md.
+const BEFORE = readArg('--before', 'a48547664')
 const JSON_OUT = readArg('--json', null)
 const WORK = 'psit/parity'
 
-const MODULES = {
-  before: [
-    'src/utils/psit-as-array.js',
-    'src/utils/psit-bec-signals.js',
-    'src/utils/psit-bec-incident.js',
-    'src/utils/psit-bec-iocs.js',
-    'src/utils/psit-bec-collection.js',
-  ],
-  after: [
-    'src/utils/psit-as-array.js',
-    'src/utils/psit-report-prose.js',
-    'src/utils/psit-bec-signals.js',
-    'src/utils/psit-bec-incident.js',
-    'src/utils/psit-bec-iocs.js',
-    'src/utils/psit-bec-collection.js',
-  ],
-}
+// One list for both sides. It used to be shorter on the "before" side because the reference,
+// ed40f7bdd, predated the prose module; the reference now postdates it, so an amputated list only
+// breaks the import graph.
+const VALUE_MODULES = [
+  'src/utils/psit-as-array.js',
+  'src/utils/psit-report-prose.js',
+  'src/utils/psit-bec-signals.js',
+  'src/utils/psit-bec-incident.js',
+  'src/utils/psit-bec-iocs.js',
+  'src/utils/psit-bec-collection.js',
+]
+
+const MODULES = { before: VALUE_MODULES, after: VALUE_MODULES }
 
 const git = (list) => execFileSync('git', list, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 
@@ -58,7 +58,14 @@ const extract = (side, ref) => {
   rmSync(dir, { recursive: true, force: true })
   mkdirSync(dir, { recursive: true })
   for (const file of MODULES[side]) {
-    const source = ref === null ? git(['show', `HEAD:${file}`]) : git(['show', `${ref}:${file}`])
+    // A module absent from an older reference is a fact about that reference, not an error: keep
+    // the flag usable on any commit, including ones that predate the prose module.
+    let source
+    try {
+      source = ref === null ? git(['show', `HEAD:${file}`]) : git(['show', `${ref}:${file}`])
+    } catch {
+      continue
+    }
     const name = file.split('/').pop().replace(/\.js$/, '.mjs')
     const rewritten = source.replace(/from '(\.\/[a-z0-9-]+)'/g, (_, spec) => `from '${spec}.mjs'`)
     writeFileSync(`${dir}/${name}`, rewritten)

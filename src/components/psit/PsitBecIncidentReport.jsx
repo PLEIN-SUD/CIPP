@@ -21,6 +21,21 @@ import { ApiGetCall } from '../../api/ApiCall'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
 import { psitAsArray } from '../../utils/psit-as-array'
 import {
+  agree,
+  andMore,
+  cardinal,
+  counted,
+  dateProse,
+  dateTable,
+  elideDe,
+  enumerate,
+  nbsp,
+  phrase,
+  sentence,
+  truncationNote,
+} from '../../utils/psit-report-prose'
+import { PsitTlpBand, tlpLabel } from './PsitTlpBand'
+import {
   AlertBox,
   Bold,
   Bullet,
@@ -28,6 +43,7 @@ import {
   ClearBox,
   ContentPage,
   CoverMeta,
+  DataTable,
   InfoBox,
   Note,
   Paragraph,
@@ -44,6 +60,7 @@ import {
   firstUnauthorisedAccessUtc,
   formatUtc,
   getAnalysisWindow,
+  groupSignInsByIp,
   partitionDeterminations,
 } from '../../utils/psit-bec-signals'
 import {
@@ -64,6 +81,23 @@ import {
 // notification is required is the controller's decision, not a processor's. And it never asserts
 // what the data cannot support - "no mail was read" is the sentence that comes back to haunt an
 // MSP, so the absence of MailItemsAccessed is written out as an absence.
+
+/**
+ * `{ticket}_{compte}.pdf` - the client-facing reference on the last surface that still carried the
+ * internal one. Everything outside the allowed set becomes an underscore, so an address lands as
+ * p_martin_contoso_test rather than as a name a file system may refuse.
+ */
+export const psitReportFileName = (ticket, account, { pseudonymise = false } = {}) => {
+  const clean = (value, fallback, keep) =>
+    String(value || fallback)
+      .replace(keep, '_')
+      .replace(/^_+|_+$/g, '')
+  // The ticket keeps its dot, it is part of the reference; the address loses its dots and its @,
+  // so p.martin@contoso.test lands as p_martin_contoso_test.
+  const safeTicket = clean(ticket, 'ticket-non-renseigne', /[^A-Za-z0-9.-]+/g)
+  const safeAccount = clean(account, 'compte-inconnu', /[^A-Za-z0-9-]+/g)
+  return `${safeTicket}_${safeAccount}${pseudonymise ? '_pseudonymise' : ''}.pdf`
+}
 
 export const PsitBecIncidentReportDocument = ({
   userData,
@@ -101,66 +135,249 @@ export const PsitBecIncidentReportDocument = ({
     return determination?.Verdict === 'unexpected'
   })
   const mailReadStatus = incident?.MailReadStatus || exposure.mailReadSuggested
+  // The client-facing reference is the Autotask ticket, on every surface. The internal
+  // PSIT-BEC-* identifier stays a sort and join key on our side, and travels only in the PDF
+  // metadata: a client quotes a ticket number, not our filing scheme.
+  const ticket = incident?.AutotaskTicket || 'ticket non renseigné'
+  const relatedTickets = psitAsArray(incident?.RelatedTickets)
+  const ticketLine =
+    relatedTickets.length > 0
+      ? `Ticket ${ticket} (liés : ${enumerate(relatedTickets)})`
+      : `Ticket ${ticket}`
+  const marking = tlpLabel(incident?.Tlp)
+  const qualificationLabel = phrase('verdict', verdict.status, 'box') || 'à préciser'
+  const effectSentence =
+    incident?.EffectDescription === 'other'
+      ? incident?.EffectDescriptionOther || null
+      : phrase('effect', incident?.EffectDescription)
   const doneActions = containment.filter((action) => action.done)
   const attestedCount = doneActions.length
+
+  // The summary, written sentence by sentence from the record. Each one states its own basis, and
+  // none of them is deduced from a counter: what the access was followed by is a field the analyst
+  // fills, because the collection cannot tell a hijacked thread from a mass send.
+  const foreignAddresses = psitAsArray(becData?.SuspectUserSignIns)
+    .filter((signIn) => signIn?.Status === 'Success' && signIn?.ForeignLocation === true)
+    .map((signIn) => String(signIn?.IPAddress || '').trim())
+    .filter(Boolean)
+  const distinctForeignAddresses = [...new Set(foreignAddresses)].length
+  const foreignCountries = [
+    ...new Set(
+      psitAsArray(becData?.SuspectUserSignIns)
+        .filter((signIn) => signIn?.Status === 'Success' && signIn?.ForeignLocation === true)
+        .map((signIn) => String(signIn?.Country || '').trim())
+        .filter(Boolean)
+    ),
+  ]
+
+  const accessSentence = exposure.accessEstablished
+    ? `Le compte ${userData?.userPrincipalName} a fait l'objet d'accès non autorisés, établis par les éléments repris en section « Constats et base probante »${
+        firstAccessUtc ? `, à partir du ${dateProse(firstAccessUtc, { article: false })}` : ''
+      }${
+        distinctForeignAddresses > 0
+          ? `, depuis ${cardinal(distinctForeignAddresses, 'adresse')} IP${
+              foreignCountries.length > 0 ? ` située en ${enumerate(foreignCountries)}` : ''
+            }`
+          : ''
+      }.`
+    : `L'accès non autorisé au compte ${userData?.userPrincipalName} n'est pas établi par les éléments de cette collecte.`
+  const effectClause = effectSentence
+    ? `Ces accès ont été suivis ${elideDe(effectSentence)}.`
+    : ''
+  const containmentSentence =
+    attestedCount > 0
+      ? `${sentence(attestedCount, 'action', 'attesté')} par le journal CIPP à la date d'édition.`
+      : "À la date d'édition, aucune action de confinement n'est enregistrée au journal CIPP."
+  const exfiltrationSentence =
+    exposure.exfiltration.length > 0
+      ? `${sentence(exposure.exfiltration.length, 'voieExfiltration', 'relevé')} : ${enumerate(
+          exposure.exfiltration.map((item) => item.label.toLowerCase())
+        )}.`
+      : "Aucune voie d'exfiltration n'a été relevée parmi celles que cette collecte couvre."
+  const thirdPartySentence =
+    thirdParties.recipients.length > 0
+      ? `${sentence(
+          thirdParties.recipients.length,
+          'tiers',
+          'relevé'
+        )} parmi les destinataires des envois signalés, à vérifier en priorité.`
+      : "Aucun tiers destinataire d'un envoi signalé n'a été relevé."
+  // Rows for the chronology tables. Built here so the page holds layout only.
+  const signInWindows = groupSignInsByIp(psitAsArray(becData?.SuspectUserSignIns))
+    .filter((group) => group.successes > 0)
+    .map((group) => ({
+      period: `${dateTable(group.firstSeenUtc)} au ${dateTable(group.lastSeenUtc)}`,
+      ip: group.ip,
+      country: group.country || 'non déterminé',
+      city: enumerate(group.cities, { empty: 'non déterminée' }),
+      signIns: String(group.successes),
+      apps: [
+        enumerate(group.apps.slice(0, 3), { empty: 'non déterminées' }),
+        andMore(3, group.apps.length, 'application'),
+      ]
+        .filter(Boolean)
+        .join(', '),
+    }))
+
+  // No slice here on purpose: the table is capped by its own `limit`, which is what makes the
+  // primitive count what it left out and print a note. Slicing to the same number first made the
+  // drop invisible - twenty rows shown, six dropped, nothing said.
+  const otherEvents = timeline
+    .filter((event) => !String(event.label || '').startsWith('Session depuis'))
+    .map((event) => ({
+      stamp: event.timestampUtc,
+      label: event.label,
+      detail: event.detail || 'non détaillé',
+    }))
+
+  const interventions = [
+    ...doneActions.map((action) => ({
+      stamp: action.firstUtc || 'date non enregistrée',
+      action: action.label,
+      source: 'Journal CIPP',
+      operator: action.operator || 'non renseigné',
+      hasFailure: Boolean(action.hasFailure),
+    })),
+    ...psitAsArray(incident?.ExternalActions).map((action) => ({
+      stamp: action?.DoneUtc ? dateTable(action.DoneUtc) : 'date déclarée',
+      action: action?.Action || 'action hors CIPP',
+      source: 'Déclarée, hors CIPP',
+      operator: action?.By || 'non renseigné',
+      hasFailure: false,
+    })),
+  ]
+
+  const containmentRows = containment.map((action) => ({
+    action: action.label,
+    state: action.done
+      ? action.hasFailure
+        ? 'Attestée, erreur journalisée'
+        : 'Attestée'
+      : 'Non attestée',
+    stamp: action.done ? action.firstUtc || 'date non enregistrée' : 'sans objet',
+    operator: action.done ? action.operator || 'non renseigné' : 'sans objet',
+  }))
+
+  // Subjects deduplicated with a counter and capped: the same subject repeated eleven times told
+  // the reader nothing the count does not, and pushed the useful ones out of the cell.
+  const subjectCell = (subjects, total) => {
+    const counts = new Map()
+    for (const subject of psitAsArray(subjects)) {
+      const label = String(subject || '').trim()
+      if (!label) continue
+      counts.set(label, (counts.get(label) || 0) + 1)
+    }
+    const entries = [...counts.entries()].sort((a, b) => b[1] - a[1])
+    const shown = entries.map(([label, count]) => (count > 1 ? `${label} ×${count}` : label))
+    if (shown.length === 0) return 'objet non renseigné'
+    // The count comes from the collection, not from what reached this cell: the list was already
+    // capped upstream, so counting here would always find nothing missing.
+    return [shown.join(', '), andMore(shown.length, total ?? shown.length, 'objet')]
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  const thirdPartyRows = thirdParties.recipients.slice(0, 60).map((entry, index) => ({
+    recipient: pseudonymise
+      ? `T-${String(index + 1).padStart(2, '0')} (${entry.domain || 'domaine non déterminé'})`
+      : entry.address,
+    messages: String(entry.messages),
+    period:
+      entry.firstUtc && entry.lastUtc
+        ? `${dateTable(entry.firstUtc)} au ${dateTable(entry.lastUtc)}`
+        : 'non déterminée',
+    // A subject line can name a third party, so it goes with the address.
+    subjects: pseudonymise ? 'non reproduits' : subjectCell(entry.subjects, entry.subjectsTotal),
+  }))
+
+  const notifiedRows = psitAsArray(incident?.ThirdPartiesNotified).map((entry) => ({
+    name: entry?.Name || entry?.name || 'tiers non nommé',
+    stamp: dateTable(entry?.NotifiedUtc || entry?.notifiedUtc, { fallback: 'non renseigné' }),
+    // A channel outside the enumeration cannot reach here any more, but an older record may hold
+    // one: it is printed as unfilled rather than as fact.
+    channel: phrase('channel', entry?.Channel || entry?.channel) || 'non renseigné',
+  }))
+
+  const retainedSummary = `${sentence(
+    established.length + confirmed.length,
+    'signal',
+    'retenu'
+  )} à ce stade. Le détail figure en section « Constats et base probante ».`
 
   return (
     <ReportDocument
       brandingSettings={brandingSettings}
+      language="fr"
       tenantName={tenantName}
       reportName="Rapport d'incident"
       generatedOn={currentDate}
       variables={variables}
-      coverLabel="RAPPORT D'INCIDENT DE SÉCURITÉ"
-      coverTitle="Compromission"
-      coverAccent="Constatée"
-      coverSubtitle={`Compromission de messagerie professionnelle — ${
-        incident?.Reference || 'référence à attribuer'
-      }`}
-      coverTenant={userData?.displayName || 'Utilisateur inconnu'}
-      coverFallbackImage="/reportImages/soc.jpg"
-      coverFooterNote="Confidentiel - Diffusion restreinte"
-      footerLabel={`${tenantName} - ${incident?.Reference || 'Rapport d’incident'} - ${
-        userData?.displayName
-      }`}
+      coverLabel="Rapport d'incident de sécurité"
+      /* The qualification never appears in the title: a cover reading "Compromission constatée"
+         states the conclusion before the reader has the basis for it, and the same cover has to
+         serve a case closed as a false positive. It goes in one sober line below. */
+      coverTitle="Compromission de messagerie"
+      coverAccent="professionnelle"
+      coverSubtitle={ticketLine}
+      coverTenant={userData?.displayName || 'Compte inconnu'}
+      coverFooterNote={`${marking} : diffusion restreinte aux personnes ayant à en connaître`}
+      footerLabel={`${marking} | ${ticket} | ${tenantName}`}
+      documentTitle={`Rapport d'incident ${ticket}`}
+      documentSubject="Rapport d'incident de sécurité PSIT-BEC"
+      /* The internal reference travels in the metadata, not in the body: it is what identifies a
+         copy in circulation, and it is readable by anyone opening the file properties. */
+      documentKeywords={[incident?.Reference, incident?.AutotaskTicket].filter(Boolean).join(' ')}
+      documentAuthor="PLEIN SUD IT"
       coverMeta={
         <CoverMeta
-          lines={[userData?.userPrincipalName || 'utilisateur@domaine.fr']}
-          note={`Détection : ${formatUtc(incident?.DetectedUtc)} — Statut : ${
-            INCIDENT_STATUS_LABELS[incident?.Status] || 'à préciser'
-          }${incident?.AutotaskTicket ? ` — Ticket ${incident.AutotaskTicket}` : ''}`}
+          lines={[
+            `Compte concerné : ${userData?.displayName || 'nom inconnu'} (${
+              userData?.userPrincipalName || 'adresse inconnue'
+            })`,
+            `Organisation : ${tenantName}`,
+            `Détection : ${dateProse(incident?.DetectedUtc)}`,
+            `Entité émettrice : PLEIN SUD IT`,
+          ]}
+          note={`Qualification à la date d'édition : ${qualificationLabel}. Marquage ${marking}.`}
         />
       }
     >
       {/* 1 & 2. IDENTIFICATION ET RÉSUMÉ */}
       <ContentPage
         title="Résumé de l'incident"
-        subtitle="Ce qui s'est passé, ce qui est établi, ce qu'il reste à faire"
+        subtitle="Synthèse des constats et des actions attendues"
       >
+        <PsitTlpBand tlp={incident?.Tlp} note={`${ticket} | ${tenantName}`} />
         <Section title="Identification">
           <InfoBox title="Incident">
-            Référence : {incident?.Reference || 'à attribuer'}
-            {incident?.CreatedUtc ? ` (dossier ouvert le ${formatUtc(incident.CreatedUtc)})` : ''}
+            Ticket : {ticket}
+            {relatedTickets.length > 0 ? `\nTickets liés : ${enumerate(relatedTickets)}` : ''}
             {'\n'}
-            Ticket Autotask : {incident?.AutotaskTicket || 'non renseigné'}
+            Dossier ouvert : {dateProse(incident?.CreatedUtc)}
             {'\n'}
-            Rapport d'investigation associé : collecte du {formatUtc(becData?.ExtractedAt)}
+            Rapport d'investigation associé : collecte du{' '}
+            {dateProse(becData?.ExtractedAt, { article: false })}
             {'\n'}
             Compte concerné : {userData?.userPrincipalName}
             {'\n'}
             Organisation : {tenantName}
             {'\n'}
-            Détection : {formatUtc(incident?.DetectedUtc)}
+            Détection : {dateProse(incident?.DetectedUtc)}
             {'\n'}
             Confinement :{' '}
-            {incident?.ContainedUtc ? formatUtc(incident.ContainedUtc) : 'non confiné à ce stade'}
+            {incident?.ContainedUtc
+              ? dateProse(incident.ContainedUtc, { article: false })
+              : 'aucune action enregistrée à ce stade'}
             {'\n'}
-            Statut : {INCIDENT_STATUS_LABELS[incident?.Status] || 'à préciser'}
+            Statut : {phrase('incidentStatus', incident?.Status, 'box') || 'à préciser'}
             {'\n'}
-            Qualification : {verdict.label}
+            Qualification à la date d'édition : {qualificationLabel}
             {'\n'}
-            Rapport établi par : {incident?.UpdatedBy || incident?.CreatedBy || 'N/D'} le{' '}
-            {formatUtc(incident?.UpdatedUtc)}
+            {/* The analyst is named once, on the handover page. Here the issuing party is enough,
+                and it is the party the client contracted with. */}
+            Rapport établi par : PLEIN SUD IT, {dateProse(incident?.UpdatedUtc)}
+            {'\n'}
+            Marquage de diffusion : {marking}
           </InfoBox>
         </Section>
 
@@ -168,50 +385,53 @@ export const PsitBecIncidentReportDocument = ({
           <StatRow
             stats={[
               { value: established.length + confirmed.length, label: 'Faits retenus' },
-              { value: exposure.exfiltration.length, label: "Voies d'exfiltration" },
+              { value: exposure.exfiltration.length, label: "Voies d'exfiltration établies" },
               { value: attestedCount, label: 'Actions de confinement attestées' },
-              { value: thirdParties.recipients.length, label: 'Tiers destinataires à vérifier' },
+              { value: thirdParties.recipients.length, label: 'Tiers à vérifier' },
             ]}
           />
 
           {verdict.status === VERDICT_STATUS.COMPROMISED ? (
-            <AlertBox colour="#742A2A" title="Compromission retenue">
-              {verdict.detail}
+            <AlertBox colour="#742A2A" title="Qualification : compromission retenue">
+              {retainedSummary}
             </AlertBox>
           ) : (
-            <AlertBox title="Attention : ce rapport a été produit sans compromission retenue">
-              Le dossier d'investigation ne conclut pas à une compromission ({verdict.label}). Ce
-              document ne devrait pas être diffusé en l'état.
+            <AlertBox title="Ce rapport a été produit sans compromission retenue">
+              {`Le dossier d'investigation ne conclut pas à une compromission : ${qualificationLabel}. Ce document ne devrait pas être diffusé en l'état.`}
             </AlertBox>
           )}
 
           {psitAsArray(incident?.PreviousCases).length > 0 && (
             <AlertBox
               colour="#742A2A"
-              title={`Compromission répétée : ${psitAsArray(incident.PreviousCases).length} dossier(s) antérieur(s) sur cette boîte`}
+              title={`Compromission répétée : ${cardinal(
+                psitAsArray(incident.PreviousCases).length,
+                'dossier'
+              )} antérieur sur cette boîte`}
             >
               {psitAsArray(incident.PreviousCases)
                 .map(
                   (previous) =>
-                    `${previous.Reference} — détection ${
-                      previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'
-                    }, clos le ${previous.ClosedUtc ? formatUtc(previous.ClosedUtc) : 'N/D'}`
+                    `Ticket ${previous.AutotaskTicket || 'non renseigné'} : détection ${dateProse(
+                      previous.DetectedUtc,
+                      { article: false }
+                    )}, clos ${dateProse(previous.ClosedUtc, { article: false })}`
                 )
                 .join('\n')}
             </AlertBox>
           )}
 
-          {incident?.ExecutiveNote && <Paragraph>{incident.ExecutiveNote}</Paragraph>}
-
+          {/* Composed from the record, sentence by sentence, rather than left to a free field: the
+              first version of this page carried "Connexions malveillantes depuis l'Italie, envoi de
+              spam massif" - an analyst's shorthand, printed to a client. The analyst's own note now
+              follows this paragraph instead of replacing it. */}
           <Paragraph>
-            L'accès non autorisé au compte{' '}
-            {exposure.accessEstablished ? 'est établi' : "n'est pas établi"} par les éléments listés
-            en section « Faits établis ». La lecture des messages de la boîte :{' '}
-            <Bold>{MAIL_READ_LABELS[mailReadStatus]}</Bold>.
-            {exposure.exfiltration.length > 0
-              ? ` ${exposure.exfiltration.length} voie(s) d'exfiltration ont été relevées.`
-              : " Aucune voie d'exfiltration n'a été relevée parmi celles que cette collecte couvre."}
+            {accessSentence} {effectSentence ? `${effectClause} ` : ''}
+            {containmentSentence} {phrase('mailRead', mailReadStatus)} {exfiltrationSentence}{' '}
+            {thirdPartySentence}
           </Paragraph>
+
+          {incident?.ExecutiveNote && <Paragraph>{incident.ExecutiveNote}</Paragraph>}
         </Section>
       </ContentPage>
 
@@ -220,58 +440,78 @@ export const PsitBecIncidentReportDocument = ({
         title="Chronologie de l'incident"
         subtitle="Horodatages en UTC, toutes sources confondues"
       >
-        <Section title="Déroulé">
-          {timeline.length > 0 ? (
+        <Section title="Activité par fenêtre">
+          {/* A table, not a stack of cards: thirty-five boxes of one line each ran to three pages
+              and made a concurrence between two countries impossible to see. */}
+          {signInWindows.length > 0 ? (
             <>
-              {timeline.slice(0, 35).map((event, index) => (
-                <InfoBox key={`tl-${index}`} title={`${event.timestampUtc} — ${event.label}`}>
-                  {event.detail || ' '}
-                </InfoBox>
-              ))}
-              {timeline.length > 35 && (
-                <Note>
-                  ... et {timeline.length - 35} autres événements (voir le rapport d'investigation)
-                </Note>
-              )}
+              <DataTable
+                columns={[
+                  { header: 'Période (UTC)', key: 'period', width: 3 },
+                  { header: 'IP', key: 'ip', width: 2, bold: true },
+                  { header: 'Pays', key: 'country', width: 1 },
+                  { header: 'Localité', key: 'city', width: 2 },
+                  { header: 'Connexions', key: 'signIns', width: 1, align: 'right' },
+                  { header: 'Applications', key: 'apps', width: 3 },
+                ]}
+                rows={signInWindows}
+                limit={25}
+                emptyText="Aucune connexion retournée par la collecte."
+              />
+              <Note>Localités issues de la géolocalisation IP ; précision limitée.</Note>
             </>
           ) : (
-            <Note>Aucun événement daté n'a pu être reconstitué sur la fenêtre analysée.</Note>
+            <Note>Aucune connexion datée n'a pu être reconstituée sur la fenêtre analysée.</Note>
+          )}
+        </Section>
+
+        <Section title="Autres événements datés">
+          {otherEvents.length > 0 ? (
+            <DataTable
+              columns={[
+                { header: 'Horodatage (UTC)', key: 'stamp', width: 2 },
+                { header: 'Événement', key: 'label', width: 3, bold: true },
+                { header: 'Détail', key: 'detail', width: 4 },
+              ]}
+              rows={otherEvents}
+              limit={20}
+              emptyText="Aucun autre événement daté."
+            />
+          ) : (
+            <Note>Aucun autre événement daté sur la fenêtre analysée.</Note>
           )}
         </Section>
 
         <Section title="Interventions">
-          {doneActions.length > 0 ? (
-            doneActions.map((action) => (
-              <InfoBox
-                key={action.key}
-                title={`${action.firstUtc || 'date inconnue'} — ${action.label}`}
-              >
-                Opérateur : {action.operator || 'N/D'}
-                {action.hasFailure &&
-                  '\n⚠️ Au moins une erreur a été journalisée pour cette action'}
-              </InfoBox>
-            ))
+          {interventions.length > 0 ? (
+            <DataTable
+              columns={[
+                { header: 'Horodatage (UTC)', key: 'stamp', width: 2 },
+                { header: 'Action', key: 'action', width: 3, bold: true },
+                { header: 'Source', key: 'source', width: 2 },
+                { header: 'Opérateur', key: 'operator', width: 2 },
+              ]}
+              rows={interventions}
+              limit={20}
+              emptyText="Aucune intervention enregistrée."
+            />
           ) : (
             <Note>
-              Aucune action de remédiation n'a été retrouvée dans le journal CIPP pour ce compte.
+              Aucune action de remédiation n'est enregistrée dans le journal CIPP pour ce compte.
             </Note>
           )}
-          {psitAsArray(incident?.ExternalActions).map((action, index) => (
-            <InfoBox
-              key={`ext-${index}`}
-              title={`${action?.DoneUtc ? formatUtc(action.DoneUtc) : 'date déclarée'} — ${
-                action?.Action || 'action hors CIPP'
-              }`}
-            >
-              Déclarée par : {action?.By || 'N/D'}
-              {action?.Note && `\n${action.Note}`}
-            </InfoBox>
-          ))}
+          {interventions.some((row) => row.hasFailure) && (
+            <Note>
+              Une action marquée « erreur journalisée » a échoué au moins une fois : son effet doit
+              être vérifié dans le tenant.
+            </Note>
+          )}
         </Section>
       </ContentPage>
 
       {/* 4. FAITS ÉTABLIS */}
-      <ContentPage title="Faits établis" subtitle="Ce que les données prouvent, et sur quelle base">
+      <ContentPage title="Faits établis" subtitle="Constats et base probante">
+        <PsitTlpBand tlp={incident?.Tlp} note={`${ticket} | ${tenantName}`} />
         <Section title="Éléments retenus">
           {[...established, ...confirmed].length > 0 ? (
             [...established, ...confirmed].map((signal) => {
@@ -279,12 +519,21 @@ export const PsitBecIncidentReportDocument = ({
                 (entry) => entry.SignalId === signal.id
               )
               return (
+                /* One field per line, and the analyst's comment on its own labelled line: the
+                   previous form glued the note to the qualification behind a colon, which read as
+                   part of the finding rather than as a comment on it. */
                 <InfoBox key={signal.id} title={signal.title}>
-                  {signal.detail}
-                  {determination &&
-                    `\nQualifié « inattendu » par ${determination.Analyst} le ${formatUtc(
-                      determination.DecidedUtc
-                    )}${determination.Justification ? ` : ${determination.Justification}` : ''}`}
+                  {`Constat : ${signal.detail}`}
+                  {'\n'}
+                  {`Source : ${enumerate(signal.evidence || [], { empty: 'collecte BEC' })}`}
+                  {determination
+                    ? `\nQualification : ${
+                        phrase('determination', determination.Verdict) || determination.Verdict
+                      }, portée par l'analyste PLEIN SUD IT ${dateProse(determination.DecidedUtc)}`
+                    : "\nQualification : établie par la donnée, sans intervention de l'analyste"}
+                  {determination?.Justification
+                    ? `\nCommentaire de l'analyste : ${determination.Justification}`
+                    : ''}
                 </InfoBox>
               )
             })
@@ -330,29 +579,44 @@ export const PsitBecIncidentReportDocument = ({
 
         <Section title="Nature de la violation">
           <InfoBox title="Nature">
-            Accès non autorisé à une boîte de messagerie professionnelle
-            {exposure.exfiltration.length > 0 ? ', avec voie(s) d’exfiltration établie(s)' : ''}.
+            {`Accès non autorisé à une boîte de messagerie professionnelle${
+              exposure.exfiltration.length > 0
+                ? `, avec ${cardinal(
+                    exposure.exfiltration.length,
+                    'voieExfiltration'
+                  )} ${agree(exposure.exfiltration.length, 'voieExfiltration', 'établi')}`
+                : ''
+            }.`}
             {'\n'}
             Compte concerné : {userData?.userPrincipalName}
             {'\n'}
             {/* The window starts at the first access the evidence actually supports, not at the
                 first collected row: an MFA method registered years earlier once became "premier
                 accès non autorisé observé" in a client document. */}
-            Période d'exposition : de{' '}
-            {firstAccessUtc ? formatUtc(firstAccessUtc) : formatUtc(incident?.DetectedUtc)} (
-            {firstAccessUtc ? 'premier accès retenu' : 'détection'}) à{' '}
-            {incident?.ContainedUtc ? formatUtc(incident.ContainedUtc) : 'ce jour (non confinée)'}
+            {`Période d'exposition : du ${
+              firstAccessUtc
+                ? `${dateProse(firstAccessUtc, { article: false })} (premier accès retenu)`
+                : `${dateProse(incident?.DetectedUtc, { article: false })} (détection)`
+            } au ${
+              incident?.ContainedUtc
+                ? dateProse(incident.ContainedUtc, { article: false })
+                : "jour d'édition, le confinement n'étant pas enregistré"
+            }.`}
             {'\n'}
-            Premier accès non autorisé observé :{' '}
-            {firstAccessUtc
-              ? formatUtc(firstAccessUtc)
-              : "non déterminé : aucun signal de connexion n'a été retenu"}
+            {`Premier accès non autorisé observé : ${
+              firstAccessUtc
+                ? dateProse(firstAccessUtc, { article: false })
+                : "non déterminé, aucun signal de connexion n'ayant été retenu"
+            }.`}
             {'\n'}
             {/* The DPO reads this section, and this is the sentence that keeps the date from being
                 quoted as the start of the intrusion. */}
-            Borne de début limitée par la collecte : elle porte sur la fenêtre du{' '}
-            {formatUtc(window.startUtc)} au {formatUtc(window.endUtc)}, dans la limite de rétention
-            des journaux Microsoft. Un accès antérieur ne serait pas visible.
+            {`Borne de début limitée par la collecte : elle porte sur la fenêtre du ${dateProse(
+              window.startUtc,
+              { article: false }
+            )} au ${dateProse(window.endUtc, {
+              article: false,
+            })}, dans la limite de rétention des journaux Microsoft. Un accès antérieur ne serait pas visible.`}
           </InfoBox>
         </Section>
 
@@ -361,23 +625,50 @@ export const PsitBecIncidentReportDocument = ({
             {psitAsArray(incident?.DataSubjectCategories).join(', ') ||
               'Non renseigné : à compléter par l’analyste avant diffusion'}
           </InfoBox>
+          {/* The two figures, articulated: an estimate the controller owns, and a floor the trace
+              shows. Printed one after the other without that distinction, the second was read as a
+              correction of the first. */}
           <InfoBox title="Nombre approximatif">
-            {incident?.AffectedPersonsEstimate || 'Non renseigné'}
-            {incident?.AffectedPersonsBasis &&
-              `\nBase d'estimation : ${incident.AffectedPersonsBasis}`}
+            {incident?.AffectedPersonsEstimate
+              ? `Estimation : ${incident.AffectedPersonsEstimate}${
+                  incident?.AffectedPersonsBasis
+                    ? `, sur la base de ${incident.AffectedPersonsBasis}`
+                    : ''
+                }.`
+              : "Estimation non renseignée, à compléter par l'analyste avant diffusion."}
+            {'\n'}
+            {/* Ce que le décompte mesure, et ce qu'il ne mesure pas : sans cette distinction, un
+                lecteur presse lit le plancher comme un nombre de personnes concernées. */}
+            {nbsp(
+              `Repère mesuré : ${cardinal(
+                exposure.correspondentFloor.distinct,
+                'correspondant'
+              )} ${agree(
+                exposure.correspondentFloor.distinct,
+                'correspondant',
+                'distinct',
+                'observé'
+              )} sur la fenêtre analysée${
+                exposure.correspondentFloor.truncated
+                  ? `, sur un suivi partiel (${cardinal(
+                      exposure.correspondentFloor.collectedRecipients,
+                      'ligneSuivi'
+                    )} ${agree(
+                      exposure.correspondentFloor.collectedRecipients,
+                      'ligneSuivi',
+                      'collecté'
+                    )} pour ${cardinal(
+                      exposure.correspondentFloor.declaredRecipients,
+                      'destinataire'
+                    )} ${agree(
+                      exposure.correspondentFloor.declaredRecipients,
+                      'destinataire',
+                      'annoncé'
+                    )})`
+                  : ''
+              }. Ce décompte porte sur les correspondants observés, non sur les personnes dont les données figurent dans la boîte ; il constitue un plancher et ne préjuge pas du contenu de la boîte.`
+            )}
           </InfoBox>
-          {/* A measurable floor, labelled as the narrow thing it is: the estimate above is the
-              analyst's and the controller's, this is only what the trace shows. */}
-          <Note>
-            Repère mesurable : {exposure.correspondentFloor.distinct} correspondant(s) externe(s)
-            distinct(s) ont échangé avec cette boîte pendant la fenêtre analysée
-            {exposure.correspondentFloor.truncated
-              ? `, sur un suivi partiel (${exposure.correspondentFloor.collectedRecipients} lignes collectées pour ${exposure.correspondentFloor.declaredRecipients} destinataires annoncés)`
-              : ''}
-            . Ce nombre ne dit rien du contenu de la boîte : il ne mesure pas les personnes dont les
-            données y figurent, seulement les correspondants observés sur la fenêtre. Il constitue
-            un plancher, pas une estimation.
-          </Note>
         </Section>
 
         <Section title="Données concernées">
@@ -389,16 +680,17 @@ export const PsitBecIncidentReportDocument = ({
             tone={mailReadStatus === MAIL_READ_STATUS.PROVEN ? 'warn' : undefined}
             title="Lecture des messages"
           >
-            {MAIL_READ_LABELS[mailReadStatus]}
-            {'\n'}
-            {exposure.mailReadNote}
+            {/* One sentence with its reason, instead of "Ne peut être ni établie ni exclue : le
+                niveau d'audit du tenant ne l'enregistre pas" followed by a second colon and a
+                second explanation. */}
+            {phrase('mailRead', mailReadStatus)}
           </InfoBox>
           {exposure.exfiltration.length > 0 ? (
             exposure.exfiltration.map((item, index) => (
-              <InfoBox key={`exf-${index}`} title={`Exfiltration : ${item.label}`}>
-                {item.detail}
+              <InfoBox key={`exf-${index}`} title={item.label}>
+                {`Constat : ${item.detail}`}
                 {'\n'}
-                Base : {item.basis}
+                {`Source : ${item.basis}`}
               </InfoBox>
             ))
           ) : (
@@ -420,7 +712,7 @@ export const PsitBecIncidentReportDocument = ({
       {/* 6 & 7. CONFINEMENT ET PERSISTANCES */}
       <ContentPage
         title="Confinement et suites"
-        subtitle="Ce qui a été fait, ce qui reste à vérifier"
+        subtitle="État du confinement et vérifications à mener"
       >
         <Section title="Actions de confinement">
           <Paragraph>
@@ -428,46 +720,51 @@ export const PsitBecIncidentReportDocument = ({
             opérateur sont attestés par l'outil. Une action menée hors de CIPP figure comme déclarée
             et non attestée.
           </Paragraph>
-          {/* One box, not nine: a full page of "non attestée" says nothing a ten-line list
-              cannot. */}
-          <InfoBox
-            title={`Attestées par le journal CIPP : ${doneActions.length} sur ${containment.length}`}
-          >
-            {containment
-              .map((action) =>
-                action.done
-                  ? `${action.label} : le ${action.firstUtc || 'date inconnue'} par ${
-                      action.operator || 'N/D'
-                    }${action.hasFailure ? ' (au moins une erreur journalisée)' : ''}`
-                  : `${action.label} : non attestée`
-              )
-              .join('\n')}
-          </InfoBox>
+          {/* Nothing attested: one sentence. A list of nine "non attestée" fills a page and says
+              exactly what the sentence says. */}
+          {attestedCount === 0 ? (
+            <Paragraph>
+              {`Aucune des ${containment.length} actions types de confinement ne figure au journal CIPP à la date d'édition. Une action menée hors de CIPP est réputée déclarée et non attestée.`}
+            </Paragraph>
+          ) : (
+            <DataTable
+              columns={[
+                { header: 'Action', key: 'action', width: 3, bold: true },
+                { header: 'État', key: 'state', width: 2 },
+                { header: 'Horodatage (UTC)', key: 'stamp', width: 2 },
+                { header: 'Opérateur', key: 'operator', width: 2 },
+              ]}
+              rows={containmentRows}
+              limit={12}
+              emptyText="Aucune action attestée."
+            />
+          )}
         </Section>
 
         <Section title="Persistances non écartées">
           <Paragraph>
             Une compromission de messagerie laisse des accès qui survivent à la réinitialisation du
-            mot de passe. Les points suivants doivent être vérifiés explicitement :
+            mot de passe. Les vérifications suivantes restent à mener :
           </Paragraph>
           <BulletList>
-            {exposure.notCovered.map((item, index) => (
+            {exposure.persistenceChecks.map((item, index) => (
               <Bullet key={`pers-${index}`}>{item}</Bullet>
             ))}
           </BulletList>
         </Section>
 
         <Section title="Tiers prévenus">
-          {psitAsArray(incident?.ThirdPartiesNotified).length > 0 ? (
-            psitAsArray(incident.ThirdPartiesNotified).map((entry, index) => (
-              <InfoBox key={`tp-${index}`} title={entry?.Name || entry?.name || 'Tiers'}>
-                {entry?.NotifiedUtc || entry?.notifiedUtc
-                  ? `Prévenu le ${formatUtc(entry.NotifiedUtc || entry.notifiedUtc)}`
-                  : 'Date non renseignée'}
-                {(entry?.Channel || entry?.channel) &&
-                  `\nCanal : ${entry.Channel || entry.channel}`}
-              </InfoBox>
-            ))
+          {notifiedRows.length > 0 ? (
+            <DataTable
+              columns={[
+                { header: 'Tiers', key: 'name', width: 3, bold: true },
+                { header: 'Prévenu le (UTC)', key: 'stamp', width: 2 },
+                { header: 'Canal', key: 'channel', width: 2 },
+              ]}
+              rows={notifiedRows}
+              limit={20}
+              emptyText="Aucun tiers prévenu."
+            />
           ) : (
             <Note>Aucun tiers n'est enregistré comme prévenu à ce stade.</Note>
           )}
@@ -478,10 +775,10 @@ export const PsitBecIncidentReportDocument = ({
       <ContentPage title="Suites recommandées" subtitle="Pour le responsable de traitement">
         <Section title="Sans délai">
           <BulletList>
-            <Bullet marker="1." label="Vérifier les persistances listées ci-dessus :">
+            <Bullet marker="1." label="Mener les vérifications de persistance :">
               {' '}
-              consentements applicatifs, secrets d'application, méthodes d'authentification,
-              transfert de boîte, protocoles hérités.
+              la liste figure en section « Persistances non écartées ». Chacune doit être tracée,
+              faite ou écartée.
             </Bullet>
             <Bullet marker="2." label="Prévenir les tiers concernés :">
               {' '}
@@ -490,8 +787,8 @@ export const PsitBecIncidentReportDocument = ({
             </Bullet>
             <Bullet marker="3." label="En cas de virement exécuté :">
               {' '}
-              contacter immédiatement la banque émettrice — un rappel de fonds n'est possible que
-              dans un délai très court — puis déposer plainte.
+              contacter immédiatement la banque émettrice (un rappel de fonds n'est possible que
+              dans un délai très court), puis déposer plainte.
             </Bullet>
             <Bullet marker="4." label="Statuer sur la notification :">
               {' '}
@@ -537,7 +834,7 @@ export const PsitBecIncidentReportDocument = ({
 
       {/* 9. ANNEXE : TIERS DESTINATAIRES */}
       <ContentPage
-        title="Annexe — destinataires des envois signalés"
+        title="Annexe : destinataires des envois signalés"
         subtitle="Liste à vérifier, extraite du suivi des messages"
       >
         <Section>
@@ -558,43 +855,48 @@ export const PsitBecIncidentReportDocument = ({
           )}
           {thirdParties.truncated && (
             <Note>
-              Échantillon : la collecte a retourné {thirdParties.collectedRecipients} lignes de
-              suivi sur {thirdParties.totalRecipients}. La liste ci-dessous est donc partielle.
+              {`Échantillon : la collecte a retourné ${cardinal(
+                thirdParties.collectedRecipients,
+                'ligneSuivi'
+              )} sur ${thirdParties.totalRecipients} annoncées. La liste ci-dessous est donc partielle.`}
             </Note>
           )}
           <Note>
-            Exclus de cette liste : {thirdParties.excluded.systemGenerated} message(s) générés par
-            le service (réponses automatiques, avis de non-remise) et{' '}
-            {thirdParties.excluded.internal} destinataire(s) interne(s) à l'organisation — une
-            réponse automatique partie vers une lettre d'information n'est pas un tiers à prévenir.
-            {thirdParties.derivedLocally &&
-              ' Cette classification a été calculée à la génération du rapport : la collecte est antérieure à sa mise en place côté API.'}
+            {`Exclus de cette liste : ${cardinal(
+              thirdParties.excluded.systemGenerated,
+              'message'
+            )} généré par le service (réponses automatiques, avis de non-remise) et ${cardinal(
+              thirdParties.excluded.internal,
+              'destinataire'
+            )} interne à l'organisation. Une réponse automatique partie vers une lettre d'information n'est pas un tiers à prévenir.`}
+            {thirdParties.derivedLocally
+              ? ' Cette classification a été calculée à la génération du rapport, la collecte étant antérieure à sa mise en place côté API.'
+              : ''}
           </Note>
         </Section>
 
-        <Section title={`Destinataires (${thirdParties.recipients.length})`}>
+        <Section
+          title={`Destinataires : ${counted(thirdParties.recipients.length, 'destinataire')}`}
+        >
           {thirdParties.recipients.length > 0 ? (
             <>
-              {thirdParties.recipients.slice(0, 60).map((entry, index) => (
-                <InfoBox
-                  key={entry.address}
-                  title={
-                    pseudonymise
-                      ? `T-${String(index + 1).padStart(2, '0')} — ${entry.domain || 'domaine inconnu'}`
-                      : entry.address
-                  }
-                >
-                  {entry.messages} message(s) — {entry.reasons.join(', ')}
-                  {'\n'}
-                  Du {entry.firstUtc || 'N/D'} au {entry.lastUtc || 'N/D'}
-                  {!pseudonymise &&
-                    entry.subjects.length > 0 &&
-                    `\nObjets : ${entry.subjects.join(' | ')}`}
-                </InfoBox>
-              ))}
-              {thirdParties.recipients.length > 60 && (
+              {/* A table, not one box per recipient: thirty recipients ran to five pages of
+                  near-identical boxes. Rows stay unbreakable and the header repeats, so a long
+                  annex still reads. */}
+              <DataTable
+                columns={[
+                  { header: 'Destinataire', key: 'recipient', width: 3, bold: true },
+                  { header: 'Messages', key: 'messages', width: 1, align: 'right' },
+                  { header: 'Période (UTC)', key: 'period', width: 3 },
+                  { header: 'Objets', key: 'subjects', width: 4 },
+                ]}
+                rows={thirdPartyRows}
+                limit={60}
+                emptyText="Aucun destinataire signalé."
+              />
+              {truncationNote(60, thirdParties.recipients.length) && (
                 <Note>
-                  ... et {thirdParties.recipients.length - 60} autres destinataires (export JSON)
+                  {truncationNote(60, thirdParties.recipients.length)}
                 </Note>
               )}
             </>
@@ -627,15 +929,15 @@ export const PsitBecIncidentReportDocument = ({
       {/* 10. REMISE ET VALIDATION */}
       <ContentPage
         title="Remise et validation"
-        subtitle="Qui a reçu ce rapport, quand, et ce qu'il reste à valider"
+        subtitle="Traçabilité de la remise et validation du responsable de traitement"
       >
         <Section>
           <Paragraph>
             Ce document est produit par Plein Sud IT en qualité de sous-traitant. Les constats et
             les mesures qu'il rapporte relèvent de notre intervention ; les décisions qui en
-            découlent — qualification juridique d'une violation de données, notification à
-            l'autorité de contrôle et aux personnes concernées, déclaration à l'assureur, dépôt de
-            plainte — relèvent du responsable de traitement.
+            découlent (qualification juridique d'une violation de données, notification à l'autorité
+            de contrôle et aux personnes concernées, déclaration à l'assureur, dépôt de plainte)
+            relèvent du responsable de traitement.
           </Paragraph>
         </Section>
 
@@ -674,7 +976,7 @@ export const PsitBecIncidentReportDocument = ({
           </Paragraph>
           {/* Deliberately blank lines: the signed copy is the artefact, and it has to be printable
               from the PDF without anyone retyping the case reference. */}
-          <InfoBox title={`Dossier ${incident?.Reference || 'sans référence'}`}>
+          <InfoBox title={`Dossier ${ticket}`}>
             Nom et fonction : ______________________________________________
             {'\n\n'}
             Date : ______________________
@@ -734,6 +1036,9 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
   // analyst has to see what is missing, in place - and the download is what waits.
   const missing = []
   if (!incident?.Reference) missing.push("aucune fiche d'incident ouverte")
+  // The client-facing reference: cover, identification block, file name. Without it the document
+  // carries no reference the client can quote.
+  if (!incident?.AutotaskTicket) missing.push('numéro de ticket Autotask')
   if (!incident?.DetectedUtc) missing.push('date de détection')
   if (!psitAsArray(incident?.DataSubjectCategories).length) {
     missing.push('catégories de personnes concernées')
@@ -784,10 +1089,10 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
               </Typography>
               {missing.length > 0 && (
                 <Typography variant="body2" color="error.main">
-                  Téléchargement bloqué — à compléter dans la fiche de dossier :{' '}
-                  {missing.join(', ')}. Ces éléments sont ceux que l'article 33.3 du RGPD demande de
-                  décrire ; un rapport qui les laisse vides a l'air complet, ce qui est pire que pas
-                  de rapport. L'aperçu reste consultable.
+                  Téléchargement bloqué, à compléter dans la fiche de dossier : {missing.join(', ')}
+                  . Ces éléments sont ceux que l'article 33.3 du RGPD demande de décrire ; un
+                  rapport qui les laisse vides a l'air complet, ce qui est pire que pas de rapport.
+                  L'aperçu reste consultable.
                 </Typography>
               )}
             </Box>
@@ -826,9 +1131,13 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
             ) : (
               <PDFDownloadLink
                 document={documentNode}
-                fileName={`${incident?.Reference || 'Incident_BEC'}_${userData?.userPrincipalName}${
-                  pseudonymise ? '_pseudonymise' : ''
-                }.pdf`}
+                fileName={psitReportFileName(
+                  incident?.AutotaskTicket,
+                  userData?.userPrincipalName,
+                  {
+                    pseudonymise,
+                  }
+                )}
                 style={{ textDecoration: 'none' }}
               >
                 {({ loading }) => (

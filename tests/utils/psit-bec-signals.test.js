@@ -156,7 +156,7 @@ describe('buildSignals', () => {
 
     expect(signInSignals).toHaveLength(1)
     expect(signInSignals[0].class).toBe(SIGNAL_CLASS.TO_QUALIFY)
-    expect(signInSignals[0].title).toContain('3 connexion(s) réussie(s)')
+    expect(signInSignals[0].title).toContain('3 connexions réussies')
     expect(signInSignals[0].question).toContain('VPN')
     expect(signInSignals[0].question).toContain('FR')
   })
@@ -224,7 +224,7 @@ describe('buildVerdict', () => {
 
     const verdict = buildVerdict(signals, triage)
     expect(verdict.status).toBe(VERDICT_STATUS.COMPROMISED)
-    expect(verdict.detail).toContain('connexion(s) réussie(s)')
+    expect(verdict.detail).toContain('connexions réussies')
   })
 
   it('stays open when a question could not be answered', () => {

@@ -32,6 +32,18 @@ import {
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
 import { psitAsArray } from '../../utils/psit-as-array'
+import {
+  andMore,
+  cardinal,
+  counted,
+  dateProse,
+  dateTable,
+  enumerate,
+  listWithNote,
+  phrase,
+  truncationNote,
+} from '../../utils/psit-report-prose'
+import { PsitTlpBand, tlpLabel } from './PsitTlpBand'
 import { buildIocs } from '../../utils/psit-bec-iocs'
 import {
   AlertBox,
@@ -195,7 +207,10 @@ export const PsitBecReportFrDocument = ({
       result:
         ruleCount === 0 && ruleChangeCount === 0
           ? 'Aucune règle, aucune modification dans la fenêtre'
-          : `${plural(ruleCount, 'règle présente', 'règles présentes')}, ${ruleChangeCount} modification(s) dans la fenêtre`,
+          : `${counted(ruleCount, 'regle')} présente, ${counted(
+              ruleChangeCount,
+              'modification'
+            )} dans la fenêtre`,
       attention: ruleCount > 0 || ruleChangeCount > 0,
     },
     {
@@ -208,7 +223,7 @@ export const PsitBecReportFrDocument = ({
       result:
         maliciousAppCount === 0 && addedAppCount === 0
           ? 'Aucune ajoutée, aucune du catalogue malveillant'
-          : `${addedAppCount} ajoutée(s), ${maliciousAppCount} du catalogue malveillant`,
+          : `${counted(addedAppCount, 'application')} ajoutée, ${maliciousAppCount} du catalogue malveillant`,
       attention: maliciousAppCount > 0 || addedAppCount > 0,
     },
     {
@@ -216,12 +231,14 @@ export const PsitBecReportFrDocument = ({
       result:
         permissionChangeCount === 0
           ? 'Aucune modification'
-          : `${permissionChangeCount} modification(s)`,
+          : counted(permissionChangeCount, 'modification'),
       attention: permissionChangeCount > 0,
     },
     {
       control: '5. Courrier sortant',
-      result: `${mail.counts.collected} ligne(s) de suivi, dont ${mail.counts.humanExternal} vers l'extérieur`,
+      result: `${counted(mail.counts.collected, 'ligneSuivi')}, dont ${
+        mail.counts.humanExternal
+      } vers l'extérieur`,
       attention: mail.foreignHumanExternal.length > 0,
     },
     {
@@ -242,7 +259,10 @@ export const PsitBecReportFrDocument = ({
     },
     {
       control: '8. Expéditeurs approuvés et bloqués',
-      result: `${senderListEntries} entrée(s), ${safelistChanges.length} modification(s) dans la fenêtre`,
+      result: `${counted(senderListEntries, 'entree')}, ${counted(
+        safelistChanges.length,
+        'modification'
+      )} dans la fenêtre`,
       attention: safelistChanges.length > 0,
     },
     {
@@ -259,28 +279,39 @@ export const PsitBecReportFrDocument = ({
       result:
         signInGroups.length === 0
           ? 'Aucune connexion retournée par la collecte'
-          : `${signInSuccesses} réussie(s) depuis ${signInGroups.filter((group) => group.successes > 0).length} adresse(s), ${signInFailures} échec(s)`,
+          : `${counted(signInSuccesses, 'connexion')} réussie${
+              signInSuccesses > 1 ? 's' : ''
+            } depuis ${counted(
+              signInGroups.filter((group) => group.successes > 0).length,
+              'adresse'
+            )}, ${counted(signInFailures, 'tentative')} en échec`,
       attention: foreignSuccessSessions.length > 0,
     },
     {
       control: '11. Liens de partage',
-      result: sharingCount === 0 ? 'Aucun créé ni modifié' : `${sharingCount} modification(s)`,
+      result: sharingCount === 0 ? 'Aucun créé ni modifié' : counted(sharingCount, 'modification'),
       attention: sharingCount > 0,
     },
   ]
   const hasAnyDetail = Object.values(detail).some(Boolean)
 
+  // Same client-facing reference as the incident report: the ticket, on every surface.
+  const ticket = incident?.AutotaskTicket || 'ticket non renseigné'
+  const relatedTickets = psitAsArray(incident?.RelatedTickets)
+  const marking = tlpLabel(incident?.Tlp)
+
   const qualificationOf = (signalId) => {
     const determination = determinations.get(signalId)
     if (!determination) return 'non qualifié'
-    return `${VERDICT_WORDS[determination.Verdict] || determination.Verdict} — ${
-      determination.Analyst || 'N/D'
-    }, ${formatUtc(determination.DecidedUtc)}`
+    return `${
+      phrase('determination', determination.Verdict) || determination.Verdict
+    }, portée par l'analyste PLEIN SUD IT ${dateProse(determination.DecidedUtc)}`
   }
 
   return (
     <ReportDocument
       brandingSettings={brandingSettings}
+      language="fr"
       tenantName={tenantName}
       reportName="Rapport d'investigation"
       generatedOn={currentDate}
@@ -288,10 +319,8 @@ export const PsitBecReportFrDocument = ({
       coverLabel="RAPPORT D'INVESTIGATION"
       coverTitle="Investigation"
       coverAccent="Messagerie"
-      coverSubtitle={`Recherche d'indices de compromission sur une boîte de messagerie — ${
-        tenantName || 'votre organisation'
-      }`}
-      coverTenant={userData?.displayName || 'Utilisateur inconnu'}
+      coverSubtitle={`Ticket ${ticket}`}
+      coverTenant={userData?.displayName || 'Compte inconnu'}
       coverFallbackImage="/reportImages/soc.jpg"
       coverFooterNote="Confidentiel - Usage interne uniquement"
       footerLabel={`${tenantName} - Investigation ${userData?.displayName}${
@@ -299,23 +328,24 @@ export const PsitBecReportFrDocument = ({
       }`}
       coverMeta={
         <CoverMeta
-          lines={[userData?.userPrincipalName || 'utilisateur@domaine.fr']}
-          note={`Collecte du ${formatDate(becData?.ExtractedAt)}${
-            incident?.AutotaskTicket ? ` — Ticket ${incident.AutotaskTicket}` : ''
-          }${incident?.Reference ? ` — Incident ${incident.Reference}` : ''}`}
+          lines={[userData?.userPrincipalName || 'adresse non renseignée']}
+          note={`Collecte du ${dateProse(becData?.ExtractedAt, {
+            article: false,
+          })}. Marquage ${marking}.`}
         />
       }
     >
       {/* 1. DÉCISION */}
-      <ContentPage title="Décision" subtitle="Ce que l'investigation retient, et sur quelle base">
+      <ContentPage title="Décision" subtitle="Constats retenus et base probante">
+        <PsitTlpBand tlp={incident?.Tlp} note={`${ticket} | ${tenantName}`} />
         <Section title="Dossier">
           <InfoBox title="Références">
-            Ticket Autotask : {incident?.AutotaskTicket || 'non renseigné'}
+            Ticket : {ticket}
             {'\n'}
             Rapport d'incident associé :{' '}
             {incident?.Reference
-              ? `${incident.Reference} (${
-                  INCIDENT_STATUS_LABELS[incident?.Status] || 'statut à préciser'
+              ? `oui, même ticket (${
+                  phrase('incidentStatus', incident?.Status, 'box') || 'statut à préciser'
                 })`
               : 'aucun à ce stade'}
             {'\n'}
@@ -360,17 +390,16 @@ export const PsitBecReportFrDocument = ({
 
         {(incident?.PreviousCases || []).length > 0 && (
           <Section title="Antécédents sur cette boîte">
-            <AlertBox title={`${incident.PreviousCases.length} dossier(s) antérieur(s)`}>
+            <AlertBox title={`${cardinal(incident.PreviousCases.length, 'dossier')} antérieur`}>
               {psitAsArray(incident.PreviousCases)
                 .map(
                   (previous) =>
-                    `• ${previous.Reference}${
-                      previous.AutotaskTicket ? ` — ticket ${previous.AutotaskTicket}` : ''
-                    }\n  Détection : ${
-                      previous.DetectedUtc ? formatUtc(previous.DetectedUtc) : 'non renseignée'
-                    } — clos le ${
-                      previous.ClosedUtc ? formatUtc(previous.ClosedUtc) : 'N/D'
-                    } par ${previous.ClosedBy || 'N/D'}`
+                    `• Ticket ${previous.AutotaskTicket || 'non renseigné'}\n  Détection : ${dateProse(
+                      previous.DetectedUtc,
+                      { article: false }
+                    )}, clos ${dateProse(previous.ClosedUtc, { article: false })} par ${
+                      previous.ClosedBy || 'analyste non renseigné'
+                    }`
                 )
                 .join('\n')}
             </AlertBox>
@@ -385,8 +414,9 @@ export const PsitBecReportFrDocument = ({
         {staleTriage.length > 0 && (
           <Section title="Qualifications antérieures à la fenêtre">
             <Note>
-              {staleTriage.length} qualification(s) enregistrée(s) avant le{' '}
-              {formatUtc(window.startUtc)} ne sont pas appliquées à cette collecte : une réponse
+              {`${cardinal(staleTriage.length, 'qualification')} enregistrée avant ${dateProse(
+                window.startUtc
+              )} n'est pas appliquée à cette collecte : une réponse`}{' '}
               donnée sur un événement passé ne vaut pas pour un événement nouveau, même à la même
               adresse. Les signaux concernés sont de nouveau présentés comme des questions.
               {'\n'}
@@ -394,8 +424,8 @@ export const PsitBecReportFrDocument = ({
                 .map(
                   (determination) =>
                     `• ${determination.SignalId} : ${
-                      VERDICT_WORDS[determination.Verdict] || determination.Verdict
-                    } — ${determination.Analyst || 'N/D'}, ${formatUtc(determination.DecidedUtc)}`
+                      phrase('determination', determination.Verdict) || determination.Verdict
+                    }, portée par l'analyste PLEIN SUD IT ${dateProse(determination.DecidedUtc)}`
                 )
                 .join('\n')}
             </Note>
@@ -412,8 +442,8 @@ export const PsitBecReportFrDocument = ({
               </Bullet>
               <Bullet marker="2." label="Vérifier les persistances :">
                 {' '}
-                consentements applicatifs, transfert de boîte, protocoles hérités, règles masquées —
-                la liste figure en section « Couverture et limites ».
+                consentements applicatifs, transfert de boîte, protocoles hérités, règles masquées.
+                La liste figure en section « Couverture et limites ».
               </Bullet>
               <Bullet marker="3." label="Ouvrir le rapport d'incident :">
                 {' '}
@@ -458,11 +488,11 @@ export const PsitBecReportFrDocument = ({
       >
         <Section>
           <Paragraph>
-            Les sources n'utilisent pas la même base de temps : Entra ID date les connexions, le
+            Les sources n'utilisent pas la même base de temps. Entra ID date les connexions, le
             suivi des messages date le courrier, le journal d'audit date les modifications. Tout est
             ramené en UTC pour qu'une concomitance soit visible. Les connexions réussies
-            consécutives depuis une même adresse sont regroupées en session : sept requêtes en cinq
-            minutes sont une session, pas sept événements.
+            consécutives depuis une même adresse sont regroupées en session, sept requêtes en cinq
+            minutes formant une session et non sept événements.
           </Paragraph>
         </Section>
 
@@ -470,12 +500,12 @@ export const PsitBecReportFrDocument = ({
           {timeline.length > 0 ? (
             <>
               {timeline.slice(0, 30).map((event, index) => (
-                <InfoBox key={`tl-${index}`} title={`${event.timestampUtc} — ${event.label}`}>
+                <InfoBox key={`tl-${index}`} title={`${event.label} (${event.timestampUtc})`}>
                   {event.detail || ' '}
                 </InfoBox>
               ))}
-              {timeline.length > 30 && (
-                <Note>... et {timeline.length - 30} autres événements (export JSON)</Note>
+              {truncationNote(30, timeline.length) && (
+                <Note>{truncationNote(30, timeline.length)}</Note>
               )}
             </>
           ) : (
@@ -493,10 +523,11 @@ export const PsitBecReportFrDocument = ({
               l'incident et ne peuvent pas être lus comme un premier accès.
             </Paragraph>
             <InfoBox title={plural(outOfWindow.length, 'élément antérieur', 'éléments antérieurs')}>
-              {outOfWindow
-                .slice(0, 12)
-                .map((event) => `${event.timestampUtc} — ${event.label}`)
-                .join('\n')}
+              {listWithNote(
+                outOfWindow,
+                12,
+                (event) => `${event.label} (${event.timestampUtc})`
+              )}
             </InfoBox>
           </Section>
         )}
@@ -568,7 +599,7 @@ export const PsitBecReportFrDocument = ({
       {/* 4. COUVERTURE ET LIMITES */}
       <ContentPage
         title="Couverture et limites"
-        subtitle="Ce qui a été regardé, ce qui ne peut pas être conclu"
+        subtitle="Étendue de la collecte et limites de visibilité"
       >
         <Section title="Provenance des données">
           <InfoBox title="Collecte">
@@ -613,15 +644,15 @@ export const PsitBecReportFrDocument = ({
             de détection, d'analyse et de documentation des incidents des référentiels ISO 27001
             (A.16.1), SOC 2 (CC7.3, CC7.4) et NIST CSF (fonctions Detect et Respond), ainsi qu'aux
             articles 32 et 33 du RGPD s'agissant d'une éventuelle violation de données à caractère
-            personnel — dont l'appréciation relève du responsable de traitement. Il doit être
+            personnel, dont l'appréciation relève du responsable de traitement. Il doit être
             conservé selon la politique documentaire de l'organisation, à accès restreint.
           </Paragraph>
         </Section>
       </ContentPage>
 
-      {/* ANNEXE A — COUVERTURE PUIS DÉTAIL */}
+      {/* ANNEXE A : COUVERTURE PUIS DETAIL */}
       <ContentPage
-        title="Annexe A — couverture des vérifications"
+        title="Annexe A : couverture des vérifications"
         subtitle="Les onze contrôles de la collecte et leur résultat"
       >
         <Section>
@@ -646,6 +677,7 @@ export const PsitBecReportFrDocument = ({
             ]}
             rows={coverage}
             limit={11}
+            emptyText="Aucun contrôle exploitable dans cette collecte."
           />
         </Section>
 
@@ -662,7 +694,7 @@ export const PsitBecReportFrDocument = ({
 
       {hasAnyDetail && (
         <ContentPage
-          title="Annexe A — détail des contrôles"
+          title="Annexe A : détail des contrôles"
           subtitle="Uniquement les contrôles qui ont retourné des éléments"
         >
           {detail.rules && (
@@ -687,17 +719,16 @@ export const PsitBecReportFrDocument = ({
                     'modifications de règles dans la fenêtre'
                   )}
                 >
-                  {psitAsArray(becData?.InboxRuleChanges)
-                    .slice(0, 8)
-                    .map(
-                      (change) =>
-                        `${formatUtc(change?.Date)} — ${change?.Operation} « ${
-                          change?.RuleName || 'sans nom'
-                        } » depuis ${change?.ClientIP || 'IP inconnue'}${
-                          change?.Country ? ` (${change.Country})` : ''
-                        }`
-                    )
-                    .join('\n')}
+                  {listWithNote(
+                    psitAsArray(becData?.InboxRuleChanges),
+                    8,
+                    (change) =>
+                      `${dateTable(change?.Date)} : ${change?.Operation} « ${
+                        change?.RuleName || 'sans nom'
+                      } » depuis ${change?.ClientIP || 'IP inconnue'}${
+                        change?.Country ? ` (${change.Country})` : ''
+                      }`
+                  )}
                 </InfoBox>
               )}
             </Section>
@@ -706,10 +737,11 @@ export const PsitBecReportFrDocument = ({
           {detail.newUsers && (
             <Section title="2. Comptes créés récemment">
               <InfoBox title={plural(newUserCount, 'compte créé', 'comptes créés')}>
-                {psitAsArray(becData?.NewUsers)
-                  .slice(0, 10)
-                  .map((user) => `${user?.userPrincipalName} — ${formatUtc(user?.createdDateTime)}`)
-                  .join('\n')}
+                {listWithNote(
+                  psitAsArray(becData?.NewUsers),
+                  10,
+                  (user) => `${user?.userPrincipalName} (créé ${dateTable(user?.createdDateTime)})`
+                )}
               </InfoBox>
             </Section>
           )}
@@ -724,13 +756,14 @@ export const PsitBecReportFrDocument = ({
                     'applications du catalogue malveillant présentes'
                   )}
                 >
-                  {psitAsArray(becData?.MaliciousSPs)
-                    .slice(0, 8)
-                    .map(
-                      (app) =>
-                        `${app?.displayName} (${app?.appId}) — ${app?.CatalogName || 'catalogue'}`
-                    )
-                    .join('\n')}
+                  {listWithNote(
+                    psitAsArray(becData?.MaliciousSPs),
+                    8,
+                    (app) =>
+                      `${app?.displayName} (${app?.appId}), catalogue ${
+                        app?.CatalogName || 'non nommé'
+                      }`
+                  )}
                 </AlertBox>
               )}
               {addedAppCount > 0 && (
@@ -741,15 +774,14 @@ export const PsitBecReportFrDocument = ({
                     'applications ajoutées dans la fenêtre'
                   )}
                 >
-                  {psitAsArray(becData?.AddedApps)
-                    .slice(0, 8)
-                    .map(
-                      (app) =>
-                        `${app?.displayName || app?.appDisplayName} — ${formatUtc(
-                          app?.createdDateTime
-                        )}${app?.MaliciousMatch ? ' — correspond au catalogue malveillant' : ''}`
-                    )
-                    .join('\n')}
+                  {listWithNote(
+                    psitAsArray(becData?.AddedApps),
+                    8,
+                    (app) =>
+                      `${app?.displayName || app?.appDisplayName} (ajoutée ${dateTable(
+                        app?.createdDateTime
+                      )})${app?.MaliciousMatch ? ', correspond au catalogue malveillant' : ''}`
+                  )}
                 </InfoBox>
               )}
             </Section>
@@ -764,15 +796,14 @@ export const PsitBecReportFrDocument = ({
                   'modifications de permissions'
                 )}
               >
-                {psitAsArray(becData?.MailboxPermissionChanges)
-                  .slice(0, 8)
-                  .map(
-                    (change) =>
-                      `${change?.Operation} par ${change?.UserKey || 'inconnu'} sur ${
-                        change?.ObjectId || 'N/D'
-                      }${change?.TargetsSuspect === true ? ' — concerne cette boîte' : ''}`
-                  )
-                  .join('\n')}
+                {listWithNote(
+                  psitAsArray(becData?.MailboxPermissionChanges),
+                  8,
+                  (change) =>
+                    `${change?.Operation} par ${change?.UserKey || 'inconnu'} sur ${
+                      change?.ObjectId || 'N/D'
+                    }${change?.TargetsSuspect === true ? ', concerne cette boîte' : ''}`
+                )}
               </InfoBox>
             </Section>
           )}
@@ -782,7 +813,8 @@ export const PsitBecReportFrDocument = ({
               <InfoBox title="Volumes">
                 Lignes de suivi collectées : {mail.counts.collected}
                 {'\n'}
-                Dont destinataires externes, envoyés par l'utilisateur : {mail.counts.humanExternal}
+                Dont destinataires externes, envoyés par le titulaire du compte :{' '}
+                {mail.counts.humanExternal}
                 {'\n'}
                 Dont générés par le service (réponses automatiques, non-remises) :{' '}
                 {mail.counts.systemGenerated}
@@ -800,30 +832,32 @@ export const PsitBecReportFrDocument = ({
                     "rafales d'envoi"
                   )}
                 >
-                  {psitAsArray(analysis?.Bursts)
-                    .slice(0, 5)
-                    .map(
-                      (burst) =>
-                        `${formatUtc(burst?.WindowStart)} — ${burst?.MessageCount} message(s) vers ${
-                          burst?.RecipientCount
-                        } destinataire(s) : ${burst?.TopSubject || 'objet inconnu'}`
-                    )
-                    .join('\n')}
+                  {listWithNote(
+                    psitAsArray(analysis?.Bursts),
+                    5,
+                    (burst) =>
+                      `${dateTable(burst?.WindowStart)} : ${counted(
+                        burst?.MessageCount ?? 0,
+                        'message'
+                      )} vers ${counted(
+                        burst?.RecipientCount ?? 0,
+                        'destinataire'
+                      )}, objet « ${burst?.TopSubject || 'non renseigné'} »`
+                  )}
                 </InfoBox>
               )}
               {mail.humanExternal.length > 0 && (
                 <InfoBox title="Échantillon de courrier externe">
-                  {mail.humanExternal
-                    .slice(0, 8)
-                    .map(
-                      (message) =>
-                        `${formatUtc(message?.Received)} — ${message?.RecipientAddress} — ${
-                          message?.Subject || '(sans objet)'
-                        } — depuis ${message?.FromIP || 'IP inconnue'}${
-                          message?.Country ? ` (${message.Country})` : ''
-                        }`
-                    )
-                    .join('\n')}
+                  {listWithNote(
+                    mail.humanExternal,
+                    8,
+                    (message) =>
+                      `${dateTable(message?.Received)} : ${
+                        message?.RecipientAddress
+                      }, objet « ${message?.Subject || 'non renseigné'} », depuis ${
+                        message?.FromIP || 'adresse non déterminée'
+                      }${message?.Country ? ` (${message.Country})` : ''}`
+                  )}
                 </InfoBox>
               )}
             </Section>
@@ -841,13 +875,13 @@ export const PsitBecReportFrDocument = ({
                     (method) =>
                       `${String(method?.['@odata.type'] || 'inconnue')
                         .replace('#microsoft.graph.', '')
-                        .replace('AuthenticationMethod', '')} — ${
+                        .replace('AuthenticationMethod', '')} : ${
                         method?.displayName || 'sans nom'
-                      } — ${
+                      } (${
                         method?.createdDateTime
-                          ? formatUtc(method.createdDateTime)
+                          ? dateTable(method.createdDateTime)
                           : 'date non exposée'
-                      }`
+                      })`
                   )
                   .join('\n')}
               </InfoBox>
@@ -864,8 +898,10 @@ export const PsitBecReportFrDocument = ({
                 Sur le compte analysé :{' '}
                 {formatUtc(suspectPasswordChange[0]?.lastPasswordChangeDateTime)}
                 {'\n'}
-                Sur d'autres comptes du tenant : {otherPasswordChanges} — activité du tenant, sans
-                lien établi avec cette boîte
+                {`Sur d'autres comptes du tenant : ${counted(
+                  otherPasswordChanges,
+                  'modification'
+                )}, activité du tenant sans lien établi avec cette boîte`}
               </InfoBox>
             </Section>
           )}
@@ -873,15 +909,14 @@ export const PsitBecReportFrDocument = ({
           {detail.safelist && (
             <Section title="8. Expéditeurs approuvés et bloqués">
               <InfoBox title="Modifications dans la fenêtre">
-                {safelistChanges
-                  .slice(0, 8)
-                  .map(
-                    (change) =>
-                      `${formatUtc(change?.Date)} — par ${change?.UserKey || 'inconnu'} depuis ${
-                        change?.ClientIP || 'IP inconnue'
-                      }${change?.Country ? ` (${change.Country})` : ''}`
-                  )
-                  .join('\n')}
+                {listWithNote(
+                  safelistChanges,
+                  8,
+                  (change) =>
+                    `${dateTable(change?.Date)} : par ${change?.UserKey || 'auteur inconnu'} depuis ${
+                      change?.ClientIP || 'IP inconnue'
+                    }${change?.Country ? ` (${change.Country})` : ''}`
+                )}
               </InfoBox>
             </Section>
           )}
@@ -892,17 +927,16 @@ export const PsitBecReportFrDocument = ({
                 <AlertBox title="Appareils non récupérables">{becData.IntuneDevicesError}</AlertBox>
               ) : (
                 <InfoBox title={plural(intuneCount, 'appareil géré', 'appareils gérés')}>
-                  {psitAsArray(becData?.IntuneDevices)
-                    .slice(0, 8)
-                    .map(
-                      (device) =>
-                        `${device?.deviceName} — ${
-                          device?.operatingSystem || 'OS inconnu'
-                        } — inscrit le ${formatUtc(device?.enrolledDateTime)} — conformité : ${
-                          device?.complianceState || 'N/D'
-                        }`
-                    )
-                    .join('\n')}
+                  {listWithNote(
+                    psitAsArray(becData?.IntuneDevices),
+                    8,
+                    (device) =>
+                      `${device?.deviceName} (${
+                        device?.operatingSystem || 'système non renseigné'
+                      }), inscrit ${dateTable(device?.enrolledDateTime)}, conformité : ${
+                        device?.complianceState || 'non renseignée'
+                      }`
+                  )}
                 </InfoBox>
               )}
             </Section>
@@ -920,28 +954,37 @@ export const PsitBecReportFrDocument = ({
                       group.successes,
                       'connexion réussie',
                       'connexions réussies'
-                    )} — ${group.ip}${group.country ? ` (${group.country})` : ''}${
-                      group.foreign ? ' — hors zone' : ''
+                    )} depuis ${group.ip}${group.country ? ` (${group.country})` : ''}${
+                      group.foreign ? ', hors zone' : ''
                     }`}
                   >
                     {group.cities.join(', ') || 'ville inconnue'}
                     {'\n'}
                     Du {formatUtc(group.firstSeenUtc)} au {formatUtc(group.lastSeenUtc)}
                     {'\n'}
-                    Applications : {group.apps.slice(0, 5).join(', ') || 'N/D'}
+                    Applications :{' '}
+                    {[group.apps.slice(0, 5).join(', ') || 'N/D', andMore(5, group.apps.length, 'application')]
+                      .filter(Boolean)
+                      .join(', ')}
                     {group.failures > 0
                       ? `\nÉchecs depuis la même adresse : ${group.failures}`
                       : ''}
                   </InfoBox>
                 ))}
+              {truncationNote(8, signInGroups.filter((group) => group.successes > 0).length) && (
+                <Note>
+                  {truncationNote(8, signInGroups.filter((group) => group.successes > 0).length)}
+                </Note>
+              )}
               {signInGroups.filter((group) => group.successes === 0).length > 0 && (
                 <Note>
                   {signInGroups
                     .filter((group) => group.successes === 0)
                     .reduce((total, group) => total + group.failures, 0)}{' '}
-                  tentative(s) en échec depuis{' '}
-                  {signInGroups.filter((group) => group.successes === 0).length} autre(s) adresse(s)
-                  : pulvérisation de mots de passe, aucune n'a abouti.
+                  {`en échec depuis ${cardinal(
+                    signInGroups.filter((group) => group.successes === 0).length,
+                    'adresse'
+                  )} : pulvérisation de mots de passe, aucune n'a abouti.`}
                 </Note>
               )}
             </Section>
@@ -952,25 +995,24 @@ export const PsitBecReportFrDocument = ({
               <InfoBox
                 title={plural(sharingCount, 'modification de partage', 'modifications de partages')}
               >
-                {psitAsArray(becData?.SharingChanges)
-                  .slice(0, 8)
-                  .map(
-                    (change) =>
-                      `${formatUtc(change?.Date)} — ${change?.Operation} — ${
-                        change?.FileName || change?.ItemUrl || 'élément inconnu'
-                      }${change?.Target ? ` — partagé avec ${change.Target}` : ''}`
-                  )
-                  .join('\n')}
+                {listWithNote(
+                  psitAsArray(becData?.SharingChanges),
+                  8,
+                  (change) =>
+                    `${dateTable(change?.Date)} : ${change?.Operation}, ${
+                      change?.FileName || change?.ItemUrl || 'élément non nommé'
+                    }${change?.Target ? `, partagé avec ${change.Target}` : ''}`
+                )}
               </InfoBox>
             </Section>
           )}
         </ContentPage>
       )}
 
-      {/* ANNEXE C — INDICATEURS */}
+      {/* ANNEXE C : INDICATEURS */}
       {iocs.total > 0 && (
         <ContentPage
-          title="Annexe C — indicateurs observés"
+          title="Annexe C : indicateurs observés"
           subtitle="Éléments techniques réutilisables, avec leur origine"
         >
           <Section>
@@ -991,7 +1033,7 @@ export const PsitBecReportFrDocument = ({
             <DataTable
               columns={[
                 { header: 'Indicateur', key: 'value', width: 2, bold: true },
-                { header: 'Ce qui a été observé', key: 'detail', width: 3 },
+                { header: 'Constat', key: 'detail', width: 3 },
                 { header: 'Source', key: 'basis', width: 2 },
               ]}
               rows={[...iocs.signInIps, ...iocs.sendingIps, ...iocs.forwardTargets]}
@@ -1005,7 +1047,7 @@ export const PsitBecReportFrDocument = ({
               <DataTable
                 columns={[
                   { header: 'Indicateur', key: 'value', width: 2, bold: true },
-                  { header: 'Ce qui a été observé', key: 'detail', width: 3 },
+                  { header: 'Constat', key: 'detail', width: 3 },
                   { header: 'Source', key: 'basis', width: 2 },
                 ]}
                 rows={[...iocs.ruleNames, ...iocs.apps, ...iocs.subjects]}
@@ -1017,9 +1059,9 @@ export const PsitBecReportFrDocument = ({
         </ContentPage>
       )}
 
-      {/* ANNEXE B — COMPRENDRE LE BEC */}
+      {/* ANNEXE B : COMPRENDRE LE BEC */}
       <ContentPage
-        title="Annexe B — comprendre la compromission de messagerie"
+        title="Annexe B : comprendre la compromission de messagerie"
         subtitle="Pour le lecteur non technique"
       >
         <Section>
@@ -1035,14 +1077,14 @@ export const PsitBecReportFrDocument = ({
             L'accès initial vient presque toujours de l'un de ces chemins : hameçonnage
             d'identifiants sur un faux site, pulvérisation de mots de passe courants, réutilisation
             d'identifiants divulgués ailleurs, ou logiciel malveillant sur un poste. Une fois
-            l'accès obtenu, l'attaquant cherche à le rendre durable : méthode d'authentification
-            ajoutée, consentement applicatif, transfert automatique, règle masquée — autant de
-            portes qui survivent à une simple réinitialisation de mot de passe, et c'est pourquoi ce
-            rapport les traite séparément.
+            l'accès obtenu, l'attaquant cherche à le rendre durable en ajoutant une méthode
+            d'authentification, un consentement applicatif, un transfert automatique ou une règle
+            masquée. Autant de portes qui survivent à une simple réinitialisation de mot de passe,
+            et c'est pourquoi ce rapport les traite séparément.
           </Paragraph>
         </Section>
 
-        <Section title="Ce que ce rapport prouve, et ce qu'il ne prouve pas">
+        <Section title="Portée et limites de ce rapport">
           <BulletList>
             <Bullet label="Il prouve :">
               {' '}
@@ -1051,8 +1093,8 @@ export const PsitBecReportFrDocument = ({
             </Bullet>
             <Bullet label="Il ne prouve pas :">
               {' '}
-              qu'un message a été lu — cela suppose un niveau d'audit supérieur —, ni l'absence de
-              ce que la collecte ne regarde pas, listé en section « Couverture et limites ».
+              qu'un message a été lu (cela suppose un niveau d'audit supérieur), ni l'absence de ce
+              que la collecte ne regarde pas, listé en section « Couverture et limites ».
             </Bullet>
             <Bullet label="Il ne décide pas :">
               {' '}
@@ -1161,8 +1203,10 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
                   de risque que personne ne peut défendre. */}
               {openQuestions > 0 && (
                 <Typography variant="body2" color="warning.main">
-                  {openQuestions} question(s) sans réponse : le rapport ne conclura pas sur un
-                  niveau de risque. Qualifiez-les dans le panneau « Qualification avant diffusion ».
+                  {`${cardinal(
+                    openQuestions,
+                    'question'
+                  )} sans réponse : le rapport ne conclura pas sur un niveau de risque. Qualifiez-la dans le panneau « Qualification avant diffusion ».`}
                 </Typography>
               )}
             </Box>

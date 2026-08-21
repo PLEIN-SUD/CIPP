@@ -8,6 +8,7 @@
 
 import { SIGNAL_CLASS, classifySentMessages, toUtc } from './psit-bec-signals'
 import { psitAsArray } from './psit-as-array'
+import { cardinal } from './psit-report-prose'
 
 /** Categories of data subjects, for the GDPR article 33(3) description. */
 export const DATA_SUBJECT_CATEGORIES = [
@@ -141,7 +142,10 @@ export const buildThirdPartyExposure = (becData = {}, userData = {}) => {
     .map((entry) => ({
       ...entry,
       reasons: [...entry.reasons],
+      // Capped for the cell, but the total travels with it: the annex used to cut here and then
+      // count what was left, which is always zero.
       subjects: [...entry.subjects].slice(0, 3),
+      subjectsTotal: entry.subjects.size,
     }))
     .sort((a, b) => b.messages - a.messages || a.address.localeCompare(b.address))
 
@@ -162,6 +166,52 @@ export const buildThirdPartyExposure = (becData = {}, userData = {}) => {
     derivedLocally: mail.derivedLocally,
   }
 }
+
+/**
+ * The persistence paths this collection does not cover, in the two forms the reports need.
+ *
+ * One source, because the same eight points were written out three times and had started to drift:
+ * `scope` states a limit of visibility, for the section that says what cannot be concluded; `check`
+ * states an action, for the section that says what to verify. A report that needs the list a third
+ * time cross-references instead of repeating it.
+ */
+export const PERSISTENCE_CHECKS = [
+  {
+    scope:
+      'Consentements OAuth accordés sur le compte (seules les applications créées pendant la fenêtre et celles du catalogue malveillant sont collectées)',
+    check:
+      'Vérifier les consentements OAuth accordés sur le compte et révoquer ceux qui ne sont pas justifiés',
+  },
+  {
+    scope: 'Secrets et certificats ajoutés à une application existante',
+    check: 'Rechercher les secrets et certificats ajoutés récemment aux applications du tenant',
+  },
+  {
+    scope: "Pass d'accès temporaire (TAP) et méthodes d'authentification ajoutées hors fenêtre",
+    check:
+      "Contrôler les méthodes d'authentification enregistrées sur le compte, pass d'accès temporaire compris",
+  },
+  {
+    scope: 'Transfert configuré au niveau de la boîte (ForwardingSmtpAddress)',
+    check: 'Rechercher un transfert configuré au niveau de la boîte (ForwardingSmtpAddress)',
+  },
+  {
+    scope: 'Protocoles hérités IMAP et POP activés sur la boîte',
+    check: 'Vérifier si les protocoles hérités IMAP et POP sont activés sur la boîte',
+  },
+  {
+    scope: 'Règles masquées absentes de la vue Exchange (visibles uniquement en MAPI)',
+    check: 'Lister les règles masquées de la boîte en MAPI, la vue Exchange ne les montre pas',
+  },
+  {
+    scope: 'Paramètres de fédération de domaine et accès inter-locataires',
+    check: 'Contrôler les paramètres de fédération de domaine et les accès inter-locataires',
+  },
+  {
+    scope: 'Connexions non interactives (jetons, IMAP, EWS)',
+    check: 'Révoquer les jetons et examiner les connexions non interactives (IMAP, EWS)',
+  },
+]
 
 /**
  * What can and cannot be asserted about exposure. Every field carries its basis, because an
@@ -202,7 +252,10 @@ export const buildExposure = (becData = {}, signals = [], triage = [], userData 
   if (mail.foreignHumanExternal.length > 0) {
     exfiltration.push({
       label: 'Courrier envoyé depuis une adresse hors zone',
-      detail: `${mail.foreignHumanExternal.length} message(s) envoyés par l'utilisateur à des destinataires externes depuis une adresse hors du pays d'utilisation déclaré, hors messages générés par le service.`,
+      detail: `${cardinal(
+        mail.foreignHumanExternal.length,
+        'message'
+      )} envoyé par le titulaire du compte à des destinataires externes depuis une adresse hors du pays d'utilisation déclaré, hors messages générés par le service.`,
       basis: 'Suivi des messages',
     })
   }
@@ -238,16 +291,8 @@ export const buildExposure = (becData = {}, signals = [], triage = [], userData 
     exfiltration,
     // Persistence paths this collection does not cover, listed so the report cannot be read as
     // clearing them. Verified against what the BEC run actually gathers.
-    notCovered: [
-      "Consentements OAuth de l'utilisateur (seules les applications créées pendant la fenêtre et celles du catalogue malveillant sont collectées)",
-      'Secrets et certificats ajoutés à une application existante',
-      'Pass d’accès temporaire (TAP) et méthodes d’authentification ajoutées hors fenêtre',
-      'Transfert configuré au niveau de la boîte (ForwardingSmtpAddress)',
-      'Protocoles hérités IMAP et POP activés sur la boîte',
-      'Règles masquées absentes de la vue Exchange (visibles uniquement en MAPI)',
-      'Paramètres de fédération de domaine et accès inter-locataires',
-      'Connexions non interactives (jetons, IMAP, EWS)',
-    ],
+    notCovered: PERSISTENCE_CHECKS.map((item) => item.scope),
+    persistenceChecks: PERSISTENCE_CHECKS.map((item) => item.check),
   }
 }
 

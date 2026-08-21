@@ -16,6 +16,7 @@
 // and produces the same verdict in the panel and in the report.
 
 import { psitAsArray } from './psit-as-array'
+import { cardinal, counted, dateProse, enumerate } from './psit-report-prose'
 
 const HIDING_FOLDER_PATTERN =
   /rss|conversation history|archive|junk|deleted|notes|sync issues|corbeille|indésirable|éléments supprimés/i
@@ -323,12 +324,12 @@ export const buildTimeline = (becData = {}) => {
     const span =
       session.startUtc === session.endUtc
         ? ''
-        : ` jusqu'à ${session.endUtc.slice(11, 19)}Z, ${session.count} connexion(s)`
+        : ` jusqu'à ${session.endUtc.slice(11, 19)}, ${counted(session.count, 'connexion')}`
     push(
       session.startUtc,
       'signin',
       `Session depuis ${session.ip}${session.country ? ` (${session.country})` : ''}${span}`,
-      [session.cities.join(', '), session.apps.slice(0, 4).join(', ')].filter(Boolean).join(' — ')
+      [session.cities.join(', '), session.apps.slice(0, 4).join(', ')].filter(Boolean).join(', ')
     )
   }
   for (const change of becData?.InboxRuleChanges || []) {
@@ -354,7 +355,10 @@ export const buildTimeline = (becData = {}) => {
     push(
       burst?.WindowStart,
       'mail',
-      `Rafale d'envoi : ${burst?.MessageCount} message(s) vers ${burst?.RecipientCount} destinataire(s)`,
+      `Rafale d'envoi : ${counted(burst?.MessageCount ?? 0, 'message')} vers ${counted(
+        burst?.RecipientCount ?? 0,
+        'destinataire'
+      )}`,
       burst?.TopSubject || ''
     )
   }
@@ -480,7 +484,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
         title: `La règle « ${name} » supprime ou dissimule du courrier`,
         detail: rule?.DeleteMessage
           ? 'La règle supprime les messages entrants.'
-          : `La règle déplace les messages vers « ${rule.MoveToFolder} », un dossier que l'utilisateur ne consulte pas.`,
+          : `La règle déplace les messages vers « ${rule.MoveToFolder} », un dossier que le titulaire du compte ne consulte pas.`,
         evidence: ['NewRules'],
       })
       continue
@@ -491,7 +495,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: `rule-filing:${name}`,
       class: SIGNAL_CLASS.TO_QUALIFY,
       category: 'rules',
-      title: `Règle de classement « ${name} »`,
+      title: `Règle de boîte de réception « ${name} »`,
       detail: `Aucune action d'exfiltration : ${
         rule?.MoveToFolder
           ? `classement vers « ${rule.MoveToFolder} »`
@@ -531,7 +535,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'sharing-anonymous',
       class: SIGNAL_CLASS.ESTABLISHED,
       category: 'sharing',
-      title: `${anonymousLinks.length} lien(s) de partage anonyme(s) créé(s) pendant la fenêtre`,
+      title: `${counted(anonymousLinks.length, 'objet')} de partage anonyme créé pendant la fenêtre`,
       detail:
         "Le contenu est accessible à quiconque détient l'URL, indépendamment de toute remédiation sur le compte.",
       evidence: ['SharingChanges'],
@@ -551,7 +555,10 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'config-change-foreign',
       class: SIGNAL_CLASS.ESTABLISHED,
       category: 'rules',
-      title: `${foreignConfigChanges.length} modification(s) de configuration depuis une IP hors du pays d'utilisation`,
+      title: `${counted(
+        foreignConfigChanges.length,
+        'modification'
+      )} de configuration depuis une adresse hors du pays d'utilisation`,
       detail: `Modifie ${[...new Set(foreignConfigChanges.map((entry) => entry.what))].join(', ')}. Un déplacement explique une connexion, rarement une modification de configuration.`,
       evidence: ['InboxRuleChanges', 'SafelistChanges', 'SharingChanges'],
     })
@@ -565,13 +572,17 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: `signin-ip:${group.ip}`,
       class: SIGNAL_CLASS.TO_QUALIFY,
       category: 'signin',
-      title: `${group.successes} connexion(s) réussie(s) depuis ${group.ip}${group.country ? ` (${group.country})` : ''}`,
-      detail: `${group.cities.join(', ') || 'ville inconnue'} — du ${formatUtc(group.firstSeenUtc)} au ${formatUtc(
+      title: `${counted(group.successes, 'connexion')} réussie${
+        group.successes > 1 ? 's' : ''
+      } depuis ${group.ip}${group.country ? ` (${group.country})` : ''}`,
+      detail: `${group.cities.join(', ') || 'ville non déterminée'}, du ${formatUtc(group.firstSeenUtc)} au ${formatUtc(
         group.lastSeenUtc
       )}. Applications : ${group.apps.slice(0, 4).join(', ') || 'inconnues'}${
-        group.failures > 0 ? `. ${group.failures} échec(s) depuis la même adresse.` : ''
+        group.failures > 0
+          ? `. ${counted(group.failures, 'tentative')} en échec depuis la même adresse.`
+          : ''
       }`,
-      question: `L'utilisateur était-il à cet endroit, ou derrière un VPN ou un roaming, entre le ${formatUtc(
+      question: `Le titulaire du compte était-il à cet endroit, ou derrière un VPN ou un roaming, entre le ${formatUtc(
         group.firstSeenUtc
       )} et le ${formatUtc(group.lastSeenUtc)} ?${usageLocation ? ` (pays déclaré : ${usageLocation})` : ''}`,
       evidence: ['SuspectUserSignIns'],
@@ -588,11 +599,19 @@ export const buildSignals = (becData = {}, userData = {}) => {
       class: SIGNAL_CLASS.TO_QUALIFY,
       category: 'mail',
       title: "Volume d'envoi inhabituel",
-      detail: `${campaigns} campagne(s) à objet répété et ${bursts} rafale(s). Sur ${
-        mail.counts.collected
-      } ligne(s) de suivi collectées : ${mail.counts.humanExternal} vers des destinataires externes, ${
-        mail.counts.systemGenerated
-      } réponse(s) automatique(s) et ${mail.counts.internal} interne(s), exclues du calcul.`,
+      detail: `${counted(campaigns, 'objet')} répété et ${counted(
+        bursts,
+        'tentative'
+      )} en rafale. Sur ${counted(mail.counts.collected, 'ligneSuivi')} collectée : ${counted(
+        mail.counts.humanExternal,
+        'destinataire'
+      )} externe, ${counted(
+        mail.counts.systemGenerated,
+        'message'
+      )} généré par le service et ${counted(
+        mail.counts.internal,
+        'destinataire'
+      )} interne, exclus du calcul.`,
       question:
         "Ce volume correspond-il à l'activité normale de ce poste (commercial, recrutement, support) ?",
       evidence: ['SentMessageAnalysis'],
@@ -613,14 +632,14 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'mfa-recent',
       class: SIGNAL_CLASS.TO_QUALIFY,
       category: 'mfa',
-      title: `${recentMfa.length} méthode(s) MFA enregistrée(s) pendant la fenêtre`,
+      title: `${counted(recentMfa.length, 'methode')} d'authentification enregistrée pendant la fenêtre`,
       detail: recentMfa
         .map(
           (method) =>
             `${method?.displayName || method?.['@odata.type']} le ${formatUtc(method?.createdDateTime)}`
         )
         .join(' ; '),
-      question: "L'utilisateur a-t-il lui-même enregistré cette méthode d'authentification ?",
+      question: "Le titulaire du compte a-t-il lui-même enregistré cette méthode d'authentification ?",
       evidence: ['MFADevices'],
     })
   }
@@ -633,7 +652,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'permission-targeting-user',
       class: SIGNAL_CLASS.TO_QUALIFY,
       category: 'permissions',
-      title: `${permissionChanges.length} modification(s) de permission sur cette boîte`,
+      title: `${counted(permissionChanges.length, 'modification')} de permission sur cette boîte`,
       detail: permissionChanges
         .map((change) => `${change?.Operation} par ${change?.UserKey || 'inconnu'}`)
         .join(' ; '),
@@ -650,7 +669,10 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'signin-failures',
       class: SIGNAL_CLASS.NOISE,
       category: 'signin',
-      title: `${attempts} tentative(s) de connexion en échec depuis ${failedOnly.length} adresse(s)`,
+      title: `${counted(attempts, 'tentative')} de connexion en échec depuis ${counted(
+        failedOnly.length,
+        'adresse'
+      )}`,
       detail:
         "Pulvérisation de mots de passe, présente sur la plupart des tenants. Aucune n'a abouti.",
       evidence: ['SuspectUserSignIns'],
@@ -662,9 +684,9 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'mail-service-generated',
       class: SIGNAL_CLASS.NOISE,
       category: 'mail',
-      title: `${serviceMail} message(s) générés par le service, exclus de l'analyse`,
+      title: `${counted(serviceMail, 'message')} généré par le service, exclu de l'analyse`,
       detail:
-        "Réponses automatiques et avis de non-remise soumis par l'infrastructure Exchange Online : leur IP source est une adresse Microsoft, sans rapport avec la localisation de l'utilisateur.",
+        "Réponses automatiques et avis de non-remise soumis par l'infrastructure Exchange Online : leur adresse source est une adresse Microsoft, sans rapport avec la localisation du titulaire du compte.",
       evidence: ['SentMessageAnalysis'],
     })
   }
@@ -676,7 +698,10 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'password-other-users',
       class: SIGNAL_CLASS.NOISE,
       category: 'tenant',
-      title: `${otherPasswordChanges.length} changement(s) de mot de passe sur d'autres comptes`,
+      title: `${counted(
+        otherPasswordChanges.length,
+        'modification'
+      )} de mot de passe sur d'autres comptes`,
       detail: 'Activité du tenant, sans lien établi avec cette boîte.',
       evidence: ['ChangedPasswords'],
     })
@@ -727,7 +752,7 @@ export const buildVerdict = (signals = [], triage = []) => {
       status: VERDICT_STATUS.COMPROMISED,
       label: 'Compromission établie',
       colour: '#742A2A',
-      detail: `${established.length} signal(s) que la donnée seule suffit à qualifier : ${established
+      detail: `${cardinal(established.length, 'signal')} que la donnée seule suffit à qualifier : ${established
         .map((signal) => signal.title)
         .join(' ; ')}.`,
       openQuestions: unanswered.map((entry) => entry.signal),
@@ -740,7 +765,7 @@ export const buildVerdict = (signals = [], triage = []) => {
       status: VERDICT_STATUS.COMPROMISED,
       label: 'Compromission retenue par l’analyste',
       colour: '#742A2A',
-      detail: `${unexpected.length} signal(s) qualifié(s) comme inattendus : ${unexpected
+      detail: `${cardinal(unexpected.length, 'signal')} qualifié inattendu : ${unexpected
         .map((entry) => entry.signal.title)
         .join(' ; ')}.`,
       openQuestions: unanswered.map((entry) => entry.signal),
@@ -753,7 +778,10 @@ export const buildVerdict = (signals = [], triage = []) => {
       status: VERDICT_STATUS.TO_QUALIFY,
       label: 'À qualifier',
       colour: '#744210',
-      detail: `Le verdict dépend de ${unanswered.length} question(s) restée(s) sans réponse. Aucun niveau de risque n'est affiché tant qu'elles ne sont pas tranchées.`,
+      detail: `Le verdict dépend de ${cardinal(
+        unanswered.length,
+        'question'
+      )} restée sans réponse. Aucun niveau de risque n'est affiché tant qu'elle n'est pas tranchée.`,
       openQuestions: unanswered.map((entry) => entry.signal),
       established,
       unexpected: [],
@@ -764,7 +792,10 @@ export const buildVerdict = (signals = [], triage = []) => {
       status: VERDICT_STATUS.UNDETERMINED,
       label: 'Indéterminé',
       colour: '#744210',
-      detail: `${undetermined.length} signal(s) n'ont pas pu être tranchés (utilisateur injoignable ou information indisponible). Le dossier reste ouvert.`,
+      detail: `${cardinal(
+        undetermined.length,
+        'signal'
+      )} n'a pu être tranché : titulaire du compte injoignable ou information indisponible. Le dossier reste ouvert.`,
       openQuestions: [],
       established,
       unexpected: [],
@@ -775,7 +806,7 @@ export const buildVerdict = (signals = [], triage = []) => {
     label: 'Aucun signal retenu',
     colour: '#22543D',
     detail: toQualify.length
-      ? `Les ${toQualify.length} signal(s) relevés ont tous été qualifiés comme attendus par l'analyste.`
+      ? `${cardinal(toQualify.length, 'signal')} relevé a été qualifié attendu par l'analyste.`
       : 'Aucun signal établi ni à qualifier sur la fenêtre analysée.',
     openQuestions: [],
     established: [],

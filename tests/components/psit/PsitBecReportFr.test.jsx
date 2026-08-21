@@ -7,6 +7,12 @@ import {
   PsitBecReportFrDocument,
 } from '../../../src/components/psit/PsitBecReportFr'
 
+// Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
+// timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
+// which is upstream: no divergence, and the value travels with the tests that need it.
+vi.setConfig({ testTimeout: 60000 })
+
+
 vi.mock('../../../src/api/ApiCall', () => ({
   ApiGetCall: vi.fn(() => ({
     data: undefined,
@@ -22,10 +28,19 @@ vi.mock('../../../src/api/ApiCall', () => ({
 // plain DOM, which is how the upstream report tests do it. The trade-off is explicit: this proves
 // the wording and the structure, never the rendered PDF.
 vi.mock('@react-pdf/renderer', () => {
+  // `render` is honoured, not ignored: react-pdf calls it with the page counters, and a component
+  // that only rendered `children` made every title using a render callback vanish from the assertions
+  // while the real PDF printed it. First page of its own flow, which is the common case.
   const passthrough =
     (tag) =>
-    ({ children }) =>
-      React.createElement(tag, null, children)
+    ({ children, render }) =>
+      React.createElement(
+        tag,
+        null,
+        typeof render === 'function'
+          ? render({ pageNumber: 1, totalPages: 1, subPageNumber: 1, subPageTotalPages: 1 })
+          : children
+      )
   return {
     Document: passthrough('div'),
     Page: passthrough('div'),
@@ -195,7 +210,7 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).toContain('Chronologie')
     expect(text).toContain('Faits et signaux')
     expect(text).toContain('Couverture et limites')
-    expect(text).toContain('Annexe A — couverture des vérifications')
+    expect(text).toContain('Annexe A : couverture des vérifications')
     expect(text).toContain('Annexe B')
     // The decision page comes before the annex, which is the whole point of the restructure.
     expect(text.indexOf('Décision')).toBeLessThan(text.indexOf('Annexe A'))
@@ -219,8 +234,10 @@ describe('PsitBecReportFrDocument structure', () => {
     // The full form's own headings belong to the upstream English report, not to page 1 here.
     expect(text).not.toContain('Signaux établis par la donnée')
     expect(text).not.toContain('Qualifications enregistrées')
-    // The determination itself is printed once, on the findings page.
-    expect(text.match(/s\.miro@pleinsudit\.com/g)).toHaveLength(1)
+    // The analyst is not named in the body: the determination is carried by the firm, and the
+    // nominative trail stays in the raw export.
+    expect(text).not.toContain('s.miro@pleinsudit.com')
+    expect(text).toContain("portée par l'analyste PLEIN SUD IT")
   })
 
   it('gives each open question the evidence needed to answer it', () => {
@@ -247,7 +264,7 @@ describe('PsitBecReportFrDocument structure', () => {
     const text = container.textContent
 
     expect(text).toContain('Qualifications antérieures à la fenêtre')
-    expect(text).toContain('ne sont pas appliquées à cette collecte')
+    expect(text).toContain("n'est pas appliquée à cette collecte")
     // And the signal is still a question rather than being filed as noise.
     expect(text).toContain('À qualifier')
   })
@@ -270,7 +287,9 @@ describe('PsitBecReportFrDocument structure', () => {
     const text = container.textContent
 
     expect(text).toContain('Antécédents sur cette boîte')
-    expect(text).toContain('PSIT-BEC-20260820-AB12')
+    // Quoted by ticket, never by the internal reference.
+    expect(text).toContain('Ticket T20260820.0042')
+    expect(text).not.toContain('PSIT-BEC-20260820-AB12')
     expect(text).toContain('Une compromission répétée de la même boîte est un constat en soi')
   })
 
@@ -284,8 +303,10 @@ describe('PsitBecReportFrDocument structure', () => {
     })
 
     expect(container.textContent).toContain('T20260820.0042')
-    expect(container.textContent).toContain('PSIT-BEC-20260820-AFF6')
-    expect(container.textContent).toContain('En cours de traitement')
+    // The cross-reference names the same ticket: the internal identifier is metadata only.
+    expect(container.textContent).not.toContain('PSIT-BEC-20260820-AFF6')
+    expect(container.textContent).toContain('oui, même ticket')
+    expect(container.textContent).toContain('en cours de traitement')
   })
 
   it('states no risk level and lists the open questions when nothing is qualified', () => {
@@ -309,7 +330,7 @@ describe('PsitBecReportFrDocument structure', () => {
     })
 
     expect(container.textContent).toContain('Retenus (1)')
-    expect(container.textContent).toContain('s.miro@pleinsudit.com')
+    expect(container.textContent).toContain("portée par l'analyste PLEIN SUD IT")
     expect(container.textContent).toContain("l'utilisateur n'est pas en Italie")
   })
 })
@@ -320,7 +341,7 @@ describe('PsitBecReportFrDocument corrections', () => {
     // 3 collected rows: one automatic reply, one internal, one genuine external.
     expect(container.textContent).toContain('Messages externes envoyés')
     expect(container.textContent).toContain(
-      "Dont destinataires externes, envoyés par l'utilisateur : 1"
+      "Dont destinataires externes, envoyés par le titulaire du compte : 1"
     )
     expect(container.textContent).toContain(
       'Dont générés par le service (réponses automatiques, non-remises) : 1'
@@ -339,7 +360,7 @@ describe('PsitBecReportFrDocument corrections', () => {
   it('aggregates consecutive sign-ins into a session instead of one line each', () => {
     const { container } = render()
     expect(container.textContent).toContain('Session depuis 203.0.113.42')
-    expect(container.textContent).toContain('2 connexion(s)')
+    expect(container.textContent).toContain('2 connexions')
   })
 
   it('does not reproduce the sender lists when nothing changed in the window', () => {
@@ -387,7 +408,7 @@ describe('PsitBecReportFrDocument corrections', () => {
     const { container } = render()
     const text = container.textContent
 
-    expect(text).toContain('Annexe C — indicateurs observés')
+    expect(text).toContain('Annexe C : indicateurs observés')
     expect(text).toContain('203.0.113.42')
     // The automatic reply was submitted by Exchange Online: blocking that address would block the
     // client's own mail.

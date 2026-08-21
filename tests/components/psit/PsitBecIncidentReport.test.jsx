@@ -5,8 +5,15 @@ import { renderWithProviders } from '../../test-utils'
 import {
   PsitBecIncidentReportButton,
   PsitBecIncidentReportDocument,
+  psitReportFileName,
 } from '../../../src/components/psit/PsitBecIncidentReport'
 import { ApiGetCall } from '../../../src/api/ApiCall'
+
+// Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
+// timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
+// which is upstream: no divergence, and the value travels with the tests that need it.
+vi.setConfig({ testTimeout: 60000 })
+
 
 vi.mock('../../../src/api/ApiCall', () => ({
   ApiGetCall: vi.fn(() => ({
@@ -20,10 +27,19 @@ vi.mock('../../../src/api/ApiCall', () => ({
 }))
 
 vi.mock('@react-pdf/renderer', () => {
+  // `render` is honoured, not ignored: react-pdf calls it with the page counters, and a component
+  // that only rendered `children` made every title using a render callback vanish from the assertions
+  // while the real PDF printed it. First page of its own flow, which is the common case.
   const passthrough =
     (tag) =>
-    ({ children }) =>
-      React.createElement(tag, null, children)
+    ({ children, render }) =>
+      React.createElement(
+        tag,
+        null,
+        typeof render === 'function'
+          ? render({ pageNumber: 1, totalPages: 1, subPageNumber: 1, subPageTotalPages: 1 })
+          : children
+      )
   return {
     Document: passthrough('div'),
     Page: passthrough('div'),
@@ -153,6 +169,8 @@ describe('PsitBecIncidentReportButton', () => {
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     expect(screen.getByText(/Téléchargement bloqué/)).toBeInTheDocument()
+    // The client-facing reference is required: without it the PDF has no name a client can quote.
+    expect(screen.getAllByText(/ticket Autotask/).length).toBeGreaterThan(0)
     // The missing items are named in the same warning, tooltip included, hence getAllByText.
     expect(screen.getAllByText(/conséquences probables/).length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: /Télécharger le PDF/ })).toBeDisabled()
@@ -195,11 +213,16 @@ describe('PsitBecIncidentReportDocument', () => {
       />
     )
 
-  it('carries the incident identification and the reference', () => {
+  it('identifies the case by its ticket, never by the internal reference', () => {
     const { container } = render()
-    expect(container.textContent).toContain('PSIT-BEC-20260820-AB12')
-    expect(container.textContent).toContain('Confinée')
-    expect(container.textContent).toContain('s.miro@pleinsudit.com')
+    const text = container.textContent
+
+    expect(text).toContain('Ticket : T20260820.0042')
+    // The internal identifier is a sort key on our side; it travels in the PDF metadata only.
+    expect(text).not.toContain('PSIT-BEC-20260820-AB12')
+    expect(text).toContain('confiné')
+    // The analyst is named once, on the handover page, not in the identification block.
+    expect(text).toContain('Rapport établi par : PLEIN SUD IT')
   })
 
   it('structures the exposure section on the article 33.3 items', () => {
@@ -267,15 +290,15 @@ describe('PsitBecIncidentReportDocument', () => {
     })
 
     expect(container.textContent).toContain(
-      'Premier accès non autorisé observé : 2026-08-16 16:40 UTC'
+      'Premier accès non autorisé observé : 16 août 2026 à 16:40 UTC'
     )
-    expect(container.textContent).not.toContain('Premier accès non autorisé observé : 2021')
+    expect(container.textContent).not.toContain('Premier accès non autorisé observé : 12 mars 2021')
   })
 
   it('says so rather than guessing when no access can be dated', () => {
     const { container } = render()
     expect(container.textContent).toContain(
-      "non déterminé : aucun signal de connexion n'a été retenu"
+      "non déterminé, aucun signal de connexion n'ayant été retenu"
     )
   })
 
@@ -390,11 +413,44 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).not.toContain('Les adresses sont pseudonymisées')
   })
 
-  it('dates the case file next to its reference, so the reference is not read as a date', () => {
+  it('dates the case file, in prose, on its own line', () => {
     const { container } = render({
       incident: { ...incident, CreatedUtc: '2026-08-20T15:00:00Z' },
     })
-    expect(container.textContent).toContain('(dossier ouvert le 2026-08-20 15:00 UTC)')
+    expect(container.textContent).toContain('Dossier ouvert : le 20 août 2026 à 15:00 UTC')
+  })
+
+  it('composes the summary rather than printing an analyst shorthand', () => {
+    const { container } = render({
+      incident: {
+        ...incident,
+        EffectDescription: 'mass-send',
+        ExecutiveNote: 'Compte utilisé pour relancer des fournisseurs.',
+      },
+      triage: [{ SignalId: 'rule-exfil:copie', Verdict: 'unexpected', Analyst: 's.miro' }],
+    })
+    const text = container.textContent
+
+    expect(text).toContain("a fait l'objet d'accès non autorisés")
+    expect(text).toContain('Ces accès ont été suivis d')
+    expect(text).toContain("campagne d'envoi en masse")
+    // The fixture carries one attested action, so the sentence agrees with it.
+    expect(text).toContain('1 action a été attestée par le journal CIPP')
+    expect(text).toContain('MailItemsAccessed')
+    // The analyst's note comes after the composed paragraph, never instead of it.
+    expect(text).toContain('Compte utilisé pour relancer des fournisseurs.')
+    expect(text.indexOf("a fait l'objet")).toBeLessThan(text.indexOf('Compte utilisé pour'))
+    // The document-wide absence of "(s)" is enforced by the PSIT render lint, not here.
+  })
+
+  it('carries the distribution marking on the page, not only on the cover', () => {
+    const { container } = render({ incident: { ...incident, Tlp: 'TLP:RED' } })
+    expect(container.textContent).toContain('TLP:RED')
+  })
+
+  it('defaults the marking to the strictest when the record has none', () => {
+    const { container } = render({ incident: { ...incident, Tlp: undefined } })
+    expect(container.textContent).toContain('TLP:AMBER+STRICT')
   })
 
   it('puts a repeat compromise in the summary, where the controller will read it', () => {
@@ -403,8 +459,9 @@ describe('PsitBecIncidentReportDocument', () => {
         ...incident,
         PreviousCases: [
           {
-            Reference: 'PSIT-BEC-20260820-AB12',
-            DetectedUtc: '2026-08-20T09:00:00Z',
+            Reference: 'PSIT-BEC-20260819-AB12',
+            AutotaskTicket: 'T20260819.0001',
+            DetectedUtc: '2026-08-19T09:00:00Z',
             ClosedUtc: '2026-08-25T16:00:00Z',
           },
         ],
@@ -412,11 +469,28 @@ describe('PsitBecIncidentReportDocument', () => {
     })
 
     expect(container.textContent).toContain('Compromission répétée')
-    expect(container.textContent).toContain('PSIT-BEC-20260820-AB12')
+    // Previous cases are quoted by their ticket too.
+    expect(container.textContent).toContain('Ticket T20260819.0001')
   })
 
   it('warns on its own first page when generated without a retained compromise', () => {
     const { container } = render({ becData: cleanBecData })
     expect(container.textContent).toContain('sans compromission retenue')
+  })
+})
+
+describe('psitReportFileName', () => {
+  it('names the file by the ticket and the account', () => {
+    // The ticket keeps its dot; the address loses its dots and its @.
+    expect(psitReportFileName('T20260820.0013', 'p.martin@contoso.test')).toBe(
+      'T20260820.0013_p_martin_contoso_test.pdf'
+    )
+  })
+
+  it('marks a pseudonymised copy, and never produces an empty name', () => {
+    expect(
+      psitReportFileName('T20260820.0013', 'p.martin@contoso.test', { pseudonymise: true })
+    ).toContain('_pseudonymise.pdf')
+    expect(psitReportFileName(undefined, undefined)).toBe('ticket-non-renseigne_compte-inconnu.pdf')
   })
 })

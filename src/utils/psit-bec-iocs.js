@@ -9,6 +9,7 @@
 
 import { classifySentMessages, groupSignInsByIp, isServiceIp } from './psit-bec-signals'
 import { psitAsArray } from './psit-as-array'
+import { counted } from './psit-report-prose'
 
 const uniqueBy = (items, key) => {
   const seen = new Map()
@@ -33,7 +34,9 @@ export const buildIocs = (becData = {}, userData = {}) => {
   const signInIps = signInGroups.map((group) => ({
     value: group.ip,
     country: group.country || null,
-    detail: `${group.successes} réussie(s), ${group.failures} échec(s)${
+    detail: `${counted(group.successes, 'connexion')} réussie${
+      group.successes > 1 ? 's' : ''
+    }, ${counted(group.failures, 'tentative')} en échec${
       group.foreign ? ', hors du pays d’utilisation déclaré' : ''
     }`,
     basis: 'Journal de connexion Entra ID',
@@ -87,14 +90,16 @@ export const buildIocs = (becData = {}, userData = {}) => {
     [
       ...psitAsArray(becData?.MaliciousSPs).map((app) => ({
         value: String(app?.appId || app?.displayName || ''),
-        detail: `${app?.displayName || 'application'} — catalogue ${app?.CatalogName || 'malveillant'}`,
+        detail: `${app?.displayName || 'application'}, catalogue ${
+          app?.CatalogName || 'malveillant'
+        }`,
         basis: 'Catalogue CIPP',
       })),
       ...psitAsArray(becData?.AddedApps)
         .filter((app) => app?.MaliciousMatch)
         .map((app) => ({
           value: String(app?.appId || app?.displayName || ''),
-          detail: `${app?.displayName || app?.appDisplayName || 'application'} — ajoutée dans la fenêtre`,
+          detail: `${app?.displayName || app?.appDisplayName || 'application'}, ajoutée dans la fenêtre`,
           basis: 'Journal d’audit',
         })),
     ],

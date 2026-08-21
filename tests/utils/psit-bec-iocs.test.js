@@ -66,8 +66,8 @@ describe('buildIocs', () => {
     expect(addresses).toContain('198.51.100.99')
 
     const spray = iocs.signInIps.find((entry) => entry.value === '198.51.100.99')
-    expect(spray.detail).toContain('0 réussie(s)')
-    expect(spray.detail).toContain('1 échec(s)')
+    expect(spray.detail).toContain('0 connexion réussie')
+    expect(spray.detail).toContain('1 tentative en échec')
   })
 
   it("never lists Microsoft's own submission addresses, which would block the client's mail", () => {

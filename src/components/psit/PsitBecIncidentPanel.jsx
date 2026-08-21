@@ -197,11 +197,16 @@ export const PsitBecIncidentPanel = ({
       />
       <Collapse in={!collapsible || expanded}>
         <CardContent>
+          {/* The verdict detail belongs to the decision card in rail mode; here it would be the
+              third copy of the same sentence on one screen. What this panel adds is what it does
+              with the verdict, so that is all that stays. */}
           <Alert severity={isCompromised ? 'error' : 'info'} sx={{ mb: 2 }}>
             <AlertTitle>{verdict.label}</AlertTitle>
             {isCompromised
-              ? verdict.detail
-              : `${verdict.detail} Les champs propres à l'incident (exposition des données, confinement, tiers) apparaîtront si une compromission est retenue.`}
+              ? collapsible
+                ? null
+                : verdict.detail
+              : `${collapsible ? '' : `${verdict.detail} `}Les champs propres à l'incident (exposition des données, confinement, tiers) apparaîtront si une compromission est retenue.`}
           </Alert>
 
           <Stack spacing={2} divider={<Divider flexItem />}>

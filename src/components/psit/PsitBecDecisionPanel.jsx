@@ -77,9 +77,14 @@ export const PsitBecDecisionPanel = ({
       >
         <Stack spacing={2}>
           <Typography variant="body2" color="text.secondary">
+            {/* One source of truth for the status sentence: the verdict's own detail. The flat
+                "les signaux relevés sont qualifiés" that used to sit here read as "nothing to see"
+                next to a chip saying « Indéterminé », which is the opposite of what that status
+                means. And no "listées sous cette carte": the checks moved beside this rail, and on
+                a narrow viewport they are below it again. */}
             {openQuestions > 0
-              ? `${openQuestions} question(s) sans réponse : tant qu'elles le sont, les rapports n'affichent aucun niveau de risque. Les vérifications détaillées sont listées sous cette carte.`
-              : 'Les signaux relevés sont qualifiés. Les vérifications détaillées sont listées sous cette carte.'}
+              ? `${openQuestions} question(s) sans réponse : tant qu'elles le sont, les rapports n'affichent aucun niveau de risque.`
+              : verdict.detail}
           </Typography>
           <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
             <PsitBecReportFrButton

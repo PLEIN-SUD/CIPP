@@ -93,6 +93,31 @@ describe('PsitBecDecisionPanel', () => {
     expect(screen.getByText('Fiche de dossier')).toBeInTheDocument()
   })
 
+  it('takes the status sentence from the verdict rather than asserting all is well', () => {
+    // A signal answered "indéterminé" leaves the case open: the chip says « Indéterminé » and the
+    // sentence beside it has to agree, which a flat "les signaux relevés sont qualifiés" did not.
+    renderWithProviders(
+      <PsitBecDecisionPanel
+        userData={userData}
+        becData={becData}
+        tenantFilter="contoso.test"
+        triage={[
+          {
+            SignalId: 'rule-filing:classement',
+            Verdict: 'undetermined',
+            Analyst: 's.miro',
+            DecidedUtc: new Date().toISOString(),
+          },
+        ]}
+      />
+    )
+
+    expect(screen.getAllByText(/Indéterminé/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Le dossier reste ouvert/)).toBeInTheDocument()
+    expect(screen.queryByText(/Les signaux relevés sont qualifiés/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sous cette carte/)).not.toBeInTheDocument()
+  })
+
   it('opens the panel for the phase the case is in, and lets the other be reopened', async () => {
     renderWithProviders(
       <PsitBecDecisionPanel

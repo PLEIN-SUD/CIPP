@@ -159,7 +159,9 @@ export const PsitBecTriagePanel = ({
         <CardContent>
           <Alert severity={STATUS_SEVERITY[verdict.status] || 'info'} sx={{ mb: 2 }}>
             <AlertTitle>{verdict.label}</AlertTitle>
-            {verdict.detail}
+            {/* In rail mode the decision card above already carries the detail, two centimetres
+                away. Repeating it there would be noise. */}
+            {!collapsible && verdict.detail}
           </Alert>
 
           {established.length > 0 && (

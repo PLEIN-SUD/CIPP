@@ -7,6 +7,7 @@ import {
   listWithNote,
   truncationNote,
   cardinal,
+  dateAxis,
   counted,
   dateProse,
   dateTable,
@@ -185,6 +186,29 @@ describe('listWithNote', () => {
 
   it('survives a missing list', () => {
     expect(listWithNote(undefined, 5, (value) => value)).toBe('')
+  })
+})
+
+describe('dateAxis', () => {
+  it('is short enough to sit under a graduation', () => {
+    expect(dateAxis('2026-08-20T09:00:00Z')).toBe('20/08')
+    expect(dateAxis('2026-01-01T00:00:00Z')).toBe('01/01')
+  })
+
+  it('carries a two-digit year when the window straddles two of them', () => {
+    expect(dateAxis('2025-12-31T23:00:00Z', { withYear: true })).toBe('31/12/25')
+    expect(dateAxis('2026-01-01T01:00:00Z', { withYear: true })).toBe('01/01/26')
+  })
+
+  it('reads the ISO string rather than the local calendar', () => {
+    // 23:30 UTC on the 19th is the 20th in Paris. A tick that shifted by a day would put an event
+    // on the wrong side of a midnight line.
+    expect(dateAxis('2026-08-19T23:30:00Z')).toBe('19/08')
+  })
+
+  it('says so rather than printing nothing', () => {
+    expect(dateAxis(null)).toBe('date non d\u00e9termin\u00e9e')
+    expect(dateAxis('pas une date')).toBe('date non d\u00e9termin\u00e9e')
   })
 })
 

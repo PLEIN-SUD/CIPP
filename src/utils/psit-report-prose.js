@@ -32,12 +32,14 @@ const NOUNS = {
   ligneSuivi: { one: 'ligne de suivi', many: 'lignes de suivi', gender: 'f' },
   message: { one: 'message', many: 'messages', gender: 'm' },
   methode: { one: 'méthode', many: 'méthodes', gender: 'f' },
+  minute: { one: 'minute', many: 'minutes', gender: 'f' },
   modification: { one: 'modification', many: 'modifications', gender: 'f' },
   objet: { one: 'objet', many: 'objets', gender: 'm' },
   personne: { one: 'personne', many: 'personnes', gender: 'f' },
   qualification: { one: 'qualification', many: 'qualifications', gender: 'f' },
   question: { one: 'question', many: 'questions', gender: 'f' },
   regle: { one: 'règle', many: 'règles', gender: 'f' },
+  session: { one: 'session', many: 'sessions', gender: 'f' },
   signal: { one: 'signal', many: 'signaux', gender: 'm' },
   tentative: { one: 'tentative', many: 'tentatives', gender: 'f' },
   // Invariable: "1 tiers", "4 tiers".
@@ -231,6 +233,25 @@ export const dateTable = (value, { fallback = 'non renseigné' } = {}) => {
   const parts = utcParts(value)
   if (!parts) return fallback
   return `${parts.date} ${parts.seconds} UTC`
+}
+
+/**
+ * An axis tick: "20/08", or "20/08/26" when the window straddles two years.
+ *
+ * The third and last date format of the reports, and it exists for one reason: a graduation has a
+ * few points of width. `dateProse` and `dateTable` are both too long to sit under a tick without
+ * colliding with the next one. Everything else keeps to the two long forms - a fourth format would
+ * be a report that spells dates three ways.
+ *
+ * The year is deliberately two digits: on a strip whose whole point is a window of a few days, a
+ * four-digit year in every tick is noise. When the window fits in one year, the year is stated once
+ * in the note under the strip instead.
+ */
+export const dateAxis = (value, { withYear = false, fallback = 'date non déterminée' } = {}) => {
+  const parts = utcParts(value)
+  if (!parts) return fallback
+  const stamp = `${String(parts.day).padStart(2, '0')}/${String(parts.month).padStart(2, '0')}`
+  return withYear ? `${stamp}/${parts.year.slice(2)}` : stamp
 }
 
 /** The day alone, for a period: "17 août 2026". */

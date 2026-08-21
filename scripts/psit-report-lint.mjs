@@ -27,6 +27,7 @@ const PROSE_FILES = [
   'src/components/psit/PsitBecIncidentReport.jsx',
   'src/components/psit/PsitBecReportFr.jsx',
   'src/components/psit/PsitBecAssessmentSection.jsx',
+  'src/components/psit/PsitTimelineStrip.jsx',
   'src/components/psit/PsitTlpBand.jsx',
   'src/components/psit/PsitBecCollectionStatus.jsx',
   'src/components/psit/PsitBecDecisionPanel.jsx',
@@ -36,6 +37,7 @@ const PROSE_FILES = [
   'src/utils/psit-bec-incident.js',
   'src/utils/psit-bec-iocs.js',
   'src/utils/psit-bec-collection.js',
+  'src/utils/psit-report-timeline.js',
 ]
 
 // The prose module holds the banned lexicon itself, so its own rule table would fail every rule.

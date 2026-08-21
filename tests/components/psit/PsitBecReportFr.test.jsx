@@ -52,6 +52,7 @@ vi.mock('@react-pdf/renderer', () => {
     Circle: () => null,
     Line: () => null,
     Rect: () => null,
+    G: () => null,
     PDFViewer: passthrough('div'),
     PDFDownloadLink: passthrough('div'),
     StyleSheet: { create: (styles) => styles },

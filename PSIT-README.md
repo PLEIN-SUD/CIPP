@@ -251,6 +251,75 @@ n'est pas modifié par elle. La parité de valeurs le confirme (`scripts/psit-va
 quatrième état de qualification pour un signal établi mais légitime, avec la trace de qui l'a
 déclaré légitime et sur quelle base ?
 
+## La frise de chronologie
+
+Une bande horizontale au-dessus du tableau des connexions : **une piste par adresse source, un
+segment par session**. Ce que le tableau ne peut pas montrer, parce qu'il a une ligne par adresse et
+aplatit donc une semaine en un couple première-vue / dernière-vue : la forme de l'activité, une
+fenêtre calme puis une rafale, deux adresses qui se chevauchent.
+
+Deux fichiers, séparés exprès :
+
+- `src/utils/psit-report-timeline.js` — **arithmétique pure**, aucun react-pdf. Projection sur
+  l'axe, répartition en pistes, repli au-delà de quatre adresses, largeurs minimales, marquage des
+  débordements. C'est la partie où une frise se trompe, et elle se teste sans rendre une page.
+- `src/components/psit/PsitTimelineStrip.jsx` — le dessin, en primitives `Svg` de react-pdf
+  (`Svg`, `G`, `Rect`, `Line`, `Circle`, `Text`). Aucune bibliothèque de graphes, aucun DOM, aucun
+  asynchrone : le même arbre rend dans l'aperçu navigateur et par `renderToBuffer` en Node.
+
+### Une seule définition de session dans le dépôt
+
+La frise consomme `buildSignInSessions`, celle qui écrit déjà les phrases de la chronologie. Elle
+n'en redérive **aucune** : deux définitions de session, et le document se contredit entre le texte
+et le dessin qui prétend le représenter. Les marques d'échec, elles, viennent des événements
+bruts, puisqu'une session est par définition un accès réussi.
+
+### Ce que la frise dit, et ce qu'elle ne dit pas
+
+| Elle dit | Elle ne dit pas |
+|---|---|
+| **quand** : la position d'un segment est exacte | **combien de temps** : en dessous d'un seuil, tous les segments ont la même largeur |
+| le chevauchement ou la succession de deux adresses | l'intensité par la hauteur — jamais, à sept points c'est illisible |
+| la qualification, **par adresse** | une qualification par session : le verdict est enregistré contre l'adresse |
+| les périodes sans activité, l'axe couvrant toute la fenêtre | ce qui précède la fenêtre de collecte |
+
+Le seuil de la première ligne se calcule : **à 400 points pour une fenêtre de sept jours, un point
+vaut vingt-cinq minutes**, donc toute session de moins d'environ cinquante minutes sort à la largeur
+minimale de deux points. Ce n'est pas un défaut, c'est la résolution du support — et
+`minSegmentMinutes` rend le chiffre exact pour que la note l'écrive au lieu de laisser croire à une
+précision que le dessin n'a pas.
+
+### Couleurs
+
+Bordeaux `#9B2C2C` pour une piste dont l'adresse est qualifiée inattendue, gris clair `#B8BEC6`
+sinon. **Un bleu a été écarté** : dans un document où le rouge signale, un bleu se lit comme
+informatif, or il désignerait ici le contraire. Écart de luminance mesuré entre les deux :
+112 points sur 255, soit 44 % de la plage — foncé contre clair, sans ambiguïté à l'impression en
+niveaux de gris.
+
+### Ce qu'aucune assertion ne peut atteindre
+
+Le texte d'un `Svg` **est** écrit dans les flux du PDF : graduations, libellés de piste et
+compteurs de connexions sont donc assertables, et le sont. Un `Rect` et une `Line` n'écrivent
+aucun texte : **rien de la position, de la largeur ou de la couleur d'un segment n'est vérifiable
+par extraction.** Cette moitié est un contrôle à l'œil sur `psit/render-samples/frise-*.pdf`, et
+l'impression en niveaux de gris reste le seul moyen de vérifier que les deux remplissages se
+distinguent.
+
+Un détail d'outillage, pour ne pas le rechercher : react-pdf coupe un texte `Svg` à la
+parenthèse, et l'extracteur joint les fragments par une espace. Le libellé `203.0.113.42 (IT)`
+ressort donc en `203.0.113.42 ( IT)`. Le PDF est juste ; l'assertion doit tolérer cette espace.
+
+### Dimensions
+
+504 points de large (96 d'étiquette, 400 d'axe, 8 de marge) pour 531 points utiles sur A4 avec le
+padding de page de 32. De 44 points de haut sur deux pistes à 80 sur quatre pistes plus la bande
+d'échecs — la maquette parlait d'environ 60, le haut de la fourchette la dépasse et c'est
+assumé : quatre pistes lisibles valent mieux que quatre pistes serrées.
+
+Le bloc dessin + note est un `View wrap={false}`, **pas une `Section`** : une section insécable
+disparaît. Le titre de section porte déjà `minPresenceAhead`.
+
 ## Parité de valeurs : la référence et son historique
 
 `scripts/psit-value-parity.mjs` extrait les modules de calcul à deux commits, les exécute sur des

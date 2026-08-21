@@ -14,7 +14,7 @@ import {
   Switch,
 } from '@mui/material'
 import { ReportProblem, Download, Close } from '@mui/icons-material'
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
+import { PDFViewer, PDFDownloadLink, View } from '@react-pdf/renderer'
 import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
@@ -34,6 +34,7 @@ import {
   sentence,
   truncationNote,
 } from '../../utils/psit-report-prose'
+import { PsitTimelineStrip, psitTimelineStripNote } from './PsitTimelineStrip'
 import { PsitTlpBand, tlpLabel } from './PsitTlpBand'
 import {
   AlertBox,
@@ -203,6 +204,13 @@ export const PsitBecIncidentReportDocument = ({
         )} parmi les destinataires des envois signalés, à vérifier en priorité.`
       : "Aucun tiers destinataire d'un envoi signalé n'a été relevé."
   // Rows for the chronology tables. Built here so the page holds layout only.
+  // Which source addresses the strip paints as unexpected. Same derivation the rest of the report
+  // uses - a retained sign-in signal, established by the data or qualified by the analyst - so the
+  // colour on the strip and the verdict in "Constats et base probante" cannot disagree.
+  const unexpectedSignInIps = [...established, ...confirmed]
+    .filter((signal) => String(signal.id || '').startsWith('signin-ip:'))
+    .map((signal) => signal.id.replace('signin-ip:', ''))
+
   const signInWindows = groupSignInsByIp(psitAsArray(becData?.SuspectUserSignIns))
     .filter((group) => group.successes > 0)
     .map((group) => ({
@@ -445,6 +453,17 @@ export const PsitBecIncidentReportDocument = ({
               and made a concurrence between two countries impossible to see. */}
           {signInWindows.length > 0 ? (
             <>
+              {/* The strip above the table it completes. One unbreakable box for the drawing AND
+                  its note: a strip whose note landed on the next page states a source it no longer
+                  carries. Not a Section - a section that cannot break is a section that vanishes. */}
+              {psitTimelineStripNote(becData, { unexpectedIps: unexpectedSignInIps }) ? (
+                <View wrap={false}>
+                  <PsitTimelineStrip becData={becData} unexpectedIps={unexpectedSignInIps} />
+                  <Note>
+                    {psitTimelineStripNote(becData, { unexpectedIps: unexpectedSignInIps })}
+                  </Note>
+                </View>
+              ) : null}
               <DataTable
                 columns={[
                   { header: 'Période (UTC)', key: 'period', width: 3 },

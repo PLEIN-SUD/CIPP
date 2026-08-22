@@ -128,13 +128,11 @@ describe('rendered PDF, the chronology strip', () => {
 
       const flat = text.replace(/[ \t\n\r]+/g, ' ')
 
-      // Track labels: the address and its country, one per track. Asserted in two pieces because
-      // react-pdf splits an Svg text run at the parenthesis and the extractor joins runs with a
-      // space, so the label comes back as "203.0.113.42 ( IT)". The PDF is right; the reader is
-      // lossy at that one boundary.
-      expect(flat).toContain('203.0.113.42')
-      expect(flat).toMatch(/203\.0\.113\.42 \(\s?IT\)/)
-      expect(flat).toMatch(/198\.51\.100\.9 \(\s?FR\)/)
+      // Track labels: the address and the country NAMED, one per track. A client reading "(IT)"
+      // reads the encoding of the information rather than the information itself.
+      expect(flat).toContain('203.0.113.42, Italie')
+      expect(flat).toContain('198.51.100.9, France')
+      expect(flat).not.toContain('(IT)')
       // Axis ticks, in the short third date format and nowhere else in the document.
       expect(flat).toMatch(/\b1[4-9]\/08\b/)
       expect(flat).toContain('20/08')
@@ -221,7 +219,7 @@ describe('rendered PDF, the chronology strip', () => {
       const { text } = await render(document(becData([at(6, 0, '203.0.113.42')])), 'frise-une-session')
       const flat = text.replace(/[ \t\n\r]+/g, ' ')
 
-      expect(flat).toMatch(/203\.0\.113\.42 \(\s?IT\)/)
+      expect(flat).toContain('203.0.113.42, Italie')
       // The window is kept whole, so the six empty days show: the first tick is six days back.
       expect(flat).toContain('14/08')
       expect(flat).toContain('20/08')

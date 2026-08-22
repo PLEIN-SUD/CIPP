@@ -159,6 +159,8 @@ export const PsitBecIncidentPanel = ({
         deliveryChannel: value('DeliveryChannel'),
         acknowledgedBy: value('AcknowledgedBy'),
         acknowledgedUtc: value('AcknowledgedUtc'),
+        followUpDecision: value('FollowUpDecision'),
+        followUpDecisionUtc: value('FollowUpDecisionUtc'),
       },
     })
   }
@@ -588,6 +590,33 @@ export const PsitBecIncidentPanel = ({
                       value={toLocalInput(value('AcknowledgedUtc'))}
                       onChange={(event) =>
                         set('AcknowledgedUtc', toUtcFromInput(event.target.value))
+                      }
+                    />
+                  </Stack>
+                  {/* What the client decided to do with the report. This replaced a handwritten box
+                      in the PDF that nobody ever filled in, and it is the only evidence of what the
+                      client did with the document - the counterpart of their duty to notify. Kept
+                      here rather than in the PSA because there is no Autotask integration: the
+                      ticket number is a string an analyst types, nothing reads or writes the ticket. */}
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField
+                      label="Suite décidée par le client"
+                      size="small"
+                      fullWidth
+                      multiline
+                      minRows={2}
+                      helperText="Notification à l'autorité, information des personnes, dépôt de plainte, déclaration à l'assureur, aucune suite. Le rapport rend ce texte tel quel."
+                      value={value('FollowUpDecision')}
+                      onChange={(event) => set('FollowUpDecision', event.target.value)}
+                    />
+                    <TextField
+                      type="datetime-local"
+                      label="Décidée le"
+                      size="small"
+                      InputLabelProps={{ shrink: true }}
+                      value={toLocalInput(value('FollowUpDecisionUtc'))}
+                      onChange={(event) =>
+                        set('FollowUpDecisionUtc', toUtcFromInput(event.target.value))
                       }
                     />
                   </Stack>

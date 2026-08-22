@@ -397,6 +397,103 @@ describe('rendered PDF, the measured floor', () => {
 // table is limited to 12 rows over a fixed list of 9 canonical actions, and the coverage table of
 // the investigation report is limited to 11 rows over a fixed list of 11 controls. Both are noted
 // in PSIT-README.md rather than left to look like an oversight.
+// Article 33(3), element by element, on the reference dossier.
+//
+// The lightening pass of 22 August removed the preamble that ENUMERATED these elements, on the
+// grounds that the sections below provide them and announcing them first read as a manual. That is
+// exactly the kind of edit that quietly takes a required element with it, so the elements are
+// asserted here rather than trusted to a reading. The regulation requires the substance; the gloss
+// was what got shortened.
+describe('rendered PDF, article 33.3 survives the lightening', () => {
+  it(
+    'still carries the five elements the controller must be able to describe',
+    async () => {
+      const { text } = await render(incidentDocument(), 'incident-article-33')
+      const flat = text.replace(/[ \t\n\r]+/g, ' ')
+
+      // a) the nature of the breach
+      expect(flat).toContain('Nature de la violation')
+      expect(flat).toContain('Accès non autorisé à une boîte de messagerie professionnelle')
+      // b) the categories and approximate number of data subjects
+      expect(flat).toContain('Catégories de personnes')
+      expect(flat).toContain('Nombre approximatif')
+      expect(flat).toContain('Repère mesuré')
+      // c) the categories and volume of records
+      expect(flat).toContain('Catégories de données déclarées par le client')
+      // d) the likely consequences
+      expect(flat).toContain('Conséquences probables')
+      // e) the measures taken
+      expect(flat).toContain('Actions de confinement')
+      expect(flat).toContain('Persistances non écartées')
+
+      // And the clause that makes the document a processor's report rather than a legal opinion.
+      // It is the demarcation that protects Plein Sud IT: it shortens, it does not disappear.
+      expect(flat).toContain(
+        'La qualification juridique de la violation et la décision de notifier relèvent du responsable de traitement'
+      )
+      expect(flat).toContain("le présent document ne s'y substitue pas")
+      expect(flat).toContain('en qualité de sous-traitant')
+    },
+    RENDER_TIMEOUT
+  )
+
+  it(
+    'names the country rather than its code, and glosses the controller once',
+    async () => {
+      const { text } = await render(incidentDocument(), 'incident-pays-nommes')
+      const flat = text.replace(/[ \t\n\r]+/g, ' ')
+
+      expect(flat).toContain('Italie')
+      // The chronology table's country column and the summary sentence, both named.
+      expect(flat).toContain('en Italie')
+      // No bare code anywhere in the client report.
+      expect(flat).not.toMatch(/\\(\\s?IT\\s?\\)/)
+
+      // The gloss, at the first legal occurrence: who the controller is for these data.
+      expect(flat).toContain("c'est-à-dire contoso.test pour les données en cause")
+      // And the reserve for data the client is not the controller of.
+      expect(flat).toContain("Si certaines relèvent d'un autre responsable de traitement")
+    },
+    RENDER_TIMEOUT
+  )
+
+  it(
+    'says the data categories are declared, not analysed',
+    async () => {
+      const { text } = await render(incidentDocument(), 'incident-categories-declarees')
+      const flat = text.replace(/[ \t\n\r]+/g, ' ')
+
+      // "présentes dans la boîte" read as a finding about the mailbox contents.
+      expect(flat).not.toContain('Catégories de données présentes dans la boîte')
+      expect(flat).toContain('Catégories de données déclarées par le client')
+      expect(flat).toContain('Ces catégories sont déclarées par le client')
+      expect(flat).toContain("Le contenu des messages n'est pas analysé par cet outil")
+      // Consistent with what the report already says about reading: never established, never
+      // excluded. The two statements must not contradict each other.
+      expect(flat).toContain('La lecture des messages ne peut être ni établie ni exclue')
+    },
+    RENDER_TIMEOUT
+  )
+
+  it(
+    'drops the acknowledgement note and the signature box, and keeps the decision trace',
+    async () => {
+      const { text } = await render(incidentDocument(), 'incident-remise-allegee')
+      const flat = text.replace(/[ \t\n\r]+/g, ' ')
+
+      expect(flat).not.toContain("Aucun accusé de réception n'a été enregistré")
+      expect(flat).not.toContain('Nom et fonction :')
+      expect(flat).not.toContain('Signature :')
+      // The enumeration of decisions is gone from the delivery paragraph; the demarcation is not.
+      expect(flat).not.toContain("déclaration à l'assureur, dépôt de plainte)")
+      expect(flat).toContain('les décisions qui en découlent relèvent du responsable de traitement')
+      // The trace the box existed for.
+      expect(flat).toContain('Suite décidée')
+    },
+    RENDER_TIMEOUT
+  )
+})
+
 describe('rendered PDF, every cap says what it cut', () => {
   const many = (count, build) => Array.from({ length: count }, (unused, index) => build(index))
 

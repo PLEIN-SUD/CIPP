@@ -33,6 +33,7 @@ import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-inci
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
 import { BREACH_STATE, readBreachExposure } from '../../utils/psit-bec-breach'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { countryName } from '../../utils/psit-country-names'
 import {
   andMore,
   cardinal,
@@ -362,7 +363,10 @@ export const PsitBecReportFrDocument = ({
             {window.days} jours)
             {'\n'}
             Pays d'utilisation déclaré :{' '}
-            {becData?.LocationAnalysis?.UsageLocation || 'non renseigné'}
+            {countryName(becData?.LocationAnalysis?.UsageLocation, {
+              withCode: true,
+              fallback: 'non renseigné',
+            })}
           </InfoBox>
         </Section>
 
@@ -649,7 +653,7 @@ export const PsitBecReportFrDocument = ({
             de détection, d'analyse et de documentation des incidents des référentiels ISO 27001
             (A.16.1), SOC 2 (CC7.3, CC7.4) et NIST CSF (fonctions Detect et Respond), ainsi qu'aux
             articles 32 et 33 du RGPD s'agissant d'une éventuelle violation de données à caractère
-            personnel, dont l'appréciation relève du responsable de traitement. Il doit être
+            personnel, dont l'appréciation relève du client. Il doit être
             conservé selon la politique documentaire de l'organisation, à accès restreint.
           </Paragraph>
         </Section>
@@ -959,7 +963,11 @@ export const PsitBecReportFrDocument = ({
                       group.successes,
                       'connexion réussie',
                       'connexions réussies'
-                    )} depuis ${group.ip}${group.country ? ` (${group.country})` : ''}${
+                    )} depuis ${group.ip}${
+                      // The technical report keeps the code beside the name: it is what correlates
+                      // with a firewall log or a threat-intelligence feed.
+                      group.country ? `, ${countryName(group.country, { withCode: true })}` : ''
+                    }${
                       group.foreign ? ', hors zone' : ''
                     }`}
                   >

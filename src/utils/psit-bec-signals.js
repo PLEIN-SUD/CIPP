@@ -16,6 +16,7 @@
 // and produces the same verdict in the panel and in the report.
 
 import { psitAsArray } from './psit-as-array'
+import { countryName } from './psit-country-names'
 import { cardinal, counted, dateProse, enumerate } from './psit-report-prose'
 
 const HIDING_FOLDER_PATTERN =
@@ -340,7 +341,9 @@ export const buildTimeline = (becData = {}) => {
     push(
       session.startUtc,
       'signin',
-      `Session depuis ${session.ip}${session.country ? ` (${session.country})` : ''}${span}`,
+      `Session depuis ${session.ip}${
+        session.country ? `, ${countryName(session.country)}` : ''
+      }${span}`,
       [session.cities.join(', '), session.apps.slice(0, 4).join(', ')].filter(Boolean).join(', ')
     )
   }
@@ -586,7 +589,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       category: 'signin',
       title: `${counted(group.successes, 'connexion')} réussie${
         group.successes > 1 ? 's' : ''
-      } depuis ${group.ip}${group.country ? ` (${group.country})` : ''}`,
+      } depuis ${group.ip}${group.country ? `, ${countryName(group.country)}` : ''}`,
       detail: `${group.cities.join(', ') || 'ville non déterminée'}, du ${formatUtc(group.firstSeenUtc)} au ${formatUtc(
         group.lastSeenUtc
       )}. Applications : ${group.apps.slice(0, 4).join(', ') || 'inconnues'}${

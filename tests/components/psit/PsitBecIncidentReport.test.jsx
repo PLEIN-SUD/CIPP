@@ -366,16 +366,40 @@ describe('PsitBecIncidentReportDocument', () => {
     expect(container.textContent).toContain('Banque prévenue')
   })
 
-  it('records the handover and says plainly when no acknowledgement exists', () => {
+  it('records the handover, and says where the decision is kept when it is not recorded', () => {
     const { container } = render()
     expect(container.textContent).toContain('Remise et validation')
-    expect(container.textContent).toContain("Aucun accusé de réception n'a été enregistré")
-    expect(container.textContent).toContain(
-      "L'absence d'accusé ne vaut pas absence de transmission"
-    )
-    // A signature block, so the printed copy is the artefact.
-    expect(container.textContent).toContain('Signature :')
-    expect(container.textContent).toContain('vaut réception du présent rapport, non')
+
+    // Two blocks removed after an internal review, and neither is missed.
+    //
+    // The acknowledgement note was absurd by construction: the report is edited BEFORE it is
+    // handed over, so "no acknowledgement recorded at the time of generation" could never say
+    // anything else. And the handwritten validation box was never printed, signed or sent back -
+    // a form nobody fills in reads as decorum in a report that is otherwise careful.
+    expect(container.textContent).not.toContain("Aucun accusé de réception n'a été enregistré")
+    expect(container.textContent).not.toContain('Signature :')
+    expect(container.textContent).not.toContain('Nom et fonction :')
+
+    // What the box existed for survives, because it is the only evidence of what the client did
+    // with the report: a recorded field, and until it is filled, where to record it.
+    expect(container.textContent).toContain('Suite décidée')
+    expect(container.textContent).toContain("n'est pas encore consignée dans le dossier")
+    expect(container.textContent).toContain('T20260820.0042')
+  })
+
+  it('prints the decision itself once it is recorded', () => {
+    const { container } = render({
+      incident: {
+        ...incident,
+        FollowUpDecision:
+          "Notification à la CNIL le 22 août, information des personnes concernées engagée.",
+        FollowUpDecisionUtc: '2026-08-22T09:00:00Z',
+      },
+    })
+
+    expect(container.textContent).toContain('Notification à la CNIL le 22 août')
+    expect(container.textContent).toContain('Consignée le 22 août 2026')
+    expect(container.textContent).not.toContain("n'est pas encore consignée")
   })
 
   it('prints the recorded handover and acknowledgement when they exist', () => {

@@ -251,6 +251,92 @@ n'est pas modifié par elle. La parité de valeurs le confirme (`scripts/psit-va
 quatrième état de qualification pour un signal établi mais légitime, avec la trace de qui l'a
 déclaré légitime et sur quelle base ?
 
+## Allégement du rapport d'incident
+
+Relecture interne du 21 août 2026 sur le rendu du dossier de référence. Six retours, tous traités.
+Ce qui suit n'est pas l'historique du lot, c'est ce qu'il faut savoir avant de retoucher ces pages.
+
+### Nommer les pays, et le seul endroit où le code reste
+
+Le rapport imprimait « (IT) » à des clients. Un code à deux lettres est **l'encodage** de
+l'information, pas l'information. `src/utils/psit-country-names.js` traduit l'ISO 3166-1 alpha-2 en
+français, avec **repli sur le code** quand la table ne le connaît pas : un code se cherche, un
+« pays inconnu » ne se cherche pas.
+
+Table écrite en clair plutôt que `Intl.DisplayNames`, pour deux raisons qui tiennent toutes les
+deux ici : le rendu tourne aussi en Node, dont la construction ICU est un détail de déploiement que
+personne ne maîtrise, et les rapports refusent déjà `toLocaleString` ailleurs — un navigateur dans
+une autre locale produirait un autre document.
+
+`inCountry()` porte la préposition, parce que « en Canada » se lit comme une sortie de machine et
+que nommer le pays servait justement à ne plus lire comme ça : « en Italie », « au Canada »,
+« aux Pays-Bas », « à Monaco ».
+
+**Le code ne subsiste qu'au rapport d'investigation**, accolé au nom (`withCode: true`) : c'est ce
+qui se recoupe avec un journal de pare-feu ou un flux de renseignement. Jamais seul, jamais dans le
+rapport client.
+
+Effet de bord à connaître : un texte `Svg` **ne se coupe pas et ne se rogne pas**. Un nom long
+passerait par-dessus l'axe de la frise, donc le libellé de piste lâche le pays quand la place manque
+(budget d'environ 34 caractères à 5,5 pt). L'adresse identifie la piste, c'est le pays qui part.
+
+### Ce qui s'allège et ce qui ne s'allège jamais
+
+L'allégement porte sur la **glose**, jamais sur le fond. Concrètement :
+
+| Retiré | Conservé |
+|---|---|
+| l'énumération des éléments de l'article 33.3 en préambule | les éléments eux-mêmes, section par section |
+| la parenthèse des quatre décisions sur la page de remise | la démarcation sous-traitant / responsable de traitement |
+| la note d'absence d'accusé de réception | l'accusé lui-même quand il est enregistré |
+| l'encadré de signature manuscrite | la trace de la suite décidée, devenue un champ |
+
+**La clause de démarcation ne se supprime pas.** C'est elle qui fait du document un rapport de
+sous-traitant et non un avis juridique, et c'est elle qui protège Plein Sud IT. Elle se raccourcit.
+
+Le contrôle est mécanique et non une relecture : `tests/render/psit-report-render.test.jsx` vérifie
+sur un rendu réel les cinq éléments de l'article 33.3, la clause, l'absence de code pays nu, et la
+disparition effective des deux blocs. Un allégement qui emporterait un élément requis échouerait
+là.
+
+### « Responsable de traitement » : un terme de droit, pas un synonyme de client
+
+Ne pas remplacer par « client ». Les deux notions ne coïncident pas nécessairement
+(responsabilité conjointe, sous-traitance en cascade, groupe à plusieurs entités juridiques), et la
+clause perd sa portée si elle désigne une partie contractuelle plutôt qu'une qualité au sens du
+RGPD. Le terme fait paire avec « en qualité de sous-traitant ».
+
+- **Le terme, aux trois endroits où il porte du droit** : préambule de la section RGPD, page de
+  remise, suites recommandées.
+- **« le client » partout ailleurs**, où il n'a pas d'enjeu.
+- **Une glose à la première occurrence** : « c'est-à-dire {organisation} pour les données en
+  cause ».
+
+Et une réserve, parce que le rapport supposait partout que le client est le responsable de
+traitement des données exposées : sur un dossier où le compte manipule des données pour le compte
+de tiers — des CV de candidats transmis à des donneurs d'ordre, par exemple — l'hypothèse est
+fausse. Le préambule le dit désormais.
+
+### Les catégories de données sont déclarées, pas analysées
+
+« Catégories de données présentes dans la boîte » se lisait comme un constat d'analyse du contenu
+de la messagerie, et inquiétait les lecteurs. L'information est **déclarative**, fournie par le
+client, et l'outil ne lit jamais un message. Le libellé et la phrase de source le disent, et une
+assertion vérifie que ça ne contredit pas la mention existante sur `MailItemsAccessed`, qui dit
+déjà que la lecture n'est ni établie ni exclue. L'information reste : l'article 33.3 l'exige.
+
+### La suite décidée : pourquoi elle vit dans CIPP et pas dans le PSA
+
+Le retour demandait de déporter la trace dans Autotask, sous réserve de vérifier que le champ
+existe. **Il n'existe aucune intégration Autotask dans les deux dépôts** : `AutotaskTicket` est une
+chaîne qu'un analyste tape, rien ne lit ni n'écrit le ticket. Supprimer l'encadré en comptant sur le
+PSA aurait fait disparaître la trace sans remplaçant.
+
+D'où `FollowUpDecision` et `FollowUpDecisionUtc` sur l'incident PSIT, saisis dans le panneau et
+rendus quand ils sont renseignés. C'est la **seule preuve de ce que le client a fait du rapport**,
+et le pendant de son obligation de notifier : elle vit dans un système qu'on contrôle. Tant que le
+champ est vide, le rapport dit où la consigner.
+
 ## Exposition publique de l'identifiant
 
 Le dossier porte un bloc `BreachExposure` : les compromissions de données publiques référencées

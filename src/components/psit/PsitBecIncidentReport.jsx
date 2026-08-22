@@ -25,6 +25,7 @@ import {
   readBreachExposure,
 } from '../../utils/psit-bec-breach'
 import { psitAsArray } from '../../utils/psit-as-array'
+import { countryName, inCountry } from '../../utils/psit-country-names'
 import {
   agree,
   andMore,
@@ -182,7 +183,11 @@ export const PsitBecIncidentReportDocument = ({
       }${
         distinctForeignAddresses > 0
           ? `, depuis ${cardinal(distinctForeignAddresses, 'adresse')} IP${
-              foreignCountries.length > 0 ? ` située en ${enumerate(foreignCountries)}` : ''
+              // inCountry carries the preposition: "en Italie" but "au Canada", and a report
+              // that writes "en Canada" reads as machine output.
+              foreignCountries.length > 0
+                ? ` située ${enumerate(foreignCountries.map((code) => inCountry(code)))}`
+                : ''
             }`
           : ''
       }.`
@@ -226,7 +231,7 @@ export const PsitBecIncidentReportDocument = ({
     .map((group) => ({
       period: `${dateTable(group.firstSeenUtc)} au ${dateTable(group.lastSeenUtc)}`,
       ip: group.ip,
-      country: group.country || 'non déterminé',
+      country: countryName(group.country),
       city: enumerate(group.cities, { empty: 'non déterminée' }),
       signIns: String(group.successes),
       apps: [
@@ -592,18 +597,23 @@ export const PsitBecIncidentReportDocument = ({
       >
         <Section>
           <Paragraph>
-            Cette section fournit les éléments que le responsable de traitement doit décrire en cas
-            de violation de données à caractère personnel : la nature de la violation, les
-            catégories et le nombre approximatif de personnes concernées, les catégories et le
-            volume d'enregistrements concernés, les conséquences probables et les mesures prises.
+            {/* One sentence. The list of what the controller must describe was removed: the
+                sections below provide those elements, and announcing them before the first fact
+                made the section read as a manual. The demarcation stays - it is what protects
+                Plein Sud IT as a processor, and it shortens rather than disappears. */}
             <Bold>
-              {' '}
               La qualification juridique de la violation et la décision de notifier relèvent du
               responsable de traitement
-            </Bold>
-            , assisté le cas échéant de son délégué à la protection des données ; le présent
-            document ne s'y substitue pas.
+            </Bold>{' '}
+            {`, c'est-à-dire ${
+              tenantName || "l'organisation concernée"
+            } pour les données en cause, assisté le cas échéant de son délégué à la protection des données ; le présent document ne s'y substitue pas.`}
           </Paragraph>
+          <Note>
+            Les éléments ci-dessous portent sur les données que le compte compromis manipulait. Si
+            certaines relèvent d'un autre responsable de traitement, il appartient au responsable
+            des données concernées d'en apprécier les suites.
+          </Note>
         </Section>
 
         <Section title="Nature de la violation">
@@ -701,10 +711,17 @@ export const PsitBecIncidentReportDocument = ({
         </Section>
 
         <Section title="Données concernées">
-          <InfoBox title="Catégories de données présentes dans la boîte">
+          {/* "présentes dans la boîte" read as a finding about the mailbox contents, and worried
+              readers. It is a declaration by the client, and this tool never reads a message. The
+              information stays - article 33.3 requires it - the framing changes. */}
+          <InfoBox title="Catégories de données déclarées par le client">
             {psitAsArray(incident?.DataCategories).join(', ') ||
               'Non renseigné : à compléter par l’analyste avant diffusion'}
           </InfoBox>
+          <Note>
+            Ces catégories sont déclarées par le client. Le contenu des messages n'est pas analysé
+            par cet outil.
+          </Note>
           <InfoBox
             tone={mailReadStatus === MAIL_READ_STATUS.PROVEN ? 'warn' : undefined}
             title="Lecture des messages"
@@ -733,7 +750,7 @@ export const PsitBecIncidentReportDocument = ({
         <Section title="Conséquences probables">
           <Paragraph>
             {incident?.LikelyConsequences ||
-              "Non renseigné : à compléter par l'analyste. À défaut, le responsable de traitement ne dispose pas d'un des éléments exigés par l'article 33.3."}
+              "Non renseigné : à compléter par l'analyste. À défaut, le client ne dispose pas d'un des éléments exigés par l'article 33.3."}
           </Paragraph>
         </Section>
       </ContentPage>
@@ -981,11 +998,12 @@ export const PsitBecIncidentReportDocument = ({
       >
         <Section>
           <Paragraph>
+            {/* The parenthesis listing the decisions was removed: it enumerated four things the
+                reader either knows or will be told by their counsel. The demarcation is the
+                sentence, and it is the whole point of the page. */}
             Ce document est produit par Plein Sud IT en qualité de sous-traitant. Les constats et
             les mesures qu'il rapporte relèvent de notre intervention ; les décisions qui en
-            découlent (qualification juridique d'une violation de données, notification à l'autorité
-            de contrôle et aux personnes concernées, déclaration à l'assureur, dépôt de plainte)
-            relèvent du responsable de traitement.
+            découlent relèvent du responsable de traitement.
           </Paragraph>
         </Section>
 
@@ -1008,32 +1026,28 @@ export const PsitBecIncidentReportDocument = ({
                 ? formatUtc(incident.AcknowledgedUtc)
                 : 'date non renseignée'}
             </InfoBox>
-          ) : (
-            <Note>
-              Aucun accusé de réception n'a été enregistré à la date de génération de ce rapport.
-              L'absence d'accusé ne vaut pas absence de transmission ; elle signifie que la
-              transmission n'a pas été confirmée par écrit.
-            </Note>
-          )}
+          ) : null}
         </Section>
 
-        <Section title="Validation par le responsable de traitement">
-          <Paragraph>
-            À compléter par le client. La signature vaut réception du présent rapport, non
-            approbation de son contenu.
-          </Paragraph>
-          {/* Deliberately blank lines: the signed copy is the artefact, and it has to be printable
-              from the PDF without anyone retyping the case reference. */}
-          <InfoBox title={`Dossier ${ticket}`}>
-            Nom et fonction : ______________________________________________
-            {'\n\n'}
-            Date : ______________________
-            {'\n\n'}
-            Signature : ______________________________________________
-            {'\n\n'}
-            Suite décidée (notification, dépôt de plainte, déclaration assureur, aucune) :{'\n'}
-            ______________________________________________________________
-          </InfoBox>
+        {/* The handwritten validation box is gone. Nobody printed the document, signed it and
+            sent it back, and a form that is never filled in sits badly in a report that is
+            otherwise careful. What the box existed for survives: the client's decision is the only
+            evidence of what they did with the report, and it is now a recorded field rather than a
+            blank line. */}
+        <Section title="Suite décidée">
+          {incident?.FollowUpDecision ? (
+            <InfoBox title="Décision du responsable de traitement">
+              {`${incident.FollowUpDecision}${
+                incident?.FollowUpDecisionUtc
+                  ? `\n\nConsignée ${dateProse(incident.FollowUpDecisionUtc)}.`
+                  : ''
+              }`}
+            </InfoBox>
+          ) : (
+            <Paragraph>
+              {`La suite décidée n'est pas encore consignée dans le dossier. Elle est à enregistrer sur le ticket ${ticket}, dont elle constitue la trace.`}
+            </Paragraph>
+          )}
         </Section>
       </ContentPage>
     </ReportDocument>

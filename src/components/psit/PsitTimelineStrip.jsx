@@ -1,5 +1,6 @@
 import { Circle, G, Line, Rect, Svg, Text as SvgText, View } from '@react-pdf/renderer'
 import { cardinal, dateAxis, dateProse, truncationNote } from '../../utils/psit-report-prose'
+import { countryName } from '../../utils/psit-country-names'
 import { buildTimelineStrip } from '../../utils/psit-report-timeline'
 
 /**
@@ -34,6 +35,20 @@ const SEGMENT_HEIGHT = 7
 const LABEL_WIDTH = 96
 const AXIS_HEIGHT = 12
 const FAILURE_BAND = 8
+
+/**
+ * "203.0.113.42, Italie", or the address alone when the country will not fit.
+ *
+ * Svg text does not wrap and does not clip: a long name runs straight over the axis. At 5.5pt a
+ * character is about 2.8 points, so the label budget is roughly 34 characters - enough for every
+ * address with a short country name, not enough for "Republique democratique du Congo". The address
+ * is the part that identifies the track, so it is the country that goes.
+ */
+const trackLabel = (track) => {
+  const country = track.country ? countryName(track.country) : ''
+  const full = country ? `${track.ip}, ${country}` : String(track.ip)
+  return full.length * 2.8 <= LABEL_WIDTH - 4 ? full : String(track.ip)
+}
 
 export const PsitTimelineStrip = ({ becData, unexpectedIps = [] }) => {
   const strip = buildTimelineStrip(becData, { width: WIDTH, unexpectedIps })
@@ -87,7 +102,7 @@ export const PsitTimelineStrip = ({ becData, unexpectedIps = [] }) => {
               <SvgText x={0} y={y + TRACK_HEIGHT - 3} fill={INK} style={{ fontSize: 5.5 }}>
                 {track.folded
                   ? 'autres adresses'
-                  : `${track.ip}${track.country ? ` (${track.country})` : ''}`}
+                  : trackLabel(track)}
               </SvgText>
               {/* The track's own baseline: an address with a single session still reads as a track
                   rather than as a stray mark. */}

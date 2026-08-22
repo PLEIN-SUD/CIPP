@@ -35,6 +35,7 @@ import { BREACH_STATE, readBreachExposure } from '../../utils/psit-bec-breach'
 import { psitAsArray } from '../../utils/psit-as-array'
 import { countryName } from '../../utils/psit-country-names'
 import {
+  agree,
   andMore,
   cardinal,
   counted,
@@ -209,7 +210,7 @@ export const PsitBecReportFrDocument = ({
       result:
         ruleCount === 0 && ruleChangeCount === 0
           ? 'Aucune règle, aucune modification dans la fenêtre'
-          : `${counted(ruleCount, 'regle')} présente, ${counted(
+          : `${counted(ruleCount, 'regle')} ${agree(ruleCount, 'regle', 'présent')}, ${counted(
               ruleChangeCount,
               'modification'
             )} dans la fenêtre`,
@@ -1022,10 +1023,11 @@ export const PsitBecReportFrDocument = ({
         </ContentPage>
       )}
 
-      {/* ANNEXE : EXPOSITION PUBLIQUE */}
+      {/* ANNEXE B : EXPOSITION PUBLIQUE. Letters follow the page order, which is why the BEC
+          primer below is D and not B: the order stays, the letters were what lied. */}
       {breachExposure.state !== BREACH_STATE.UNCHECKED && breachExposure.count > 0 && (
         <ContentPage
-          title="Annexe : exposition publique de l'identifiant"
+          title="Annexe B : exposition publique de l'identifiant"
           subtitle="Compromissions de données publiques référencées pour les adresses du dossier"
         >
           <Section>
@@ -1074,10 +1076,14 @@ export const PsitBecReportFrDocument = ({
               emptyText="Aucune compromission référencée."
             />
             <Note>
-              {`${counted(breachExposure.passwordCount, 'compromission')} sur ${
+              {`${cardinal(breachExposure.passwordCount, 'compromission')} sur ${
                 breachExposure.count
               } ${
-                breachExposure.passwordCount > 1 ? 'exposent' : 'expose'
+                breachExposure.passwordCount === 0
+                  ? "n'expose"
+                  : breachExposure.passwordCount > 1
+                    ? 'exposent'
+                    : 'expose'
               } des mots de passe. Vérification effectuée ${dateProse(
                 breachExposure.checkedUtc
               )} via ${breachExposure.source || 'source non enregistrée'}.`}
@@ -1109,7 +1115,11 @@ export const PsitBecReportFrDocument = ({
           <Section title="Adresses et destinataires">
             <DataTable
               columns={[
-                { header: 'Indicateur', key: 'value', width: 2, bold: true },
+                // An IPv6 in bold needs about 152 points; this column held 145, so the first
+                // wrapped piece still overflowed and react-pdf finished the break its own way,
+                // inserting a hyphen after the first character. "2-a0e:eb47:..." is not the
+                // address, and an indicator that is wrong is worse than one that is absent.
+                { header: 'Indicateur', key: 'value', width: 3, bold: true },
                 { header: 'Constat', key: 'detail', width: 3 },
                 { header: 'Source', key: 'basis', width: 2 },
               ]}
@@ -1123,7 +1133,11 @@ export const PsitBecReportFrDocument = ({
             <Section title="Règles, applications et objets">
               <DataTable
                 columns={[
-                  { header: 'Indicateur', key: 'value', width: 2, bold: true },
+                  // An IPv6 in bold needs about 152 points; this column held 145, so the first
+                  // wrapped piece still overflowed and react-pdf finished the break its own way,
+                  // inserting a hyphen after the first character. "2-a0e:eb47:..." is not the
+                  // address, and an indicator that is wrong is worse than one that is absent.
+                  { header: 'Indicateur', key: 'value', width: 3, bold: true },
                   { header: 'Constat', key: 'detail', width: 3 },
                   { header: 'Source', key: 'basis', width: 2 },
                 ]}
@@ -1136,9 +1150,9 @@ export const PsitBecReportFrDocument = ({
         </ContentPage>
       )}
 
-      {/* ANNEXE B : COMPRENDRE LE BEC */}
+      {/* ANNEXE D : COMPRENDRE LE BEC */}
       <ContentPage
-        title="Annexe B : comprendre la compromission de messagerie"
+        title="Annexe D : comprendre la compromission de messagerie"
         subtitle="Pour le lecteur non technique"
       >
         <Section>

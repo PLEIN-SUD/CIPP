@@ -39,6 +39,9 @@ const WORK = 'psit/parity'
 const VALUE_MODULES = [
   'src/utils/psit-as-array.js',
   'src/utils/psit-report-prose.js',
+  // Imported by psit-bec-signals since the country names landed: a module missing from this list
+  // breaks the import graph of the extracted copies, not the values.
+  'src/utils/psit-country-names.js',
   'src/utils/psit-bec-signals.js',
   'src/utils/psit-bec-incident.js',
   'src/utils/psit-bec-iocs.js',

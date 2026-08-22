@@ -8,7 +8,7 @@
 
 import { SIGNAL_CLASS, classifySentMessages, toUtc } from './psit-bec-signals'
 import { psitAsArray } from './psit-as-array'
-import { cardinal } from './psit-report-prose'
+import { agree, cardinal } from './psit-report-prose'
 
 /** Categories of data subjects, for the GDPR article 33(3) description. */
 export const DATA_SUBJECT_CATEGORIES = [
@@ -255,7 +255,11 @@ export const buildExposure = (becData = {}, signals = [], triage = [], userData 
       detail: `${cardinal(
         mail.foreignHumanExternal.length,
         'message'
-      )} envoyé par le titulaire du compte à des destinataires externes depuis une adresse hors du pays d'utilisation déclaré, hors messages générés par le service.`,
+      )} ${agree(
+        mail.foreignHumanExternal.length,
+        'message',
+        'envoyé'
+      )} par le titulaire du compte à des destinataires externes depuis une adresse hors du pays d'utilisation déclaré, hors messages générés par le service.`,
       basis: 'Suivi des messages',
     })
   }

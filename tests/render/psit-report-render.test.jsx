@@ -404,6 +404,110 @@ describe('rendered PDF, the measured floor', () => {
 // exactly the kind of edit that quietly takes a required element with it, so the elements are
 // asserted here rather than trusted to a reading. The regulation requires the substance; the gloss
 // was what got shortened.
+// Defects found by reading a real client PDF, not by any assertion here.
+//
+// Seven agreements frozen in the singular, a bullet with the wrong marker, two column widths, and an
+// IPv6 that react-pdf cut in half with a hyphen. Each had a correct count beside it, which is how
+// they all survived a green suite: a right number in a wrong sentence is still a wrong sentence, and
+// no assertion was reading the sentences.
+describe('rendered PDF, what reading a real report caught', () => {
+  const many = (count, build) => Array.from({ length: count }, (unused, index) => build(index))
+
+  it(
+    'agrees every qualifier that sits next to a count',
+    async () => {
+      const signIns = [
+        ...many(3, (index) => signIn({ IPAddress: '203.0.113.42', CreatedDateTime: `2026-08-20T06:0${index}:00Z` })),
+        ...many(3, (index) => signIn({ IPAddress: '198.51.100.9', Country: 'FR', CreatedDateTime: `2026-08-20T06:1${index}:00Z` })),
+      ]
+      const messages = many(6, (index) => ({
+        MessageTraceId: `m${index}`,
+        Subject: 'Mise a jour bancaire',
+        RecipientAddress: `buyer${index}@client.test`,
+        Received: '2026-08-19T07:11:00Z',
+        FromIP: '203.0.113.42',
+        SystemGenerated: false,
+        Internal: false,
+        ForeignLocation: true,
+      }))
+
+      const { text } = await render(
+        incidentDocument({
+          becData: {
+            ...becData,
+            SuspectUserSignIns: signIns,
+            SentMessages: [
+              ...messages,
+              // Two excluded groups, so both counts are plural in the annex note.
+              ...many(4, (index) => ({ ...messages[0], MessageTraceId: `s${index}`, RecipientAddress: `svc${index}@client.test`, SystemGenerated: true })),
+              ...many(5, (index) => ({ ...messages[0], MessageTraceId: `i${index}`, RecipientAddress: `staff${index}@contoso.test`, Internal: true })),
+            ],
+            SentMessageAnalysis: { TotalRecipients: 15, RepeatedSubjects: [], Bursts: [] },
+          },
+        }),
+        'incident-accords'
+      )
+      const flat = text.replace(/[ \t\n\r]+/g, ' ')
+
+      // "2 adresses IP située en Italie"
+      expect(flat).toMatch(/2 adresses IP situées/)
+      expect(flat).not.toContain('adresses IP située ')
+      // "6 messages envoyé par le titulaire"
+      expect(flat).toContain('messages envoyés par le titulaire du compte')
+      expect(flat).not.toContain('messages envoyé par')
+      // "4 messages généré par le service" and "5 destinataires interne à l'organisation"
+      expect(flat).toContain('messages générés par le service')
+      expect(flat).toContain("destinataires internes à l'organisation")
+      expect(flat).not.toContain('messages généré par')
+      expect(flat).not.toContain("destinataires interne à")
+    },
+    RENDER_TIMEOUT
+  )
+
+  it(
+    'gives the password-reset bullet the same marker as the ones around it',
+    async () => {
+      // It carried a middle dot while its neighbours carried a bullet, which is visible at a glance
+      // and reads as a different kind of item.
+      const { text } = await render(
+        incidentDocument({
+          becData: {
+            ...becData,
+            BreachExposure: {
+              Status: 'ok',
+              CheckedUtc: '2026-08-20T10:32:00Z',
+              Source: 'Have I Been Pwned (api/v3/breachedaccount)',
+              Addresses: ['p.martin@contoso.test'],
+              Breaches: [
+                { Name: 'Adobe', BreachDate: '2013-10-04', DataClasses: ['Passwords'], Password: true },
+              ],
+            },
+          },
+        }),
+        'incident-puce-uniforme'
+      )
+      const flat = text.replace(/[ \t\n\r]+/g, ' ')
+
+      expect(flat).toContain('Réinitialisation des mots de passe réutilisés')
+      // The middle dot was only ever used by that one bullet.
+      expect(flat).not.toContain(String.fromCharCode(0xb7) + ' Réinitialisation')
+    },
+    RENDER_TIMEOUT
+  )
+
+  it(
+    'keeps the two chronology column heads apart',
+    async () => {
+      const { text } = await render(incidentDocument(), 'incident-entetes')
+
+      // "CONNEXIONSAPPLICATIONS": the header was wider than its own cell at width 1.
+      expect(text).not.toContain('CONNEXIONSAPPLICATIONS')
+      expect(text.replace(/[ \t\n\r]+/g, ' ')).toContain('CONNEXIONS APPLICATIONS')
+    },
+    RENDER_TIMEOUT
+  )
+})
+
 describe('rendered PDF, article 33.3 survives the lightening', () => {
   it(
     'still carries the five elements the controller must be able to describe',

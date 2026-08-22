@@ -186,7 +186,9 @@ export const PsitBecIncidentReportDocument = ({
               // inCountry carries the preposition: "en Italie" but "au Canada", and a report
               // that writes "en Canada" reads as machine output.
               foreignCountries.length > 0
-                ? ` située ${enumerate(foreignCountries.map((code) => inCountry(code)))}`
+                ? ` ${agree(distinctForeignAddresses, 'adresse', 'situé')} ${enumerate(
+                    foreignCountries.map((code) => inCountry(code))
+                  )}`
                 : ''
             }`
           : ''
@@ -485,7 +487,10 @@ export const PsitBecIncidentReportDocument = ({
                   { header: 'IP', key: 'ip', width: 2, bold: true },
                   { header: 'Pays', key: 'country', width: 1 },
                   { header: 'Localité', key: 'city', width: 2 },
-                  { header: 'Connexions', key: 'signIns', width: 1, align: 'right' },
+                  // The header is wider than its own cell at width 1: "CONNEXIONS" ran into
+                  // "APPLICATIONS" beside it. Widened rather than abbreviated - a column head that
+                  // needs a glossary is worse than a column that takes its share.
+                  { header: 'Connexions', key: 'signIns', width: 2, align: 'right' },
                   { header: 'Applications', key: 'apps', width: 3 },
                 ]}
                 rows={signInWindows}
@@ -865,7 +870,7 @@ export const PsitBecIncidentReportDocument = ({
             {/* Only when an exposure was actually found: recommending a reset on the strength of a
                 check that never ran would dress a failure up as a finding. */}
             {breachSuggestsPasswordReset(breachExposure) ? (
-              <Bullet marker="·" label="Réinitialisation des mots de passe réutilisés :">
+              <Bullet label="Réinitialisation des mots de passe réutilisés :">
                 {' '}
                 l'adresse figure dans des compromissions publiques, donc tout mot de passe partagé
                 entre ce compte et un service tiers doit être changé, pas seulement celui du compte.
@@ -930,10 +935,18 @@ export const PsitBecIncidentReportDocument = ({
             {`Exclus de cette liste : ${cardinal(
               thirdParties.excluded.systemGenerated,
               'message'
-            )} généré par le service (réponses automatiques, avis de non-remise) et ${cardinal(
+            )} ${agree(
+              thirdParties.excluded.systemGenerated,
+              'message',
+              'généré'
+            )} par le service (réponses automatiques, avis de non-remise) et ${cardinal(
               thirdParties.excluded.internal,
               'destinataire'
-            )} interne à l'organisation. Une réponse automatique partie vers une lettre d'information n'est pas un tiers à prévenir.`}
+            )} ${agree(
+              thirdParties.excluded.internal,
+              'destinataire',
+              'interne'
+            )} à l'organisation. Une réponse automatique partie vers une lettre d'information n'est pas un tiers à prévenir.`}
             {thirdParties.derivedLocally
               ? ' Cette classification a été calculée à la génération du rapport, la collecte étant antérieure à sa mise en place côté API.'
               : ''}

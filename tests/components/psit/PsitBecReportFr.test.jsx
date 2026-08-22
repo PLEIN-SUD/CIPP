@@ -212,7 +212,9 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).toContain('Faits et signaux')
     expect(text).toContain('Couverture et limites')
     expect(text).toContain('Annexe A : couverture des vérifications')
-    expect(text).toContain('Annexe B')
+    // The letters follow the page order since the internal review of 22 August: the BEC primer is
+    // last on the page, so it is D. It used to be titled B while sitting after C.
+    expect(text).toContain('Annexe D : comprendre la compromission')
     // The decision page comes before the annex, which is the whole point of the restructure.
     expect(text.indexOf('Décision')).toBeLessThan(text.indexOf('Annexe A'))
   })

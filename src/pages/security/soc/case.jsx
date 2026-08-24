@@ -23,15 +23,22 @@ import { PsitSocGuidePanel } from '../../../components/psit/soc/PsitSocGuidePane
 import { PsitSocQualificationPanel } from '../../../components/psit/soc/PsitSocQualificationPanel'
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
+import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDeviceContext'
+import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
 
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
 
 /**
- * One SOC case: the identity card of the alert, the investigation guide with its FP/TP clues,
- * the qualification (written on the case and pushed back to Defender when the case came from
- * there), and the action log. The context panels (user sessions, device state) arrive with the
- * next phase and will slot into the left column, driven by the case's entities.
+ * One SOC case: the identity card of the alert, the investigation guide with its FP/TP clues, the
+ * context panels, the qualification (written on the case and pushed back to Defender when the
+ * case came from there), and the action log.
+ *
+ * The context panels are driven by the case's entities, not by its type: a case naming a user
+ * gets the identity panel, one naming a machine gets the device panel, one naming a message gets
+ * the mail panel, and a case naming several gets several. An incident rarely stays in one lane -
+ * an infostealer on a laptop is a machine case AND an identity case - and the panels follow the
+ * facts rather than the label.
  */
 const Page = () => {
   const router = useRouter()
@@ -153,6 +160,12 @@ const Page = () => {
                   <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} />
                   {(socCase.Entities?.upn || socCase.Entities?.userId) && (
                     <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
+                    <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {socCase.Entities?.networkMessageId && (
+                    <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
                   )}
                   <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
                 </Stack>

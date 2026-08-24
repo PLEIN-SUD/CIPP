@@ -6,6 +6,7 @@ import {
   PSIT_SOC_TYPES,
   PSIT_SOC_TYPE_OPTIONS,
   psitSocTypeById,
+  psitSocTypeEntities,
 } from '../../src/utils/psit-soc-types'
 
 // The catalogue is data the case view trusts blindly: a type without a guide renders an empty
@@ -20,6 +21,21 @@ describe('PSIT_SOC_TYPES', () => {
     expect(new Set(ids).size).toBe(17)
     expect(ids).not.toContain(8)
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]))
+  })
+
+  it('says which entities each type investigates, so the drawer knows what to ask for', () => {
+    const known = ['user', 'app', 'device', 'mail']
+    for (const type of PSIT_SOC_TYPES) {
+      expect(type.entities.length).toBeGreaterThan(0)
+      for (const entity of type.entities) expect(known).toContain(entity)
+    }
+    // A consent case is about an application, whatever the family it belongs to.
+    expect(psitSocTypeEntities(6)).toContain('app')
+    // An infostealer is a machine case and an identity case at once.
+    expect(psitSocTypeEntities(15)).toEqual(['device', 'user'])
+    expect(psitSocTypeEntities(18)).toEqual(['mail'])
+    // An unknown type asks for nothing rather than guessing.
+    expect(psitSocTypeEntities(999)).toEqual([])
   })
 
   it('gives every type a source, a default severity, a guide and both clue lists', () => {

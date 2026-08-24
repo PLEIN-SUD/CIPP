@@ -13,6 +13,11 @@
 // P-levels for types 1, 2, 6 and 11; the others carry the PSIT reading of the plan and are meant
 // to be tuned from real cases.
 //
+// Each type declares the entities it investigates. The quick-entry drawer renders the matching
+// picker from that: a consent case asks for an application, a machine case for a machine, and
+// nobody is asked for an identifier they would have to go and find first. A type naming two
+// entities gets two pickers, since an infostealer is a machine case and an identity case at once.
+//
 // This is a PUBLIC fork: no partner name, no internal tooling name goes in this file. Sources are
 // named by role (external SOC), and the legitimate-RMM list ships empty here on purpose.
 
@@ -46,6 +51,7 @@ export const PSIT_SOC_TYPES = [
     id: 1,
     source: 'extsoc',
     family: 'signin',
+    entities: ['user'],
     severity: 'P4',
     label: 'Connexion depuis un pays inhabituel ou une IP signalée malveillante',
     guide: [
@@ -72,6 +78,7 @@ export const PSIT_SOC_TYPES = [
     id: 2,
     source: 'extsoc',
     family: 'signin',
+    entities: ['user'],
     severity: 'P2',
     label: 'Voyage impossible : activité simultanée depuis plusieurs pays',
     guide: [
@@ -97,6 +104,7 @@ export const PSIT_SOC_TYPES = [
     id: 3,
     source: 'extsoc',
     family: 'signin',
+    entities: ['user'],
     severity: 'P3',
     label: 'Connexion O365 depuis l’étranger (corrélée au voyage impossible)',
     guide: [
@@ -110,6 +118,7 @@ export const PSIT_SOC_TYPES = [
     id: 4,
     source: 'extsoc',
     family: 'identity-persistence',
+    entities: ['user'],
     severity: 'P2',
     label: 'Élévation de privilèges : ajout de rôle sensible',
     guide: [
@@ -134,6 +143,7 @@ export const PSIT_SOC_TYPES = [
     id: 5,
     source: 'extsoc',
     family: 'identity-persistence',
+    entities: ['user'],
     severity: 'P2',
     label: 'Création ou modification de règle de boîte, forward externe',
     guide: [
@@ -158,6 +168,7 @@ export const PSIT_SOC_TYPES = [
     id: 6,
     source: 'extsoc',
     family: 'identity-persistence',
+    entities: ['app', 'user'],
     severity: 'P4',
     label: 'Consentement d’application OAuth',
     guide: [
@@ -181,6 +192,7 @@ export const PSIT_SOC_TYPES = [
     id: 7,
     source: 'extsoc',
     family: 'identity-persistence',
+    entities: ['user'],
     severity: 'P3',
     label: 'Ajout de compte utilisateur ou octroi d’accès à une BAL (HNO)',
     guide: [
@@ -202,6 +214,7 @@ export const PSIT_SOC_TYPES = [
     id: 9,
     source: 'xdr',
     family: 'endpoint',
+    entities: ['device'],
     severity: 'P1',
     label: 'Menace active non mitigée sur une machine (MDE)',
     guide: [
@@ -220,6 +233,7 @@ export const PSIT_SOC_TYPES = [
     id: 10,
     source: 'xdr',
     family: 'endpoint',
+    entities: ['device'],
     severity: 'P3',
     label: 'Comportement C2 bloqué (ex. AnyDesk lancé en --service)',
     guide: [
@@ -242,6 +256,7 @@ export const PSIT_SOC_TYPES = [
     id: 11,
     source: 'xdr',
     family: 'endpoint',
+    entities: ['device'],
     severity: 'P3',
     label: 'Binaire ou script suspect (VBS, runner)',
     guide: [
@@ -263,6 +278,7 @@ export const PSIT_SOC_TYPES = [
     id: 12,
     source: 'xdr',
     family: 'endpoint',
+    entities: ['device'],
     severity: 'P4',
     label: 'Malware détecté et bloqué, scan de ports horizontal',
     guide: [
@@ -283,6 +299,7 @@ export const PSIT_SOC_TYPES = [
     id: 13,
     source: 'xdr',
     family: 'xdr',
+    entities: ['device'],
     severity: 'P2',
     label: 'Malware blocked / prevented / active (Wacatac, Malgent, FakeFolder, EICAR)',
     guide: [
@@ -298,6 +315,7 @@ export const PSIT_SOC_TYPES = [
     id: 14,
     source: 'xdr',
     family: 'xdr',
+    entities: ['device'],
     severity: 'P4',
     label: 'Unwanted software prevented',
     guide: [
@@ -311,6 +329,7 @@ export const PSIT_SOC_TYPES = [
     id: 15,
     source: 'xdr',
     family: 'xdr',
+    entities: ['device', 'user'],
     severity: 'P1',
     label: 'Infostealer activity',
     guide: [
@@ -326,6 +345,7 @@ export const PSIT_SOC_TYPES = [
     id: 16,
     source: 'xdr',
     family: 'xdr',
+    entities: ['device'],
     severity: 'P3',
     label: 'Suspicious file observed',
     guide: [
@@ -340,6 +360,7 @@ export const PSIT_SOC_TYPES = [
     id: 17,
     source: 'xdr',
     family: 'xdr',
+    entities: ['device'],
     severity: 'P3',
     label: 'Suspicious service launched',
     guide: [
@@ -354,6 +375,7 @@ export const PSIT_SOC_TYPES = [
     id: 18,
     source: 'mdo',
     family: 'mail',
+    entities: ['mail'],
     severity: 'P2',
     label: 'Phishing non bloqué, entités non purgées après livraison (ZAP incomplet)',
     guide: [
@@ -383,6 +405,13 @@ export const psitSocTypeById = (id) => {
   if (!Number.isFinite(numeric)) return null
   return PSIT_SOC_TYPES.find((type) => type.id === numeric) ?? null
 }
+
+/**
+ * The entity kinds a type investigates, in the order the drawer should ask for them. Unknown or
+ * undeclared types ask for nothing rather than guessing: a picker for the wrong entity is worse
+ * than no picker, since it fills the case with a fact that does not apply to it.
+ */
+export const psitSocTypeEntities = (id) => psitSocTypeById(id)?.entities ?? []
 
 /** Options for an autoComplete field: "1 - Connexion depuis un pays inhabituel...". */
 export const PSIT_SOC_TYPE_OPTIONS = PSIT_SOC_TYPES.map((type) => ({

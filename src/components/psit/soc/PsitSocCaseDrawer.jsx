@@ -6,12 +6,15 @@ import { PlaylistAdd } from '@mui/icons-material'
 import { CippOffCanvas } from '../../CippComponents/CippOffCanvas'
 import CippFormComponent from '../../CippComponents/CippFormComponent'
 import { CippFormTenantSelector } from '../../CippComponents/CippFormTenantSelector'
+import { CippFormUserSelector } from '../../CippComponents/CippFormUserSelector'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { ApiPostCall } from '../../../api/ApiCall'
+import { PsitSocAppSelector, PsitSocDeviceSelector } from './PsitSocEntitySelectors'
 import {
   PSIT_SOC_SEVERITIES,
   PSIT_SOC_TYPE_OPTIONS,
   psitSocTypeById,
+  psitSocTypeEntities,
 } from '../../../utils/psit-soc-types'
 
 const defaultValues = {
@@ -21,13 +24,22 @@ const defaultValues = {
   severity: null,
   externalRef: '',
   ticketRef: '',
-  upn: '',
+  user: null,
+  app: null,
+  device: null,
+  networkMessageId: '',
 }
 
 /**
  * Quick entry of a SOC case: the path an alert takes when it arrives as an external SOC
- * notification rather than through the Defender feed. The analyst pastes the reference, picks the type and the
- * tenant, and the case exists - the investigation happens on the case, not in the drawer.
+ * notification rather than through the Defender feed. The analyst pastes the reference, picks the
+ * type and the tenant, and the case exists - the investigation happens on the case, not in the
+ * drawer.
+ *
+ * The entity fields follow the type, from the catalogue: a consent case asks for an application
+ * picked from the tenant, a machine case for a machine, an identity case for a user. Asking for
+ * an identifier the analyst would have to go and look up first is how a triage tool becomes a
+ * second job.
  *
  * The severity field is left empty on purpose and falls back to the type's default at submit:
  * the notification's own P-level wins when the analyst types it, the catalogue's default applies
@@ -39,12 +51,34 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
   const { isValid } = useFormState({ control: formControl.control })
   const selectedType = useWatch({ control: formControl.control, name: 'type' })
   const catalogueEntry = psitSocTypeById(selectedType?.value)
+  const wantedEntities = psitSocTypeEntities(selectedType?.value)
 
   const createCase = ApiPostCall({ relatedQueryKeys })
 
   const handleSubmit = formControl.handleSubmit((values) => {
     const entry = psitSocTypeById(values.type?.value)
-    const entities = values.upn ? { upn: values.upn.trim() } : null
+    const kinds = psitSocTypeEntities(values.type?.value)
+
+    // Only the entities this type actually investigates are recorded: a leftover value from a
+    // type the analyst changed their mind about would send the case view looking for evidence
+    // that has nothing to do with it.
+    const entities = {}
+    if (kinds.includes('user') && values.user?.value) {
+      entities.userId = values.user.value
+      entities.upn = values.user.addedFields?.userPrincipalName ?? values.user.label
+    }
+    if (kinds.includes('app') && values.app?.value) {
+      entities.appId = values.app.value
+      entities.appDisplayName = values.app.addedFields?.appDisplayName ?? values.app.label
+    }
+    if (kinds.includes('device') && values.device?.value) {
+      entities.deviceId = values.device.value
+      entities.deviceName = values.device.addedFields?.deviceDisplayName ?? values.device.label
+    }
+    if (kinds.includes('mail') && values.networkMessageId) {
+      entities.networkMessageId = values.networkMessageId.trim()
+    }
+
     createCase.mutate({
       url: '/api/PSITExecSocCase',
       data: {
@@ -55,7 +89,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
         Severity: values.severity?.value ?? entry?.severity,
         ExternalRef: values.externalRef.trim(),
         TicketRef: values.ticketRef.trim(),
-        ...(entities ? { Entities: entities } : {}),
+        ...(Object.keys(entities).length > 0 ? { Entities: entities } : {}),
       },
     })
   })
@@ -134,6 +168,50 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
             />
           </Grid>
 
+          {/* The entity pickers appear once the type says what the case is about, which is also
+              what tells the analyst what this type investigates. */}
+          {wantedEntities.includes('user') && (
+            <Grid size={{ xs: 12 }}>
+              <CippFormUserSelector
+                formControl={formControl}
+                name="user"
+                label="Utilisateur concerné"
+                multiple={false}
+                select="id,userPrincipalName,displayName"
+                addedField={{ userPrincipalName: 'userPrincipalName' }}
+              />
+            </Grid>
+          )}
+          {wantedEntities.includes('app') && (
+            <Grid size={{ xs: 12 }}>
+              <PsitSocAppSelector
+                formControl={formControl}
+                name="app"
+                label="Application concernée"
+              />
+            </Grid>
+          )}
+          {wantedEntities.includes('device') && (
+            <Grid size={{ xs: 12 }}>
+              <PsitSocDeviceSelector
+                formControl={formControl}
+                name="device"
+                label="Machine concernée"
+              />
+            </Grid>
+          )}
+          {wantedEntities.includes('mail') && (
+            <Grid size={{ xs: 12 }}>
+              <CippFormComponent
+                type="textField"
+                name="networkMessageId"
+                label="Identifiant de message"
+                formControl={formControl}
+                helperText="networkMessageId, tel que l’alerte le donne"
+              />
+            </Grid>
+          )}
+
           <Grid size={{ md: 6, xs: 12 }}>
             <CippFormComponent
               type="autoComplete"
@@ -164,15 +242,6 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
               type="textField"
               name="ticketRef"
               label="Référence ticket"
-              formControl={formControl}
-            />
-          </Grid>
-
-          <Grid size={{ md: 6, xs: 12 }}>
-            <CippFormComponent
-              type="textField"
-              name="upn"
-              label="Utilisateur concerné (UPN)"
               formControl={formControl}
             />
           </Grid>

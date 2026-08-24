@@ -64,6 +64,43 @@ describe('PsitSocCaseDrawer', () => {
     expect(screen.getByRole('button', { name: 'Créer le cas' })).toBeDisabled()
   })
 
+  it('asks for an application, not an identifier, on a consent case', async () => {
+    renderWithProviders(<PsitSocCaseDrawer />)
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+
+    await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
+    await userEvent.click(await screen.findByText(/Consentement d’application/))
+
+    // The picker exists so nobody has to go and find an appId first.
+    expect(screen.getByRole('combobox', { name: /Application concernée/ })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /Utilisateur concerné/ })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /Machine concernée/ })).not.toBeInTheDocument()
+  })
+
+  it('asks for a machine on an endpoint case, and for a message id on a mail case', async () => {
+    renderWithProviders(<PsitSocCaseDrawer />)
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+
+    await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
+    await userEvent.click(await screen.findByText(/Infostealer/))
+    expect(screen.getByRole('combobox', { name: /Machine concernée/ })).toBeInTheDocument()
+    // An infostealer is a machine case and an identity case at once.
+    expect(screen.getByRole('combobox', { name: /Utilisateur concerné/ })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
+    await userEvent.click(await screen.findByText(/ZAP/))
+    expect(screen.getByRole('textbox', { name: /Identifiant de message/ })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /Machine concernée/ })).not.toBeInTheDocument()
+  })
+
+  it('asks for no entity at all before a type is chosen', async () => {
+    renderWithProviders(<PsitSocCaseDrawer />)
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+
+    expect(screen.queryByRole('combobox', { name: /Application concernée/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /Utilisateur concerné/ })).not.toBeInTheDocument()
+  })
+
   it('proposes the seventeen retained types, never Google Workspace', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
     await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
@@ -91,13 +128,12 @@ describe('PsitSocCaseDrawer', () => {
     // Tenant
     await userEvent.click(screen.getByRole('combobox', { name: /Tenant/ }))
     await userEvent.click(await screen.findByText(/contoso\.test/))
-    // Type 2: voyage impossible, source cyna, default P2
+    // Type 2: voyage impossible, source extsoc, default P2
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     await userEvent.click(await screen.findByText(/Voyage impossible/))
     // Title + external reference
     await userEvent.type(screen.getByRole('textbox', { name: /Titre/ }), 'Voyage impossible p.martin')
     await userEvent.type(screen.getByRole('textbox', { name: /Référence externe/ }), 'EXT-4242')
-    await userEvent.type(screen.getByRole('textbox', { name: /Utilisateur concerné/ }), 'p.martin@contoso.test')
 
     const submit = screen.getByRole('button', { name: 'Créer le cas' })
     await waitFor(() => expect(submit).toBeEnabled())
@@ -114,6 +150,7 @@ describe('PsitSocCaseDrawer', () => {
     expect(payload.data.Severity).toBe('P2')
     expect(payload.data.Title).toBe('Voyage impossible p.martin')
     expect(payload.data.ExternalRef).toBe('EXT-4242')
-    expect(payload.data.Entities).toEqual({ upn: 'p.martin@contoso.test' })
+    // No user picked in this run: the case carries no entity rather than an empty one.
+    expect(payload.data.Entities).toBeUndefined()
   })
 })

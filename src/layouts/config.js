@@ -60,6 +60,11 @@ export const nativeMenuItems = [
             path: '/security/soc/bec',
             permissions: ['Identity.User.*'],
           },
+          {
+            title: 'Santé du parc',
+            path: '/security/soc/fleet',
+            permissions: ['Endpoint.MEM.*'],
+          },
         ],
       },
     ],

@@ -213,11 +213,12 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).toContain('Couverture et limites')
     expect(text).toContain('Annexe A : couverture des vérifications')
     // The letters follow the page order AND the annexes actually present: this fixture renders all
-    // four, so the primer is D. It used to be titled B while sitting after C, then D while B and C
-    // were conditionally absent.
-    expect(text).toContain("Annexe B : exposition publique de l'identifiant")
-    expect(text).toContain('Annexe C : indicateurs observés')
-    expect(text).toContain('Annexe D : comprendre la compromission')
+    // five, so the primer is E. The detail annex carries its own letter since the review of
+    // 24 August: two pages both titled "Annexe A" read as a numbering error.
+    expect(text).toContain('Annexe B : détail des contrôles')
+    expect(text).toContain("Annexe C : exposition publique de l'identifiant")
+    expect(text).toContain('Annexe D : indicateurs observés')
+    expect(text).toContain('Annexe E : comprendre la compromission')
     // The decision page comes before the annex, which is the whole point of the restructure.
     expect(text.indexOf('Décision')).toBeLessThan(text.indexOf('Annexe A'))
   })
@@ -235,7 +236,7 @@ describe('PsitBecReportFrDocument structure', () => {
 
   it('closes the letter hole when an annex is absent', () => {
     // No sign-ins, no rules, no sent messages: nothing feeds the indicator annex, so the primer
-    // moves up to C. The reader never sees a lettering gap.
+    // moves up to D. The reader never sees a lettering gap.
     const { container } = render({
       becData: {
         ...becData,
@@ -247,8 +248,9 @@ describe('PsitBecReportFrDocument structure', () => {
     const text = container.textContent
 
     expect(text).not.toContain('indicateurs observés')
-    expect(text).toContain('Annexe C : comprendre la compromission')
-    expect(text).not.toContain('Annexe D')
+    expect(text).toContain("Annexe C : exposition publique de l'identifiant")
+    expect(text).toContain('Annexe D : comprendre la compromission')
+    expect(text).not.toContain('Annexe E')
   })
 
   it('does not print the evidence twice: the decision page points at the findings', () => {
@@ -443,7 +445,7 @@ describe('PsitBecReportFrDocument corrections', () => {
     const { container } = render()
     const text = container.textContent
 
-    expect(text).toContain('Annexe C : indicateurs observés')
+    expect(text).toContain('Annexe D : indicateurs observés')
     expect(text).toContain('203.0.113.42')
     // The automatic reply was submitted by Exchange Online: blocking that address would block the
     // client's own mail.

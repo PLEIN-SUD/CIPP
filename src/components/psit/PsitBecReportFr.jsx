@@ -311,11 +311,12 @@ export const PsitBecReportFrDocument = ({
   // Hardcoded letters over conditional pages printed "Annexe A" then "Annexe D" on a dossier
   // without indicators, and a reader who sees that goes looking for two annexes that never
   // existed. The exposure annex is unconditional (an empty check is a finding to state, not a page
-  // to drop), so today only the indicator annex can shift the letters; the allocation covers
-  // whichever page becomes conditional next.
+  // to drop); the conditional ones shift the letters of everything after them, which is exactly
+  // what the allocation absorbs.
   const annexLetters = {}
   for (const [annexKey, present] of [
     ['coverage', true],
+    ['detail', hasAnyDetail],
     ['breach', true],
     ['iocs', iocs.total > 0],
     ['primer', true],
@@ -680,7 +681,10 @@ export const PsitBecReportFrDocument = ({
         </Section>
       </ContentPage>
 
-      {/* ANNEXE A : COUVERTURE PUIS DETAIL */}
+      {/* ANNEXE COUVERTURE, PUIS ANNEXE DETAIL. Two annexes over the same eleven checks: the
+          coverage table attests the scope of every check, the detail annex shows only the checks
+          that returned something and is absent when none did. Each carries its own letter: the
+          same letter on two differently titled pages read as a numbering error. */}
       <ContentPage
         title={`Annexe ${annexLetters.coverage} : couverture des vérifications`}
         subtitle="Les onze contrôles de la collecte et leur résultat"
@@ -689,8 +693,8 @@ export const PsitBecReportFrDocument = ({
           <Paragraph>
             La collecte exécute onze contrôles, tous listés ci-dessous qu'ils aient ou non retourné
             quelque chose : c'est ce tableau qui atteste de l'étendue de l'analyse. Les contrôles
-            qui ont retourné des éléments sont détaillés ensuite ; les autres n'ont rien à montrer
-            de plus que cette ligne.
+            qui ont retourné des éléments sont détaillés en annexe suivante ; les autres n'ont rien
+            à montrer de plus que cette ligne.
           </Paragraph>
         </Section>
 
@@ -724,7 +728,7 @@ export const PsitBecReportFrDocument = ({
 
       {hasAnyDetail && (
         <ContentPage
-          title={`Annexe ${annexLetters.coverage} : détail des contrôles`}
+          title={`Annexe ${annexLetters.detail} : détail des contrôles`}
           subtitle="Uniquement les contrôles qui ont retourné des éléments"
         >
           {detail.rules && (

@@ -58,6 +58,7 @@ const UPSTREAM_FILES = [
   'src/components/BECRemediationReportButton.js',
   'src/layouts/top-nav.js',
   'tests/components/ExecutiveReportButton.test.jsx',
+  'src/layouts/config.js',
 ]
 
 // Strings that legitimately contain what a rule bans, with the reason. Versioned beside the script,

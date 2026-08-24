@@ -86,11 +86,13 @@ describe('uncommittedUpstreamFiles', () => {
   })
 
   it('watches every declared upstream file, tests included', () => {
-    expect(PSIT_UPSTREAM_FILES.length).toBe(7)
+    expect(PSIT_UPSTREAM_FILES.length).toBe(8)
     expect(PSIT_UPSTREAM_FILES).toContain('src/components/CippPdf/reportPdfPrimitives.jsx')
     // An upstream TEST double is upstream code too: it went unmarked and undeclared for a while,
     // and the guard could not see it, because it only catches files that carry markers.
     expect(PSIT_UPSTREAM_FILES).toContain('tests/components/ExecutiveReportButton.test.jsx')
+    // The navigation config carries the SOC Triage entry since the SOC dashboard (2026-08-24).
+    expect(PSIT_UPSTREAM_FILES).toContain('src/layouts/config.js')
   })
 })
 

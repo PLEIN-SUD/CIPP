@@ -345,13 +345,6 @@ export const nativeMenuItems = [
         title: 'Incidents & Alerts',
         permissions: ['Security.Incident.*'],
         items: [
-          // PSIT-CUSTOM-BEGIN: SOC triage dashboard (queue of qualified cases)
-          {
-            title: 'SOC Triage',
-            path: '/security/soc',
-            permissions: ['Security.Incident.*'],
-          },
-          // PSIT-CUSTOM-END
           {
             title: 'Incidents',
             path: '/security/incidents/list-incidents',

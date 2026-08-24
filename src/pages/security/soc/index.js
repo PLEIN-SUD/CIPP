@@ -1,8 +1,11 @@
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
+import { TabbedLayout } from '../../../layouts/TabbedLayout.jsx'
 import { CippTablePage } from '../../../components/CippComponents/CippTablePage.jsx'
 import { useSettings } from '../../../hooks/use-settings'
 import { PlayArrow, Done, Block, GppGood, LockOpen } from '@mui/icons-material'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
+import tabOptions from './tabOptions.json'
 
 /**
  * The SOC triage queue: one row per case, whatever the source (external SOC notification typed
@@ -18,6 +21,13 @@ const Page = () => {
   const queryKey = `PSITSocCases-${tenant}`
 
   const actions = [
+    {
+      label: 'Open case',
+      type: 'GET',
+      icon: <MagnifyingGlassIcon />,
+      link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Tenant]',
+      multiPost: false,
+    },
     {
       label: 'Start investigating',
       type: 'POST',
@@ -185,6 +195,10 @@ const Page = () => {
   )
 }
 
-Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>
+Page.getLayout = (page) => (
+  <DashboardLayout>
+    <TabbedLayout tabOptions={tabOptions}>{page}</TabbedLayout>
+  </DashboardLayout>
+)
 
 export default Page

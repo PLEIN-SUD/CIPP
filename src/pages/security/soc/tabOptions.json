@@ -1,0 +1,17 @@
+[
+  {
+    "label": "Queue",
+    "path": "/security/soc",
+    "icon": "Security"
+  },
+  {
+    "label": "Adopt Defender incidents",
+    "path": "/security/soc/adopt-defender",
+    "icon": "Shield"
+  },
+  {
+    "label": "Adopt MDO alerts",
+    "path": "/security/soc/adopt-mdo",
+    "icon": "Email"
+  }
+]

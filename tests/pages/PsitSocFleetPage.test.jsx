@@ -99,11 +99,11 @@ describe('fleet health page', () => {
     expect(screen.queryByText('Machines rapportées')).not.toBeInTheDocument()
   })
 
-  it('names its source and points back at the portal for a single machine', () => {
+  it('names its source and points at the portal for a single machine', () => {
     wire(fleet)
     renderWithProviders(<Page />)
 
     expect(screen.getByText(/agrégat Lighthouse/)).toBeInTheDocument()
-    expect(screen.getByText(/portail Defender reste la référence/)).toBeInTheDocument()
+    expect(screen.getByText(/passer par le portail Defender/)).toBeInTheDocument()
   })
 })

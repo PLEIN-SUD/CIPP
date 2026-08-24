@@ -784,8 +784,12 @@ export const PsitBecIncidentPanel = ({
                 </Typography>
               )}
               {saveRequest.isError && (
+                /* The reason, not just the failure: "échec de l'enregistrement" alone sent an
+                   analyst hunting for a cause the API had already named. */
                 <Typography variant="body2" color="error.main">
-                  Échec de l'enregistrement.
+                  {saveRequest.error?.response?.data?.Results ??
+                    saveRequest.error?.message ??
+                    "Échec de l'enregistrement."}
                 </Typography>
               )}
             </Stack>

@@ -19,7 +19,9 @@ import { psitAsArray } from './psit-as-array'
 import { countryName } from './psit-country-names'
 import { agree, cardinal, counted, dateProse, enumerate } from './psit-report-prose'
 
-const HIDING_FOLDER_PATTERN =
+// Exported since the SOC checks read rules the same way: two definitions of "a folder the
+// account holder never opens" would drift apart, and the drift would be silent.
+export const HIDING_FOLDER_PATTERN =
   /rss|conversation history|archive|junk|deleted|notes|sync issues|corbeille|indésirable|éléments supprimés/i
 
 export const SIGNAL_CLASS = {

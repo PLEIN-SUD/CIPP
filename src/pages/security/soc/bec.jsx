@@ -17,6 +17,7 @@ import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
 import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPanel'
+import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
 import tabOptions from './tabOptions.json'
@@ -112,13 +113,18 @@ const Page = () => {
               </CardContent>
             </Card>
           ) : (
-            <PsitBecDecisionPanel
-              userData={userData}
-              becData={becData}
-              tenantFilter={tenantFilter}
-              triage={triage}
-              onRestart={restartCollection}
-            />
+            <>
+              <PsitBecDecisionPanel
+                userData={userData}
+                becData={becData}
+                tenantFilter={tenantFilter}
+                triage={triage}
+                onRestart={restartCollection}
+              />
+              {/* The material the decision rests on, below the decision: the checks are the
+                  evidence, and evidence comes after the reading of it. */}
+              <PsitBecCheckList becData={becData} />
+            </>
           )}
 
           {userId && tenantFilter && isFetching && !becData && (

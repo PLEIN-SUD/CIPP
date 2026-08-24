@@ -285,8 +285,11 @@ export const PsitBecTriagePanel = ({
                   </Typography>
                 )}
                 {saveRequest.isError && (
+                  /* The reason the API gave, not just the fact that it failed. */
                   <Typography variant="body2" color="error.main">
-                    Échec de l'enregistrement.
+                    {saveRequest.error?.response?.data?.Results ??
+                      saveRequest.error?.message ??
+                      "Échec de l'enregistrement."}
                   </Typography>
                 )}
               </Stack>

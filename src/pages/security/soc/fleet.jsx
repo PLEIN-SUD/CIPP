@@ -23,17 +23,12 @@ import { useSettings } from '../../../hooks/use-settings'
 import tabOptions from './tabOptions.json'
 
 /**
- * Fleet health: Defender protection across every managed tenant, in one screen.
+ * Defender protection across every managed tenant, in one screen: protection disabled, active
+ * threats, and which clients are affected. Per-machine analysis stays in the Defender portal.
  *
- * This deliberately does not reproduce the Defender portal. The portal already answers "how is
- * this tenant doing" better than we ever will, and an analyst has it. What no portal answers is
- * "which machines, across all my clients, have their protection off or something running on
- * them" - and that is the question an MSP actually has, so it is the only one this page tries to
- * answer.
- *
- * The counters read what they measure and nothing more: machines Lighthouse reported. A machine
- * that stopped reporting is an absence here, never a green row, which is why the tenant table
- * shows how many devices each client reported rather than only what is wrong.
+ * The counters only count machines Lighthouse reported. A machine that stopped reporting is
+ * missing from this data, not healthy in it, which is why the per-client chips show
+ * to-look-at over reported rather than only what is wrong.
  */
 const Page = () => {
   const tenant = useSettings().currentTenant
@@ -209,9 +204,8 @@ const Page = () => {
           />
 
           <Typography variant="caption" color="text.secondary">
-            Source : agrégat Lighthouse des tenants gérés. Le portail Defender reste la référence
-            pour l’analyse d’une machine ; cette page répond à la question qu’aucun portail ne pose,
-            celle qui traverse les clients.{' '}
+            Source : agrégat Lighthouse des tenants gérés. Pour l’analyse détaillée d’une machine,
+            passer par le portail Defender.{' '}
             <Link href="/security/soc">Retour à la file d’attente</Link>
           </Typography>
         </Stack>

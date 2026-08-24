@@ -253,4 +253,23 @@ describe('PsitBecIncidentPanel', () => {
     const { container } = render({ becData: { Waiting: true } })
     expect(container).toBeEmptyDOMElement()
   })
+
+  it('shows why the save failed, not only that it did', () => {
+    // A bare "échec de l'enregistrement" sent an analyst hunting for a cause the API had already
+    // named - an optional field left blank that a validated parameter refused.
+    ApiPostCall.mockImplementation(() => ({
+      mutate: vi.fn(),
+      isPending: false,
+      isSuccess: false,
+      isError: true,
+      error: {
+        response: {
+          data: { Results: "Could not save the incident record: argument '' does not belong to the set" },
+        },
+      },
+    }))
+    render()
+
+    expect(screen.getByText(/does not belong to the set/)).toBeInTheDocument()
+  })
 })

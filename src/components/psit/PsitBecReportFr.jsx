@@ -772,7 +772,7 @@ export const PsitBecReportFrDocument = ({
                     (app) =>
                       `${app?.displayName} (${app?.appId}), catalogue ${
                         app?.CatalogName || 'non nommé'
-                      }`
+                      }, présente depuis ${dateTable(app?.createdDateTime)}`
                   )}
                 </AlertBox>
               )}

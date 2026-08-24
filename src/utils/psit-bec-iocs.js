@@ -9,7 +9,7 @@
 
 import { classifySentMessages, groupSignInsByIp, isServiceIp } from './psit-bec-signals'
 import { psitAsArray } from './psit-as-array'
-import { counted } from './psit-report-prose'
+import { counted, dateTable } from './psit-report-prose'
 
 const uniqueBy = (items, key) => {
   const seen = new Map()
@@ -88,11 +88,14 @@ export const buildIocs = (becData = {}, userData = {}) => {
 
   const apps = uniqueBy(
     [
+      // The presence date travels with the indicator: an application present since 2024 is still
+      // worth hunting elsewhere, and the reader has to be able to see it is not dated from the
+      // window under investigation.
       ...psitAsArray(becData?.MaliciousSPs).map((app) => ({
         value: String(app?.appId || app?.displayName || ''),
         detail: `${app?.displayName || 'application'}, catalogue ${
           app?.CatalogName || 'malveillant'
-        }`,
+        }, présente depuis ${dateTable(app?.createdDateTime)}`,
         basis: 'Catalogue CIPP',
       })),
       ...psitAsArray(becData?.AddedApps)

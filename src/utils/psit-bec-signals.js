@@ -17,7 +17,7 @@
 
 import { psitAsArray } from './psit-as-array'
 import { countryName } from './psit-country-names'
-import { cardinal, counted, dateProse, enumerate } from './psit-report-prose'
+import { agree, cardinal, counted, dateProse, enumerate } from './psit-report-prose'
 
 const HIDING_FOLDER_PATTERN =
   /rss|conversation history|archive|junk|deleted|notes|sync issues|corbeille|indésirable|éléments supprimés/i
@@ -522,23 +522,97 @@ export const buildSignals = (becData = {}, userData = {}) => {
     })
   }
 
-  if (
-    (becData?.MaliciousSPs?.length || 0) > 0 ||
-    (becData?.AddedApps || []).some((app) => app?.MaliciousMatch)
-  ) {
-    const names = [
-      ...(becData?.MaliciousSPs || []).map((app) => app?.displayName),
-      ...(becData?.AddedApps || [])
-        .filter((app) => app?.MaliciousMatch)
-        .map((app) => app?.displayName),
-    ].filter(Boolean)
+  // A catalog application matters in two different ways, and conflating them is what put
+  // "compromission établie" on a mailbox whose only in-window signal was a single sign-in still
+  // waiting to be qualified: PerfectData Software, present in the tenant since April 2024, was read
+  // as evidence of a compromise investigated in August 2026. Consent survives a password reset, so
+  // an application that appeared during the window is settled by the data alone; the same
+  // application present for two years is a standing exposure to remediate, not proof of *this*
+  // compromise. Both are reported, each in its own class.
+  //
+  // The date is the creation of the service principal in the tenant: it bounds the first grant, not
+  // the last one. A fresh consent on an application already present does not move it, so the
+  // out-of-window wording asks for the grant to be checked rather than declaring the application
+  // out of scope, and a catalog application with no date at all becomes a question instead of being
+  // dropped. An entry taken from AddedApps is in window by construction, the collection listing
+  // only applications created during it, so a missing date there is never read as old.
+  const appWindow = getAnalysisWindow(becData)
+  const catalogApps = []
+  const seenCatalogApps = new Set()
+  const addCatalogApp = (app, { collectedInWindow }) => {
+    const name =
+      app?.displayName || app?.appDisplayName || app?.CatalogName || app?.MaliciousMatch?.Name
+    const key = String(app?.appId || name || '').toLowerCase()
+    if (!key || seenCatalogApps.has(key)) return
+    seenCatalogApps.add(key)
+    const createdUtc = toUtc(app?.createdDateTime)
+    catalogApps.push({
+      key,
+      name: name || 'application inconnue',
+      createdUtc,
+      dated: Boolean(createdUtc) || collectedInWindow,
+      inWindow: collectedInWindow || (createdUtc ? createdUtc >= appWindow.startUtc : false),
+    })
+  }
+  // AddedApps first: an application both created during the window and listed in the catalog
+  // appears in the two collections, and the audit-based one carries the stronger basis.
+  for (const app of psitAsArray(becData?.AddedApps)) {
+    if (app?.MaliciousMatch) addCatalogApp(app, { collectedInWindow: true })
+  }
+  for (const app of psitAsArray(becData?.MaliciousSPs)) {
+    addCatalogApp(app, { collectedInWindow: false })
+  }
+  const appLabel = (app) =>
+    app.createdUtc ? `${app.name}, présente depuis ${dateProse(app.createdUtc)}` : app.name
+
+  const appsInWindow = catalogApps.filter((app) => app.inWindow)
+  const appsBeforeWindow = catalogApps.filter((app) => !app.inWindow && app.dated)
+  const appsUndated = catalogApps.filter((app) => !app.inWindow && !app.dated)
+
+  if (appsInWindow.length > 0) {
     add({
       id: 'app-malicious',
       class: SIGNAL_CLASS.ESTABLISHED,
       category: 'apps',
-      title: 'Application référencée comme malveillante présente dans le tenant',
-      detail: `${names.join(', ') || 'application inconnue'}. Un accès obtenu par consentement ne disparaît pas avec le mot de passe.`,
+      title: `${counted(appsInWindow.length, 'application')} du catalogue malveillant ${agree(
+        appsInWindow.length,
+        'application',
+        'apparu'
+      )} pendant la fenêtre analysée`,
+      detail: `${enumerate(appsInWindow.map(appLabel))}. Un accès obtenu par consentement ne disparaît pas avec le mot de passe.`,
       evidence: ['MaliciousSPs', 'AddedApps'],
+    })
+  }
+
+  for (const app of appsUndated) {
+    add({
+      id: `app-malicious-undated:${app.key}`,
+      class: SIGNAL_CLASS.TO_QUALIFY,
+      category: 'apps',
+      title: `Application du catalogue malveillant « ${app.name} », date d'apparition inconnue`,
+      detail:
+        "La collecte n'a ramené aucune date de création pour cette application : sa présence ne peut être ni rattachée ni écartée de la fenêtre analysée.",
+      question: `Le consentement accordé à « ${app.name} » date-t-il de la fenêtre analysée ? La date figure sur les autorisations de l'application dans Entra.`,
+      evidence: ['MaliciousSPs'],
+    })
+  }
+
+  if (appsBeforeWindow.length > 0) {
+    add({
+      id: 'app-malicious-preexisting',
+      class: SIGNAL_CLASS.NOISE,
+      category: 'apps',
+      title: `${counted(appsBeforeWindow.length, 'application')} du catalogue malveillant ${agree(
+        appsBeforeWindow.length,
+        'application',
+        'antérieur'
+      )} à la fenêtre analysée`,
+      detail: `${enumerate(
+        appsBeforeWindow.map(appLabel)
+      )}, soit avant le début de la fenêtre (${formatUtc(
+        appWindow.startUtc
+      )}). La présence reste à traiter, elle n'établit pas cette compromission. La date est celle de l'apparition de l'application dans le tenant et non celle du dernier consentement. Si la présence n'est pas expliquée, supprimer l'application et contrôler ses autorisations ainsi que la date de son consentement.`,
+      evidence: ['MaliciousSPs'],
     })
   }
 

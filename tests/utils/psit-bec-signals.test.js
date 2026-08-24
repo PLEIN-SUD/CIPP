@@ -176,6 +176,83 @@ describe('buildSignals', () => {
     expect(noise.find((signal) => signal.id === 'mail-service-generated').title).toContain('166')
   })
 
+  // The case that produced this rule: PerfectData Software, consented in April 2024, read as
+  // evidence of an August 2026 compromise. It is a real exposure and it is not this incident.
+  it('keeps a catalog application older than the window out of the verdict', () => {
+    const signals = buildSignals(
+      {
+        ...baseBecData,
+        MaliciousSPs: [
+          {
+            displayName: 'PERFECTDATA SOFTWARE',
+            appId: 'ff8d92dc-3d82-41d6-bcbd-b9174d163620',
+            createdDateTime: '2024-04-21T11:03:06Z',
+            CatalogName: 'PerfectData Software',
+          },
+        ],
+      },
+      userData
+    )
+
+    expect(signals.some((signal) => signal.id === 'app-malicious')).toBe(false)
+    const preexisting = signals.find((signal) => signal.id === 'app-malicious-preexisting')
+    expect(preexisting.class).toBe(SIGNAL_CLASS.NOISE)
+    expect(preexisting.detail).toContain('21 avril 2024')
+    // Kept as something to do, not filed as harmless.
+    expect(preexisting.detail).toContain('supprimer')
+    expect(buildVerdict(signals, []).status).toBe(VERDICT_STATUS.TO_QUALIFY)
+  })
+
+  it('classes a catalog application that appeared during the window as established', () => {
+    const signals = buildSignals(
+      {
+        ...baseBecData,
+        MaliciousSPs: [
+          {
+            displayName: 'PERFECTDATA SOFTWARE',
+            appId: 'ff8d92dc-3d82-41d6-bcbd-b9174d163620',
+            createdDateTime: '2026-08-18T09:12:00Z',
+            CatalogName: 'PerfectData Software',
+          },
+        ],
+        AddedApps: [
+          {
+            displayName: 'PERFECTDATA SOFTWARE',
+            appId: 'ff8d92dc-3d82-41d6-bcbd-b9174d163620',
+            createdDateTime: '2026-08-18T09:12:00Z',
+            MaliciousMatch: { Name: 'PerfectData Software' },
+          },
+        ],
+      },
+      userData
+    )
+
+    const established = signals.filter((signal) => signal.id === 'app-malicious')
+    expect(established).toHaveLength(1)
+    expect(established[0].class).toBe(SIGNAL_CLASS.ESTABLISHED)
+    // Present in both collections, counted once.
+    expect(established[0].detail).toContain('PERFECTDATA SOFTWARE')
+    expect(established[0].title).toContain('1 application')
+    expect(signals.some((signal) => signal.id === 'app-malicious-preexisting')).toBe(false)
+    expect(buildVerdict(signals, []).status).toBe(VERDICT_STATUS.COMPROMISED)
+  })
+
+  it('turns a catalog application with no creation date into a question', () => {
+    const signals = buildSignals(
+      {
+        ...baseBecData,
+        MaliciousSPs: [{ displayName: 'eM Client', appId: 'e9a7fea1-1cc0-4cd9-a31b-9137ca5deee6' }],
+      },
+      userData
+    )
+    const undated = signals.find((signal) =>
+      signal.id.startsWith('app-malicious-undated:e9a7fea1')
+    )
+
+    expect(undated.class).toBe(SIGNAL_CLASS.TO_QUALIFY)
+    expect(undated.question).toContain('Entra')
+  })
+
   it('flags a configuration change made from outside the usage location as established', () => {
     const signals = buildSignals(
       {

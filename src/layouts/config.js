@@ -25,6 +25,41 @@ export const nativeMenuItems = [
     ),
     permissions: ['CIPP.Core.*'],
   },
+  // PSIT-CUSTOM-BEGIN: SOC Plein Sud, the internal security operations centre
+  {
+    title: 'SOC Plein Sud',
+    type: 'header',
+    icon: (
+      <SvgIcon>
+        <ShieldOutlined />
+      </SvgIcon>
+    ),
+    permissions: ['Security.Incident.*'],
+    items: [
+      {
+        title: 'Triage',
+        permissions: ['Security.Incident.*'],
+        items: [
+          {
+            title: 'Queue',
+            path: '/security/soc',
+            permissions: ['Security.Incident.*'],
+          },
+          {
+            title: 'Adopt Defender incidents',
+            path: '/security/soc/adopt-defender',
+            permissions: ['Security.Incident.*'],
+          },
+          {
+            title: 'Adopt MDO alerts',
+            path: '/security/soc/adopt-mdo',
+            permissions: ['Security.Incident.*'],
+          },
+        ],
+      },
+    ],
+  },
+  // PSIT-CUSTOM-END
   {
     title: 'Identity Management',
     type: 'header',
@@ -345,13 +380,6 @@ export const nativeMenuItems = [
         title: 'Incidents & Alerts',
         permissions: ['Security.Incident.*'],
         items: [
-          // PSIT-CUSTOM-BEGIN: SOC triage dashboard (queue of qualified cases)
-          {
-            title: 'SOC Triage',
-            path: '/security/soc',
-            permissions: ['Security.Incident.*'],
-          },
-          // PSIT-CUSTOM-END
           {
             title: 'Incidents',
             path: '/security/incidents/list-incidents',

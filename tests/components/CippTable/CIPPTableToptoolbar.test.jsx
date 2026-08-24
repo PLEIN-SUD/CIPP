@@ -8,9 +8,7 @@ import { CippDataTable } from '../../../src/components/CippTable/CippDataTable'
 // save-preset invalidation refetches presetList in the background (data swap, no
 // isSuccess transition), the Filters dropdown must rebuild from the refetched list
 
-vi.mock('../../../src/api/ApiCall', async () =>
-  (await import('../../mocks/api-call')).apiCallMock()
-)
+vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
 import { api, getResult, paginatedResult, postResult } from '../../mocks/api-call'
 
 const refreshRows = [
@@ -34,11 +32,7 @@ const emptyPresets = getResult({ data: { Results: [] } })
 const graphPresetResult = getResult({
   data: {
     Results: [
-      {
-        id: 'gp-1',
-        name: 'Widget View',
-        params: { endpoint: 'testWidgets', $filter: "state eq 'on'" },
-      },
+      { id: 'gp-1', name: 'Widget View', params: { endpoint: 'testWidgets', $filter: "state eq 'on'" } },
     ],
   },
 })
@@ -101,9 +95,7 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
     // reopening the menu re-renders the toolbar, which is all a background
     // refetch does, and matches the real repro (reopening doesn't help)
     swapGraphPresets({
-      data: {
-        Results: [{ id: 'p1', name: 'My Saved Preset', params: { endpoint: 'testWidgets' } }],
-      },
+      data: { Results: [{ id: 'p1', name: 'My Saved Preset', params: { endpoint: 'testWidgets' } }] },
     })
     await user.click(screen.getByRole('button', { name: 'Filters' }))
     await screen.findByRole('menuitem', { name: 'My Saved Preset' })
@@ -228,24 +220,18 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
     })
   }, 30000)
 
+  // pageName '' (jsdom router is '/') means no persistence, the slot tests name their key
   it('restores both persisted slots and discards garbage global values', async () => {
-    renderGraphTable(
-      {},
-      {
-        settings: settingsWith({
-          persistFilters: true,
-          setLastUsedFilter: vi.fn(),
-          lastUsedFilters: {
-            // legacy single-slot shape with a non-string global value
-            '': {
-              type: 'global',
-              value: [{ id: 'department', value: 'IT' }],
-              name: 'Legacy Garbage',
-            },
-          },
-        }),
-      }
-    )
+    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+      settings: settingsWith({
+        persistFilters: true,
+        setLastUsedFilter: vi.fn(),
+        lastUsedFilters: {
+          // legacy single-slot shape with a non-string global value
+          SlotsTest: { type: 'global', value: [{ id: 'department', value: 'IT' }], name: 'Legacy Garbage' },
+        },
+      }),
+    })
     await screen.findByText('1-3 of 3')
     // cross the restore effect's setTimeout(100) window before asserting, otherwise
     // cleanup unmounts (and cancels the pending timer) before it ever runs
@@ -256,27 +242,19 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
   })
 
   it('restores both persisted slots and discards new-shape garbage global values', async () => {
-    renderGraphTable(
-      {},
-      {
-        settings: settingsWith({
-          persistFilters: true,
-          setLastUsedFilter: vi.fn(),
-          lastUsedFilters: {
-            // new shape can carry the same non-string global garbage the legacy branch discards
-            '': {
-              graph: null,
-              table: {
-                id: 'Garbage',
-                name: 'Garbage',
-                type: 'global',
-                value: [{ id: 'department', value: 'IT' }],
-              },
-            },
+    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+      settings: settingsWith({
+        persistFilters: true,
+        setLastUsedFilter: vi.fn(),
+        lastUsedFilters: {
+          // new shape can carry the same non-string global garbage the legacy branch discards
+          SlotsTest: {
+            graph: null,
+            table: { id: 'Garbage', name: 'Garbage', type: 'global', value: [{ id: 'department', value: 'IT' }] },
           },
-        }),
-      }
-    )
+        },
+      }),
+    })
     await screen.findByText('1-3 of 3')
     // cross the restore effect's setTimeout(100) window before asserting, otherwise
     // cleanup unmounts (and cancels the pending timer) before it ever runs
@@ -287,24 +265,18 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
   })
 
   it('restores a legacy column filter into the table slot', async () => {
-    renderGraphTable(
-      {},
-      {
-        settings: settingsWith({
-          persistFilters: true,
-          setLastUsedFilter: vi.fn(),
-          lastUsedFilters: {
-            '': { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
-          },
-        }),
-      }
-    )
-    await waitFor(
-      () => {
-        expect(screen.getByText('1-2 of 2')).toBeInTheDocument()
-      },
-      { timeout: 5000 }
-    )
+    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+      settings: settingsWith({
+        persistFilters: true,
+        setLastUsedFilter: vi.fn(),
+        lastUsedFilters: {
+          SlotsTest: { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
+        },
+      }),
+    })
+    await waitFor(() => {
+      expect(screen.getByText('1-2 of 2')).toBeInTheDocument()
+    }, { timeout: 5000 })
     expect(screen.getByRole('button', { name: 'Filters (1)' })).toBeInTheDocument()
   })
 
@@ -313,12 +285,12 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
   // overwriting whatever the user had just applied with the persisted filter.
   it('does not clobber a user filter applied after the persisted one was restored', async () => {
     const user = userEvent.setup()
-    renderGraphTable({}, {
+    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
       settings: settingsWith({
         persistFilters: true,
         setLastUsedFilter: vi.fn(),
         lastUsedFilters: {
-          '': { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
+          SlotsTest: { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
         },
       }),
     })
@@ -408,15 +380,7 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
 
     // rename lands via refetch, same id
     swapGraphPresets({
-      data: {
-        Results: [
-          {
-            id: 'gp-1',
-            name: 'Widget View v2',
-            params: { endpoint: 'testWidgets', $filter: "state eq 'on'" },
-          },
-        ],
-      },
+      data: { Results: [{ id: 'gp-1', name: 'Widget View v2', params: { endpoint: 'testWidgets', $filter: "state eq 'on'" } }] },
     })
     await user.click(screen.getByRole('button', { name: /Filters/ }))
     const renamed = await screen.findByRole('menuitem', { name: 'Widget View v2' })

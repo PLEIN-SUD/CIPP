@@ -27,6 +27,7 @@ import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDevice
 import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
 import { PsitSocAppContext } from '../../../components/psit/soc/PsitSocAppContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
+import { usePsitSocEvidence } from '../../../hooks/use-psit-soc-evidence'
 
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
 
@@ -54,6 +55,9 @@ const Page = () => {
   const socCase = Array.isArray(caseRequest.data) ? caseRequest.data[0] : caseRequest.data
 
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
+  // Gathered once and shared: the guide answers its steps from the same requests the panels
+  // below already make, so showing the answers costs no extra call.
+  const evidence = usePsitSocEvidence(socCase)
 
   return (
     <>
@@ -158,7 +162,7 @@ const Page = () => {
                     </CardContent>
                   </Card>
 
-                  <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} />
+                  <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} evidence={evidence} />
                   {(socCase.Entities?.upn || socCase.Entities?.userId) && (
                     <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
                   )}

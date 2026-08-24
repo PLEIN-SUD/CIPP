@@ -13,6 +13,11 @@
 // P-levels for types 1, 2, 6 and 11; the others carry the PSIT reading of the plan and are meant
 // to be tuned from real cases.
 //
+// Steps that CIPP can answer carry an `evidence` key: the case view resolves it against the data
+// it already holds and prints the answer under the step. A step without one is a step only a
+// human can settle - calling the account holder, reading a process tree in the Defender portal -
+// and it stays a plain question, which is honest.
+//
 // Each type declares the entities it investigates. The quick-entry drawer renders the matching
 // picker from that: a consent case asks for an application, a machine case for a machine, and
 // nobody is asked for an identifier they would have to go and find first. A type naming two
@@ -55,8 +60,8 @@ export const PSIT_SOC_TYPES = [
     severity: 'P4',
     label: 'Connexion depuis un pays inhabituel ou une IP signalée malveillante',
     guide: [
-      { id: 'sessions', label: 'Regrouper les connexions par adresse IP et repérer les succès' },
-      { id: 'mfa', label: 'Vérifier MFA et protocole de chaque succès (client hérité ?)' },
+      { id: 'sessions', label: 'Regrouper les connexions par adresse IP et repérer les succès', evidence: 'user.sessions' },
+      { id: 'mfa', label: 'Vérifier MFA et protocole de chaque succès (client hérité ?)', evidence: 'user.signin-quality' },
       { id: 'device', label: "Vérifier l'appareil : géré, conforme, déjà vu sur ce compte" },
       { id: 'locations', label: 'Confronter aux localisations nommées et au pays déclaré' },
       { id: 'client', label: 'Contacter le titulaire ou le client : déplacement, VPN, roaming ?' },
@@ -82,8 +87,8 @@ export const PSIT_SOC_TYPES = [
     severity: 'P2',
     label: 'Voyage impossible : activité simultanée depuis plusieurs pays',
     guide: [
-      { id: 'sessions', label: 'Construire les sessions par IP et mesurer l’écart de temps entre pays' },
-      { id: 'aitm', label: 'Chercher la signature AiTM : même session vue de deux adresses, MFA « satisfaite » rejouée' },
+      { id: 'sessions', label: 'Construire les sessions par IP et mesurer l’écart de temps entre pays', evidence: 'user.sessions' },
+      { id: 'aitm', label: 'Chercher la signature AiTM : même session vue de deux adresses, MFA « satisfaite » rejouée', evidence: 'user.signin-quality' },
       { id: 'devicecode', label: 'Vérifier le protocole : deviceCode = hameçonnage par code d’appareil' },
       { id: 'client', label: 'Contacter le titulaire : VPN, roaming, second appareil ?' },
       { id: 'bec', label: 'Si TP : collecter le dossier BEC et dérouler la remédiation' },
@@ -109,7 +114,7 @@ export const PSIT_SOC_TYPES = [
     label: 'Connexion O365 depuis l’étranger (corrélée au voyage impossible)',
     guide: [
       { id: 'correlate', label: 'Vérifier si un cas de type 2 est ouvert sur le même compte' },
-      { id: 'sessions', label: 'Dérouler le guide du type 1 sur les connexions concernées' },
+      { id: 'sessions', label: 'Dérouler le guide du type 1 sur les connexions concernées', evidence: 'user.sessions' },
     ],
     fpClues: ['Mêmes indices que le type 1'],
     tpClues: ['Mêmes indices que les types 1 et 2 : reprendre la criticité du type 2 si confirmé'],
@@ -147,8 +152,8 @@ export const PSIT_SOC_TYPES = [
     severity: 'P2',
     label: 'Création ou modification de règle de boîte, forward externe',
     guide: [
-      { id: 'rules', label: 'Lister les règles de la boîte, règles masquées incluses' },
-      { id: 'targets', label: 'Qualifier chaque règle : destinataire externe ? suppression ? dossier de dissimulation ?' },
+      { id: 'rules', label: 'Lister les règles de la boîte, règles masquées incluses', evidence: 'user.rules' },
+      { id: 'targets', label: 'Qualifier chaque règle : destinataire externe ? suppression ? dossier de dissimulation ?', evidence: 'user.rules' },
       { id: 'origin', label: 'Retrouver la création dans l’audit : IP, heure, hors zone ?' },
       { id: 'forward', label: 'Vérifier le forward niveau boîte (ForwardingSmtpAddress)' },
     ],
@@ -172,9 +177,9 @@ export const PSIT_SOC_TYPES = [
     severity: 'P4',
     label: 'Consentement d’application OAuth',
     guide: [
-      { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP' },
-      { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?' },
-      { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition' },
+      { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
+      { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
+      { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
       { id: 'consent', label: 'Retrouver le consentement dans l’audit : qui, quand, HNO ?' },
     ],
     fpClues: [
@@ -218,7 +223,7 @@ export const PSIT_SOC_TYPES = [
     severity: 'P1',
     label: 'Menace active non mitigée sur une machine (MDE)',
     guide: [
-      { id: 'status', label: 'Vérifier le statut de remédiation dans le portail Defender' },
+      { id: 'status', label: 'Vérifier le statut de remédiation dans le portail Defender', evidence: 'device.defender' },
       { id: 'hash', label: 'Qualifier le binaire : hash, signature, chemin (%temp% vs Program Files)' },
       { id: 'prevalence', label: 'Mesurer la prévalence du binaire sur le parc' },
       { id: 'identity', label: 'Pivot identité : sessions et mot de passe du titulaire de la machine' },
@@ -239,7 +244,7 @@ export const PSIT_SOC_TYPES = [
     guide: [
       { id: 'rmm', label: 'L’outil est-il un RMM déployé par PSIT (liste interne) ?' },
       { id: 'binary', label: 'Vérifier signature et chemin du binaire' },
-      { id: 'context', label: 'Compte exécutant et heure : technicien en heures ouvrées ?' },
+      { id: 'context', label: 'Compte exécutant et heure : technicien en heures ouvrées ?', evidence: 'device.compliance' },
       { id: 'prevalence', label: 'Prévalence sur le parc du client' },
     ],
     fpClues: [
@@ -260,7 +265,7 @@ export const PSIT_SOC_TYPES = [
     severity: 'P3',
     label: 'Binaire ou script suspect (VBS, runner)',
     guide: [
-      { id: 'parent', label: 'Identifier le processus parent (Office vers wscript = TP probable)' },
+      { id: 'parent', label: 'Identifier le processus parent (Office vers wscript = TP probable)', evidence: 'device.compliance' },
       { id: 'binary', label: 'Qualifier le script : chemin, signature, contenu si disponible' },
       { id: 'prevalence', label: 'Prévalence sur le parc' },
       { id: 'identity', label: 'Si exécuté : pivot identité sur le titulaire de la machine' },
@@ -282,7 +287,7 @@ export const PSIT_SOC_TYPES = [
     severity: 'P4',
     label: 'Malware détecté et bloqué, scan de ports horizontal',
     guide: [
-      { id: 'blocked', label: 'Confirmer le blocage : risque résiduel faible si bloqué' },
+      { id: 'blocked', label: 'Confirmer le blocage : risque résiduel faible si bloqué', evidence: 'device.defender' },
       { id: 'operator', label: 'Compte exécutant et plage IP : outillage d’administration des techniciens ?' },
       { id: 'context', label: 'Précédé d’une autre alerte identité sur le même poste ?' },
     ],
@@ -304,7 +309,7 @@ export const PSIT_SOC_TYPES = [
     label: 'Malware blocked / prevented / active (Wacatac, Malgent, FakeFolder, EICAR)',
     guide: [
       { id: 'eicar', label: 'EICAR = fichier de test : clore benign en un clic' },
-      { id: 'status', label: 'Lire remediationStatus sur l’évidence : bloqué = risque résiduel faible' },
+      { id: 'status', label: 'Lire remediationStatus sur l’évidence : bloqué = risque résiduel faible', evidence: 'device.defender' },
       { id: 'hash', label: 'Qualifier le hash (détections génériques Wacatac/Malgent) et la prévalence' },
       { id: 'writeback', label: 'Qualifier dans Defender (classification + détermination) via le cas' },
     ],
@@ -334,9 +339,9 @@ export const PSIT_SOC_TYPES = [
     label: 'Infostealer activity',
     guide: [
       { id: 'assume', label: 'TP jusqu’à preuve du contraire : les identifiants du poste sont considérés exposés' },
-      { id: 'identity', label: 'Pivot identité immédiat : révoquer les sessions, réinitialiser le mot de passe' },
+      { id: 'identity', label: 'Pivot identité immédiat : révoquer les sessions, réinitialiser le mot de passe', evidence: 'user.sessions' },
       { id: 'bec', label: 'Collecter le dossier BEC du titulaire' },
-      { id: 'device', label: 'Machine : scan complet, envisager l’isolation (portail Defender)' },
+      { id: 'device', label: 'Machine : scan complet, envisager l’isolation (portail Defender)', evidence: 'device.defender' },
     ],
     fpClues: ['Rarissime : n’écarter que sur preuve (fichier de test, faux positif confirmé par MS)'],
     tpClues: ['Par défaut : agir d’abord, qualifier ensuite'],
@@ -351,7 +356,7 @@ export const PSIT_SOC_TYPES = [
     guide: [
       { id: 'hash', label: 'Qualifier le fichier : hash, signature, origine (mail, web, USB)' },
       { id: 'prevalence', label: 'Prévalence sur le parc' },
-      { id: 'context', label: 'Autres alertes sur le poste ou le titulaire ?' },
+      { id: 'context', label: 'Autres alertes sur le poste ou le titulaire ?', evidence: 'device.compliance' },
     ],
     fpClues: ['Fichier signé d’un éditeur connu, origine légitime'],
     tpClues: ['Origine mail ou web récente, hash inconnu, exécuté'],
@@ -366,7 +371,7 @@ export const PSIT_SOC_TYPES = [
     guide: [
       { id: 'service', label: 'Identifier le service : nom, binaire, compte de lancement' },
       { id: 'persistence', label: 'Créé récemment ? HNO ? chemin non standard ? = persistance probable' },
-      { id: 'rmm', label: 'Confronter à la liste RMM PSIT (un agent RMM crée des services)' },
+      { id: 'rmm', label: 'Confronter à la liste RMM PSIT (un agent RMM crée des services)', evidence: 'device.compliance' },
     ],
     fpClues: ['Service d’un agent connu (RMM, antivirus, sauvegarde)'],
     tpClues: ['Service créé HNO, binaire non signé, chemin utilisateur'],

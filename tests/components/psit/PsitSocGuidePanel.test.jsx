@@ -85,6 +85,58 @@ describe('PsitSocGuidePanel', () => {
     ])
   })
 
+  it('carries the answer under the step, so checking is not an errand', () => {
+    // Type 2's first step asks to group the sign-ins; the evidence answers it in place.
+    renderWithProviders(
+      <PsitSocGuidePanel
+        socCase={socCase}
+        queryKey="k"
+        evidence={{
+          user: {
+            usageLocation: 'FR',
+            signIns: [
+              {
+                ipAddress: '195.65.131.222',
+                createdDateTime: '2026-08-24T09:00:00Z',
+                status: { errorCode: 0 },
+                location: { countryOrRegion: 'CH' },
+              },
+            ],
+          },
+        }}
+      />
+    )
+
+    expect(screen.getByText(/195\.65\.131\.222/)).toBeInTheDocument()
+    expect(screen.getByText(/succès hors zone/)).toBeInTheDocument()
+  })
+
+  it('renders the step alone when nothing answers it', () => {
+    renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
+
+    // The step that only a phone call settles stays a plain question.
+    expect(screen.getByText(/Contacter le titulaire/)).toBeInTheDocument()
+  })
+
+  it('attests only a settled step: an untouched or un-ticked one has nothing to sign', () => {
+    renderWithProviders(
+      <PsitSocGuidePanel
+        socCase={{
+          ...socCase,
+          GuideProgress: {
+            sessions: { State: 'done', By: 'a', Utc: '2026-08-24T14:00:00Z' },
+            aitm: { State: 'pending', By: 'a', Utc: '2026-08-24T15:00:00Z' },
+          },
+        }}
+        queryKey="k"
+      />
+    )
+
+    expect(screen.getByText(/done, a \(2026-08-24T14:00:00Z\)/)).toBeInTheDocument()
+    // Un-ticking removes the claim rather than recording "pending, someone, at some time".
+    expect(screen.queryByText(/pending, a/)).not.toBeInTheDocument()
+  })
+
   it('shows the FP and TP clues next to the steps', () => {
     renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
 

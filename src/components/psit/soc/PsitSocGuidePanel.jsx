@@ -14,6 +14,7 @@ import {
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { psitSocTypeById } from '../../../utils/psit-soc-types'
+import { psitSocStepEvidence } from '../../../utils/psit-soc-evidence'
 
 /**
  * The investigation guide of the case's type, checkable step by step. A checked step is a
@@ -23,8 +24,13 @@ import { psitSocTypeById } from '../../../utils/psit-soc-types'
  * The FP/TP clue lists sit next to the steps because they are what the steps produce evidence
  * for. Green reads "expected activity", red reads "compromise"; the analyst weighs, the panel
  * never concludes.
+ *
+ * Steps that CIPP can answer carry their answer inline: a guide asking "read the permissions
+ * granted" while the permissions sit two cards below turns a check into an errand. What is shown
+ * reports and never concludes, and says when it does not know - data that has not arrived is not
+ * data that came back empty.
  */
-export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
+export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
   const progressWrite = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
 
@@ -42,6 +48,8 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
   }
 
   const stepState = (stepId) => socCase?.GuideProgress?.[stepId]
+
+  const EVIDENCE_COLOUR = { good: 'success.main', bad: 'error.main', unknown: 'text.secondary' }
 
   const toggleStep = (step) => {
     const done = stepState(step.id)?.State === 'done'
@@ -62,6 +70,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
         <List dense>
           {catalogueEntry.guide.map((step) => {
             const state = stepState(step.id)
+            const answer = psitSocStepEvidence(step.evidence, evidence)
             return (
               <ListItem key={step.id} disablePadding>
                 <ListItemButton onClick={() => toggleStep(step)} dense>
@@ -76,7 +85,27 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={step.label}
-                    secondary={state?.By ? `${state.State}, ${state.By} (${state.Utc})` : null}
+                    secondary={
+                      <>
+                        {answer && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            display="block"
+                            sx={{ color: EVIDENCE_COLOUR[answer.tone] }}
+                          >
+                            {answer.text}
+                          </Typography>
+                        )}
+                        {/* Only a settled step carries a name and a timestamp: a step nobody has
+                            touched, or one that was un-ticked, has nothing to attest. */}
+                        {state?.By && state.State !== 'pending' && (
+                          <Typography component="span" variant="caption" display="block">
+                            {`${state.State}, ${state.By} (${state.Utc})`}
+                          </Typography>
+                        )}
+                      </>
+                    }
                   />
                 </ListItemButton>
               </ListItem>

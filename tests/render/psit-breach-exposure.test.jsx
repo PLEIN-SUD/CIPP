@@ -316,17 +316,39 @@ describe('rendered PDF, breach exposure in the investigation report', () => {
   )
 
   it(
-    'renders no annex at all when nothing was found or nothing was checked',
+    'keeps the annex when the check found nothing, and says so',
     async () => {
-      for (const [exposure, name] of [
-        [ok([]), 'investigation-exposition-aucune'],
-        [{ ...ok([]), Status: 'error' }, 'investigation-exposition-echec'],
-      ]) {
-        const { text } = await render(investigationDocument(becData(exposure)), name)
+      const { text } = await render(
+        investigationDocument(becData(ok([]))),
+        'investigation-exposition-aucune'
+      )
+      const flat = flatten(text)
 
-        expect(text).not.toContain('Compromissions référencées')
-        expect(text).not.toContain("Annexe : exposition publique")
-      }
+      // The page stays: a check that ran and returned nothing is a finding, and a page that
+      // vanishes is also what used to shift the lettering of the annexes after it.
+      expect(flat).toContain("exposition publique de l'identifiant")
+      expect(flat).toContain('ne figure pas dans les compromissions publiques référencées')
+      expect(flat).toContain('p.martin@contoso.test et pm@contoso.test')
+      expect(flat).toContain('Vérification effectuée')
+      // No breach table when there is nothing to put in it.
+      expect(flat).not.toContain('Compromissions référencées')
+    },
+    TIMEOUT
+  )
+
+  it(
+    'keeps the annex when the check could not run, with the reason',
+    async () => {
+      const { text } = await render(
+        investigationDocument(becData({ ...ok([]), Status: 'error' })),
+        'investigation-exposition-echec'
+      )
+      const flat = flatten(text)
+
+      expect(flat).toContain("exposition publique de l'identifiant")
+      expect(flat).toContain("n'a pas pu être effectuée")
+      expect(flat).toContain('service indisponible')
+      expect(flat).not.toContain('Compromissions référencées')
     },
     TIMEOUT
   )

@@ -212,11 +212,43 @@ describe('PsitBecReportFrDocument structure', () => {
     expect(text).toContain('Faits et signaux')
     expect(text).toContain('Couverture et limites')
     expect(text).toContain('Annexe A : couverture des vérifications')
-    // The letters follow the page order since the internal review of 22 August: the BEC primer is
-    // last on the page, so it is D. It used to be titled B while sitting after C.
+    // The letters follow the page order AND the annexes actually present: this fixture renders all
+    // four, so the primer is D. It used to be titled B while sitting after C, then D while B and C
+    // were conditionally absent.
+    expect(text).toContain("Annexe B : exposition publique de l'identifiant")
+    expect(text).toContain('Annexe C : indicateurs observés')
     expect(text).toContain('Annexe D : comprendre la compromission')
     // The decision page comes before the annex, which is the whole point of the restructure.
     expect(text.indexOf('Décision')).toBeLessThan(text.indexOf('Annexe A'))
+  })
+
+  it('renders the exposure annex even when the dossier predates the check, and says why', () => {
+    // This fixture has no BreachExposure block at all: the annex must state that the check could
+    // not run rather than vanish, because "not checked" printed as "nothing found" would be a
+    // false statement, and a vanished page used to leave a hole in the annex letters.
+    const { container } = render()
+    const text = container.textContent
+
+    expect(text).toContain("n'a pas pu être effectuée")
+    expect(text).toContain('antérieure à la mise en place de la vérification')
+  })
+
+  it('closes the letter hole when an annex is absent', () => {
+    // No sign-ins, no rules, no sent messages: nothing feeds the indicator annex, so the primer
+    // moves up to C. The reader never sees a lettering gap.
+    const { container } = render({
+      becData: {
+        ...becData,
+        NewRules: [],
+        SentMessages: [],
+        SuspectUserSignIns: [],
+      },
+    })
+    const text = container.textContent
+
+    expect(text).not.toContain('indicateurs observés')
+    expect(text).toContain('Annexe C : comprendre la compromission')
+    expect(text).not.toContain('Annexe D')
   })
 
   it('does not print the evidence twice: the decision page points at the findings', () => {

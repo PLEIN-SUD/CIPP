@@ -31,7 +31,7 @@ import {
 } from '../../utils/psit-bec-signals'
 import { INCIDENT_STATUS_LABELS, buildExposure } from '../../utils/psit-bec-incident'
 import { getCollectionStatus } from '../../utils/psit-bec-collection'
-import { BREACH_STATE, readBreachExposure } from '../../utils/psit-bec-breach'
+import { BREACH_STATE, breachSentence, readBreachExposure } from '../../utils/psit-bec-breach'
 import { psitAsArray } from '../../utils/psit-as-array'
 import { countryName } from '../../utils/psit-country-names'
 import {
@@ -306,6 +306,26 @@ export const PsitBecReportFrDocument = ({
   // The one document where a breach is named. The client report stays aggregate: which services an
   // employee used is not the controller's business, the count and the kinds of data are.
   const breachExposure = readBreachExposure(becData)
+
+  // Annex letters are allocated in page order over the annexes actually rendered, never hardcoded.
+  // Hardcoded letters over conditional pages printed "Annexe A" then "Annexe D" on a dossier
+  // without indicators, and a reader who sees that goes looking for two annexes that never
+  // existed. The exposure annex is unconditional (an empty check is a finding to state, not a page
+  // to drop), so today only the indicator annex can shift the letters; the allocation covers
+  // whichever page becomes conditional next.
+  const annexLetters = {}
+  for (const [annexKey, present] of [
+    ['coverage', true],
+    ['breach', true],
+    ['iocs', iocs.total > 0],
+    ['primer', true],
+  ]) {
+    if (present) {
+      annexLetters[annexKey] = String.fromCharCode(
+        'A'.charCodeAt(0) + Object.keys(annexLetters).length
+      )
+    }
+  }
 
   const qualificationOf = (signalId) => {
     const determination = determinations.get(signalId)
@@ -662,7 +682,7 @@ export const PsitBecReportFrDocument = ({
 
       {/* ANNEXE A : COUVERTURE PUIS DETAIL */}
       <ContentPage
-        title="Annexe A : couverture des vérifications"
+        title={`Annexe ${annexLetters.coverage} : couverture des vérifications`}
         subtitle="Les onze contrôles de la collecte et leur résultat"
       >
         <Section>
@@ -704,7 +724,7 @@ export const PsitBecReportFrDocument = ({
 
       {hasAnyDetail && (
         <ContentPage
-          title="Annexe A : détail des contrôles"
+          title={`Annexe ${annexLetters.coverage} : détail des contrôles`}
           subtitle="Uniquement les contrôles qui ont retourné des éléments"
         >
           {detail.rules && (
@@ -1023,13 +1043,25 @@ export const PsitBecReportFrDocument = ({
         </ContentPage>
       )}
 
-      {/* ANNEXE B : EXPOSITION PUBLIQUE. Letters follow the page order, which is why the BEC
-          primer below is D and not B: the order stays, the letters were what lied. */}
-      {breachExposure.state !== BREACH_STATE.UNCHECKED && breachExposure.count > 0 && (
-        <ContentPage
-          title="Annexe B : exposition publique de l'identifiant"
-          subtitle="Compromissions de données publiques référencées pour les adresses du dossier"
-        >
+      {/* ANNEXE EXPOSITION PUBLIQUE. Rendered in every state: a check that ran and found nothing
+          and a check that could not run are findings the annex states, never a page that vanishes.
+          A vanishing page is also what used to shift the lettering of the annexes after it. */}
+      <ContentPage
+        title={`Annexe ${annexLetters.breach} : exposition publique de l'identifiant`}
+        subtitle="Compromissions de données publiques référencées pour les adresses du dossier"
+      >
+        {breachExposure.count === 0 ? (
+          <Section>
+            <Paragraph>
+              {breachExposure.state === BREACH_STATE.UNCHECKED
+                ? breachSentence(breachExposure, userData?.userPrincipalName)
+                : `Les adresses interrogées sont ${enumerate(breachExposure.addresses, {
+                    empty: 'non enregistrées',
+                  })}. ${breachSentence(breachExposure, userData?.userPrincipalName)}`}
+            </Paragraph>
+          </Section>
+        ) : (
+          <>
           <Section>
             <Paragraph>
               Les adresses interrogées sont{' '}
@@ -1089,13 +1121,14 @@ export const PsitBecReportFrDocument = ({
               )} via ${breachExposure.source || 'source non enregistrée'}.`}
             </Note>
           </Section>
-        </ContentPage>
-      )}
+          </>
+        )}
+      </ContentPage>
 
       {/* ANNEXE C : INDICATEURS */}
       {iocs.total > 0 && (
         <ContentPage
-          title="Annexe C : indicateurs observés"
+          title={`Annexe ${annexLetters.iocs} : indicateurs observés`}
           subtitle="Éléments techniques réutilisables, avec leur origine"
         >
           <Section>
@@ -1152,7 +1185,7 @@ export const PsitBecReportFrDocument = ({
 
       {/* ANNEXE D : COMPRENDRE LE BEC */}
       <ContentPage
-        title="Annexe D : comprendre la compromission de messagerie"
+        title={`Annexe ${annexLetters.primer} : comprendre la compromission de messagerie`}
         subtitle="Pour le lecteur non technique"
       >
         <Section>

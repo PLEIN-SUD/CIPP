@@ -25,6 +25,7 @@ import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDeviceContext'
 import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
+import { PsitSocAppContext } from '../../../components/psit/soc/PsitSocAppContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
 
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
@@ -166,6 +167,9 @@ const Page = () => {
                   )}
                   {socCase.Entities?.networkMessageId && (
                     <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {socCase.Entities?.appId && (
+                    <PsitSocAppContext socCase={socCase} queryKey={queryKey} />
                   )}
                   <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
                 </Stack>

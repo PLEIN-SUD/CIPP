@@ -22,6 +22,7 @@ import { PropertyListItem } from '../../../components/property-list-item'
 import { PsitSocGuidePanel } from '../../../components/psit/soc/PsitSocGuidePanel'
 import { PsitSocQualificationPanel } from '../../../components/psit/soc/PsitSocQualificationPanel'
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
+import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
 
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
@@ -150,6 +151,9 @@ const Page = () => {
                   </Card>
 
                   <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} />
+                  {(socCase.Entities?.upn || socCase.Entities?.userId) && (
+                    <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
+                  )}
                   <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
                 </Stack>
               </Grid>

@@ -31,10 +31,10 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
   if (!catalogueEntry) {
     return (
       <Card variant="outlined">
-        <CardHeader title="Investigation guide" />
+        <CardHeader title="Guide d’investigation" />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            Unknown alert type {String(socCase?.TypeId ?? '')}: no guide is defined for it.
+            Type d’alerte inconnu {String(socCase?.TypeId ?? '')} : aucun guide n’est défini pour lui.
           </Typography>
         </CardContent>
       </Card>
@@ -57,7 +57,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
 
   return (
     <Card variant="outlined">
-      <CardHeader title="Investigation guide" subheader={catalogueEntry.label} />
+      <CardHeader title="Guide d’investigation" subheader={catalogueEntry.label} />
       <CardContent>
         <List dense>
           {catalogueEntry.guide.map((step) => {
@@ -88,7 +88,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="success.main" gutterBottom>
-              Reads as expected activity
+              Se lit comme une activité attendue
             </Typography>
             {catalogueEntry.fpClues.map((clue, index) => (
               <Typography key={index} variant="body2" color="text.secondary">
@@ -98,7 +98,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey }) => {
           </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="error.main" gutterBottom>
-              Reads as compromise
+              Se lit comme une compromission
             </Typography>
             {catalogueEntry.tpClues.map((clue, index) => (
               <Typography key={index} variant="body2" color="text.secondary">

@@ -43,12 +43,12 @@ describe('PsitSocQualificationPanel', () => {
     const mutate = armMutate()
     renderWithProviders(<PsitSocQualificationPanel socCase={xdrCase} queryKey="k" />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'False positive' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Faux positif' }))
     await userEvent.type(
       screen.getByRole('textbox', { name: /Justification/ }),
       'Scanner des techniciens'
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Save qualification' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
 
@@ -73,8 +73,8 @@ describe('PsitSocQualificationPanel', () => {
       <PsitSocQualificationPanel socCase={{ ...xdrCase, Source: 'mdo' }} queryKey="k" />
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'True positive' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Save qualification' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Vrai positif' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
     const writeBack = mutate.mock.calls[1][0]
@@ -88,8 +88,8 @@ describe('PsitSocQualificationPanel', () => {
     const mutate = armMutate()
     renderWithProviders(<PsitSocQualificationPanel socCase={xdrCase} queryKey="k" />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Undetermined' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Save qualification' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Indéterminé' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
     expect(mutate.mock.calls[0][0].data.Verdict).toBe('undetermined')
@@ -104,8 +104,8 @@ describe('PsitSocQualificationPanel', () => {
       />
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'False positive' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Save qualification' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Faux positif' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
   })
@@ -135,8 +135,8 @@ describe('PsitSocQualificationPanel', () => {
       />
     )
 
-    expect(screen.getByText(/True positive, b/)).toBeInTheDocument()
-    expect(screen.getByText('Previous verdicts')).toBeInTheDocument()
+    expect(screen.getByText(/Vrai positif, b/)).toBeInTheDocument()
+    expect(screen.getByText('Verdicts précédents')).toBeInTheDocument()
     expect(screen.getByText(/false-positive, a/)).toBeInTheDocument()
   })
 
@@ -144,6 +144,6 @@ describe('PsitSocQualificationPanel', () => {
     armMutate()
     renderWithProviders(<PsitSocQualificationPanel socCase={xdrCase} queryKey="k" />)
 
-    expect(screen.getByRole('button', { name: 'Save qualification' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Enregistrer la qualification' })).toBeDisabled()
   })
 })

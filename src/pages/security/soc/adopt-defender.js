@@ -18,7 +18,7 @@ const Page = () => {
 
   const actions = [
     {
-      label: 'Adopt into SOC triage',
+      label: 'Adopter dans le triage SOC',
       type: 'POST',
       icon: <PlaylistAdd />,
       url: '/api/PSITExecSocCase',
@@ -32,26 +32,26 @@ const Page = () => {
         {
           type: 'autoComplete',
           name: 'TypeId',
-          label: 'Alert type',
+          label: 'Type d’alerte',
           multiple: false,
           creatable: false,
           options: PSIT_SOC_TYPES.filter((entry) => entry.source === 'xdr').map((entry) => ({
             value: entry.id,
             label: `${entry.id} - ${entry.label}`,
           })),
-          validators: { required: 'The alert type is required' },
+          validators: { required: 'Le type d’alerte est requis' },
         },
         {
           type: 'autoComplete',
           name: 'Severity',
-          label: 'Severity (optional)',
+          label: 'Criticité (optionnelle)',
           multiple: false,
           creatable: false,
           options: PSIT_SOC_SEVERITIES.map((severity) => ({ value: severity, label: severity })),
         },
       ],
       confirmText:
-        'Adopt this incident as a SOC case? If a case already exists for this incident, it is reused rather than duplicated.',
+        'Adopter cet incident comme cas SOC ? Si un cas existe déjà pour cet incident, il est réutilisé, pas dupliqué.',
       relatedQueryKeys: [queueQueryKey],
     },
   ]
@@ -77,7 +77,7 @@ const Page = () => {
 
   return (
     <CippTablePage
-      title="Adopt Defender incidents"
+      title="Adoption incidents Defender"
       apiUrl="/api/ExecIncidentsList"
       apiDataKey="Results"
       actions={actions}

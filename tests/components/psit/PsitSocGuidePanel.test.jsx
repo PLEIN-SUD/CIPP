@@ -88,8 +88,8 @@ describe('PsitSocGuidePanel', () => {
   it('shows the FP and TP clues next to the steps', () => {
     renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
 
-    expect(screen.getByText('Reads as expected activity')).toBeInTheDocument()
-    expect(screen.getByText('Reads as compromise')).toBeInTheDocument()
+    expect(screen.getByText('Se lit comme une activité attendue')).toBeInTheDocument()
+    expect(screen.getByText('Se lit comme une compromission')).toBeInTheDocument()
     expect(screen.getByText(/Protocole deviceCode/)).toBeInTheDocument()
   })
 
@@ -98,6 +98,6 @@ describe('PsitSocGuidePanel', () => {
       <PsitSocGuidePanel socCase={{ ...socCase, TypeId: 999 }} queryKey="k" />
     )
 
-    expect(screen.getByText(/Unknown alert type 999/)).toBeInTheDocument()
+    expect(screen.getByText(/Type d’alerte inconnu 999/)).toBeInTheDocument()
   })
 })

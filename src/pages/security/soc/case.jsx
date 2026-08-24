@@ -48,7 +48,7 @@ const Page = () => {
 
   return (
     <>
-      <CippHead title={`SOC case ${caseId ?? ''}`} />
+      <CippHead title={`Cas SOC ${caseId ?? ''}`} />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2} alignItems="center">
@@ -61,9 +61,9 @@ const Page = () => {
                 </SvgIcon>
               }
             >
-              Queue
+              File d’attente
             </Button>
-            <Typography variant="h5">{socCase?.Title ?? 'SOC case'}</Typography>
+            <Typography variant="h5">{socCase?.Title ?? 'Cas SOC'}</Typography>
             {socCase?.Severity && (
               <Chip
                 size="small"
@@ -82,7 +82,7 @@ const Page = () => {
                 </SvgIcon>
               }
             >
-              Refresh
+              Actualiser
             </Button>
           </Stack>
 
@@ -91,8 +91,8 @@ const Page = () => {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="body2">
-                  No case found for this id on this tenant. It may have been created on another
-                  tenant: check the queue.
+                  Aucun cas pour cet identifiant sur ce tenant. Il a pu être créé sur un autre
+                  tenant : vérifier la file d’attente.
                 </Typography>
               </CardContent>
             </Card>
@@ -103,7 +103,7 @@ const Page = () => {
               <Grid size={{ xs: 12, md: 8 }}>
                 <Stack spacing={2}>
                   <Card variant="outlined">
-                    <CardHeader title="Case" subheader={socCase.CaseId} />
+                    <CardHeader title="Cas" subheader={socCase.CaseId} />
                     <CardContent>
                       <PropertyList>
                         <PropertyListItem label="Tenant" value={socCase.Tenant} />
@@ -112,7 +112,7 @@ const Page = () => {
                           value={
                             catalogueEntry
                               ? `${socCase.TypeId} - ${catalogueEntry.label}`
-                              : String(socCase.TypeId ?? 'unknown')
+                              : String(socCase.TypeId ?? 'inconnu')
                           }
                         />
                         <PropertyListItem
@@ -120,29 +120,29 @@ const Page = () => {
                           value={PSIT_SOC_SOURCES[socCase.Source] ?? socCase.Source}
                         />
                         <PropertyListItem
-                          label="External reference"
-                          value={socCase.ExternalRef || 'none'}
+                          label="Référence externe"
+                          value={socCase.ExternalRef || 'aucune'}
                         />
                         <PropertyListItem
-                          label="Ticket reference"
-                          value={socCase.TicketRef || 'none'}
+                          label="Référence ticket"
+                          value={socCase.TicketRef || 'aucune'}
                         />
                         <PropertyListItem
-                          label="Entities"
+                          label="Entités"
                           value={JSON.stringify(socCase.Entities ?? {})}
                         />
                         <PropertyListItem
-                          label="Created"
-                          value={`${socCase.CreatedUtc} by ${socCase.CreatedBy}`}
+                          label="Créé"
+                          value={`${socCase.CreatedUtc} par ${socCase.CreatedBy}`}
                         />
                         <PropertyListItem
-                          label="Updated"
-                          value={`${socCase.UpdatedUtc} by ${socCase.UpdatedBy}`}
+                          label="Mis à jour"
+                          value={`${socCase.UpdatedUtc} par ${socCase.UpdatedBy}`}
                         />
                         {socCase.ClosedUtc && (
                           <PropertyListItem
-                            label="Closed"
-                            value={`${socCase.ClosedUtc} by ${socCase.ClosedBy}`}
+                            label="Clos"
+                            value={`${socCase.ClosedUtc} par ${socCase.ClosedBy}`}
                           />
                         )}
                       </PropertyList>

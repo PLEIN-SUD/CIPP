@@ -16,9 +16,9 @@ import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 
 const VERDICT_CHOICES = [
-  { value: 'false-positive', label: 'False positive' },
-  { value: 'true-positive', label: 'True positive' },
-  { value: 'undetermined', label: 'Undetermined' },
+  { value: 'false-positive', label: 'Faux positif' },
+  { value: 'true-positive', label: 'Vrai positif' },
+  { value: 'undetermined', label: 'Indéterminé' },
 ]
 
 /**
@@ -98,7 +98,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
     <Card variant="outlined">
       <CardHeader
         title="Qualification"
-        subheader="One decision, written on the case and pushed back to Defender when the case came from there"
+        subheader="Une décision, écrite sur le cas et répercutée dans Defender quand le cas en vient"
       />
       <CardContent>
         <Stack spacing={2}>
@@ -120,7 +120,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
           )}
           {(qualification?.PreviousVerdicts ?? []).length > 0 && (
             <Stack spacing={0.5}>
-              <Typography variant="subtitle2">Previous verdicts</Typography>
+              <Typography variant="subtitle2">Verdicts précédents</Typography>
               {qualification.PreviousVerdicts.map((previous, index) => (
                 <Typography key={index} variant="body2" color="text.secondary">
                   {previous.Verdict}, {previous.Analyst} ({previous.DecidedUtc})
@@ -150,7 +150,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
             fullWidth
             multiline
             rows={2}
-            label="Justification (who confirmed, on what evidence)"
+            label="Justification (qui a confirmé, sur quels éléments)"
             value={justification}
             onChange={(event) => setJustification(event.target.value)}
           />
@@ -161,11 +161,11 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
               disabled={!verdict || caseWrite.isPending}
               onClick={handleSave}
             >
-              {caseWrite.isPending ? 'Saving...' : 'Save qualification'}
+              {caseWrite.isPending ? 'Enregistrement...' : 'Enregistrer la qualification'}
             </Button>
             {writeBackPlanned && (
               <Typography variant="body2" color="text.secondary">
-                Will also update the Defender {socCase?.Source === 'mdo' ? 'alert' : 'incident'}.
+                Mettra aussi à jour {socCase?.Source === 'mdo' ? 'l’alerte' : 'l’incident'} Defender.
               </Typography>
             )}
           </Stack>
@@ -174,8 +174,8 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
           <CippApiResults apiObject={defenderWrite} />
           {defenderWrite.isError && (
             <Alert severity="warning">
-              The case qualification is saved. Only the Defender write-back failed: set the
-              classification from the Defender portal, or save again to retry.
+              La qualification du cas est enregistrée. Seule l’écriture vers Defender a échoué :
+              classifier depuis le portail Defender, ou réenregistrer pour réessayer.
             </Alert>
           )}
         </Stack>

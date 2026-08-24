@@ -51,18 +51,18 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
 
   return (
     <Card variant="outlined">
-      <CardHeader title="Action log" subheader="System entries and actions declared by analysts" />
+      <CardHeader title="Journal des actions" subheader="Entrées système et actions déclarées par les analystes" />
       <CardContent>
         <Stack spacing={1} sx={{ mb: 2 }}>
           <TextField
             size="small"
-            label="Action taken outside CIPP"
+            label="Action menée hors de CIPP"
             value={action}
             onChange={(event) => setAction(event.target.value)}
           />
           <TextField
             size="small"
-            label="Detail (where, on what)"
+            label="Détail (où, sur quoi)"
             value={detail}
             onChange={(event) => setDetail(event.target.value)}
           />
@@ -71,7 +71,7 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
             disabled={!action.trim() || logWrite.isPending}
             onClick={handleRecord}
           >
-            {logWrite.isPending ? 'Recording...' : 'Record action'}
+            {logWrite.isPending ? 'Enregistrement...' : 'Consigner l’action'}
           </Button>
           <CippApiResults apiObject={logWrite} />
         </Stack>
@@ -80,7 +80,7 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
         <Stack spacing={1}>
           {entries.length === 0 && (
             <Typography variant="body2" color="text.secondary">
-              Nothing recorded yet.
+              Rien de consigné pour l’instant.
             </Typography>
           )}
           {entries.map((entry, index) => (

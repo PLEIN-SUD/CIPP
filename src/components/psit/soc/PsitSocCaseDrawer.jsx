@@ -33,7 +33,7 @@ const defaultValues = {
  * the notification's own P-level wins when the analyst types it, the catalogue's default applies
  * otherwise, and either way the case says which severity it carries.
  */
-export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = [] }) => {
+export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys = [] }) => {
   const [drawerVisible, setDrawerVisible] = useState(false)
   const formControl = useForm({ mode: 'onChange', defaultValues })
   const { isValid } = useFormState({ control: formControl.control })
@@ -72,7 +72,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
       </Button>
 
       <CippOffCanvas
-        title="New SOC case"
+        title="Nouveau cas SOC"
         visible={drawerVisible}
         onClose={handleCloseDrawer}
         size="md"
@@ -85,13 +85,13 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
               disabled={createCase.isPending || !isValid}
             >
               {createCase.isPending
-                ? 'Creating...'
+                ? 'Création...'
                 : createCase.isSuccess
-                  ? 'Create another'
-                  : 'Create case'}
+                  ? 'Créer un autre'
+                  : 'Créer le cas'}
             </Button>
             <Button variant="outlined" onClick={handleCloseDrawer}>
-              Close
+              Fermer
             </Button>
           </div>
         }
@@ -104,7 +104,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
               name="tenantFilter"
               type="single"
               allTenants={false}
-              validators={{ required: 'A tenant is required' }}
+              validators={{ required: 'Le tenant est requis' }}
             />
           </Grid>
 
@@ -114,12 +114,12 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
             <CippFormComponent
               type="autoComplete"
               name="type"
-              label="Alert type"
+              label="Type d’alerte"
               formControl={formControl}
               multiple={false}
               creatable={false}
               options={PSIT_SOC_TYPE_OPTIONS}
-              validators={{ required: 'The alert type is required' }}
+              validators={{ required: 'Le type d’alerte est requis' }}
             />
           </Grid>
 
@@ -127,10 +127,10 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
             <CippFormComponent
               type="textField"
               name="title"
-              label="Title"
+              label="Titre"
               formControl={formControl}
-              validators={{ required: 'A title is required' }}
-              helperText="What the notification says, in one line"
+              validators={{ required: 'Le titre est requis' }}
+              helperText="Ce que dit la notification, en une ligne"
             />
           </Grid>
 
@@ -138,7 +138,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
             <CippFormComponent
               type="autoComplete"
               name="severity"
-              label={`Severity${catalogueEntry ? ` (default ${catalogueEntry.severity})` : ''}`}
+              label={`Criticité${catalogueEntry ? ` (défaut ${catalogueEntry.severity})` : ''}`}
               formControl={formControl}
               multiple={false}
               creatable={false}
@@ -153,9 +153,9 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
             <CippFormComponent
               type="textField"
               name="externalRef"
-              label="External reference"
+              label="Référence externe"
               formControl={formControl}
-              helperText="The alert number stated by the source"
+              helperText="Le numéro d’alerte indiqué par la source"
             />
           </Grid>
 
@@ -163,7 +163,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
             <CippFormComponent
               type="textField"
               name="ticketRef"
-              label="Ticket reference"
+              label="Référence ticket"
               formControl={formControl}
             />
           </Grid>
@@ -172,7 +172,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'New case', relatedQueryKeys = 
             <CippFormComponent
               type="textField"
               name="upn"
-              label="Affected user (UPN)"
+              label="Utilisateur concerné (UPN)"
               formControl={formControl}
             />
           </Grid>

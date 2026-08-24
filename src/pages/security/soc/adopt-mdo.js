@@ -20,7 +20,7 @@ const Page = () => {
 
   const actions = [
     {
-      label: 'Adopt into SOC triage',
+      label: 'Adopter dans le triage SOC',
       type: 'POST',
       icon: <PlaylistAdd />,
       url: '/api/PSITExecSocCase',
@@ -35,14 +35,14 @@ const Page = () => {
         {
           type: 'autoComplete',
           name: 'Severity',
-          label: 'Severity (optional, defaults to the catalogue P2)',
+          label: 'Criticité (optionnelle, P2 du catalogue par défaut)',
           multiple: false,
           creatable: false,
           options: PSIT_SOC_SEVERITIES.map((severity) => ({ value: severity, label: severity })),
         },
       ],
       confirmText:
-        'Adopt this MDO alert as a type 18 SOC case? If a case already exists for this alert, it is reused rather than duplicated.',
+        'Adopter cette alerte MDO comme cas SOC de type 18 ? Si un cas existe déjà pour cette alerte, il est réutilisé, pas dupliqué.',
       relatedQueryKeys: [queueQueryKey],
     },
   ]
@@ -66,7 +66,7 @@ const Page = () => {
 
   return (
     <CippTablePage
-      title="Adopt MDO alerts"
+      title="Adoption alertes MDO"
       apiUrl="/api/ExecMdoAlertsList"
       apiDataKey="Results"
       actions={actions}

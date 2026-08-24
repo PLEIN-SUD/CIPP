@@ -48,27 +48,27 @@ describe('PsitSocCaseDrawer', () => {
   it('stays closed until the analyst asks for it', () => {
     renderWithProviders(<PsitSocCaseDrawer />)
 
-    expect(screen.getByRole('button', { name: /New case/ })).toBeInTheDocument()
-    expect(screen.queryByText('New SOC case')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Nouveau cas/ })).toBeInTheDocument()
+    expect(screen.queryByText('Nouveau cas SOC')).not.toBeInTheDocument()
   })
 
   it('opens the drawer with the required fields and a disabled submit', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
 
-    await userEvent.click(screen.getByRole('button', { name: /New case/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
 
-    expect(screen.getByText('New SOC case')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: /Alert type/ })).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: /Title/ })).toBeInTheDocument()
+    expect(screen.getByText('Nouveau cas SOC')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /Type d’alerte/ })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /Titre/ })).toBeInTheDocument()
     // Nothing filled in: creating an empty case must not be possible.
-    expect(screen.getByRole('button', { name: 'Create case' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Créer le cas' })).toBeDisabled()
   })
 
   it('proposes the seventeen retained types, never Google Workspace', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /New case/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
 
-    await userEvent.click(screen.getByRole('combobox', { name: /Alert type/ }))
+    await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     const options = await screen.findAllByRole('option')
 
     expect(options.length).toBe(17)
@@ -86,20 +86,20 @@ describe('PsitSocCaseDrawer', () => {
     }))
 
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /New case/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
 
     // Tenant
     await userEvent.click(screen.getByRole('combobox', { name: /Tenant/ }))
     await userEvent.click(await screen.findByText(/contoso\.test/))
     // Type 2: voyage impossible, source cyna, default P2
-    await userEvent.click(screen.getByRole('combobox', { name: /Alert type/ }))
+    await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     await userEvent.click(await screen.findByText(/Voyage impossible/))
     // Title + external reference
-    await userEvent.type(screen.getByRole('textbox', { name: /Title/ }), 'Voyage impossible p.martin')
-    await userEvent.type(screen.getByRole('textbox', { name: /External reference/ }), 'EXT-4242')
-    await userEvent.type(screen.getByRole('textbox', { name: /Affected user/ }), 'p.martin@contoso.test')
+    await userEvent.type(screen.getByRole('textbox', { name: /Titre/ }), 'Voyage impossible p.martin')
+    await userEvent.type(screen.getByRole('textbox', { name: /Référence externe/ }), 'EXT-4242')
+    await userEvent.type(screen.getByRole('textbox', { name: /Utilisateur concerné/ }), 'p.martin@contoso.test')
 
-    const submit = screen.getByRole('button', { name: 'Create case' })
+    const submit = screen.getByRole('button', { name: 'Créer le cas' })
     await waitFor(() => expect(submit).toBeEnabled())
     await userEvent.click(submit)
 

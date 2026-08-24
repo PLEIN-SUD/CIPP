@@ -41,17 +41,17 @@ export const nativeMenuItems = [
         permissions: ['Security.Incident.*'],
         items: [
           {
-            title: 'Queue',
+            title: 'File d’attente',
             path: '/security/soc',
             permissions: ['Security.Incident.*'],
           },
           {
-            title: 'Adopt Defender incidents',
+            title: 'Adoption incidents Defender',
             path: '/security/soc/adopt-defender',
             permissions: ['Security.Incident.*'],
           },
           {
-            title: 'Adopt MDO alerts',
+            title: 'Adoption alertes MDO',
             path: '/security/soc/adopt-mdo',
             permissions: ['Security.Incident.*'],
           },

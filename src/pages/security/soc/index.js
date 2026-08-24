@@ -22,14 +22,14 @@ const Page = () => {
 
   const actions = [
     {
-      label: 'Open case',
+      label: 'Ouvrir le cas',
       type: 'GET',
       icon: <MagnifyingGlassIcon />,
       link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Tenant]',
       multiPost: false,
     },
     {
-      label: 'Start investigating',
+      label: 'Prendre en charge',
       type: 'POST',
       icon: <PlayArrow />,
       url: '/api/PSITExecSocCase',
@@ -38,11 +38,11 @@ const Page = () => {
         tenantFilter: 'Tenant',
         Status: '!investigating',
       },
-      confirmText: 'Take this case and mark it as under investigation?',
+      confirmText: 'Prendre ce cas et le passer en investigation ?',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Qualify as false positive',
+      label: 'Qualifier faux positif',
       type: 'POST',
       icon: <GppGood />,
       url: '/api/PSITExecSocCase',
@@ -55,17 +55,17 @@ const Page = () => {
         {
           type: 'textField',
           name: 'Justification',
-          label: 'Justification (who confirmed, how)',
+          label: 'Justification (qui a confirmé, comment)',
           multiline: true,
           rows: 3,
-          validators: { required: 'A false positive without a justification is a guess' },
+          validators: { required: 'Un faux positif sans justification est une supposition' },
         },
       ],
-      confirmText: 'Qualify this case as a false positive?',
+      confirmText: 'Qualifier ce cas en faux positif ?',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Qualify as true positive',
+      label: 'Qualifier vrai positif',
       type: 'POST',
       icon: <Block />,
       url: '/api/PSITExecSocCase',
@@ -78,16 +78,16 @@ const Page = () => {
         {
           type: 'textField',
           name: 'Justification',
-          label: 'Justification (evidence retained)',
+          label: 'Justification (éléments retenus)',
           multiline: true,
           rows: 3,
         },
       ],
-      confirmText: 'Qualify this case as a true positive?',
+      confirmText: 'Qualifier ce cas en vrai positif ?',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Mark as contained',
+      label: 'Marquer confiné',
       type: 'POST',
       icon: <Done />,
       url: '/api/PSITExecSocCase',
@@ -96,11 +96,11 @@ const Page = () => {
         tenantFilter: 'Tenant',
         Status: '!contained',
       },
-      confirmText: 'Mark this case as contained?',
+      confirmText: 'Marquer ce cas comme confiné ?',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Close case',
+      label: 'Clore le cas',
       type: 'POST',
       icon: <Done />,
       url: '/api/PSITExecSocCase',
@@ -109,11 +109,11 @@ const Page = () => {
         tenantFilter: 'Tenant',
         Status: '!closed',
       },
-      confirmText: 'Close this case? The closure is stamped with your name.',
+      confirmText: 'Clore ce cas ? La clôture est horodatée à votre nom.',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Reopen case',
+      label: 'Rouvrir le cas',
       type: 'POST',
       icon: <LockOpen />,
       url: '/api/PSITExecSocCase',
@@ -122,7 +122,7 @@ const Page = () => {
         tenantFilter: 'Tenant',
         Status: '!investigating',
       },
-      confirmText: 'Reopen this case? The closure stamps are cleared and the reopening is logged.',
+      confirmText: 'Rouvrir ce cas ? Les horodatages de clôture sont effacés et la réouverture est journalisée.',
       relatedQueryKeys: [queryKey],
     },
   ]
@@ -161,29 +161,29 @@ const Page = () => {
   ]
 
   const filterList = [
-    { filterName: 'New', value: [{ id: 'Status', value: 'new' }], type: 'column' },
+    { filterName: 'Nouveaux', value: [{ id: 'Status', value: 'new' }], type: 'column' },
     {
-      filterName: 'Investigating',
+      filterName: 'En investigation',
       value: [{ id: 'Status', value: 'investigating' }],
       type: 'column',
     },
     {
-      filterName: 'Qualified true positive',
+      filterName: 'Qualifiés vrais positifs',
       value: [{ id: 'Status', value: 'qualified-tp' }],
       type: 'column',
     },
     {
-      filterName: 'Qualified false positive',
+      filterName: 'Qualifiés faux positifs',
       value: [{ id: 'Status', value: 'qualified-fp' }],
       type: 'column',
     },
-    { filterName: 'Contained', value: [{ id: 'Status', value: 'contained' }], type: 'column' },
-    { filterName: 'Closed', value: [{ id: 'Status', value: 'closed' }], type: 'column' },
+    { filterName: 'Confinés', value: [{ id: 'Status', value: 'contained' }], type: 'column' },
+    { filterName: 'Clos', value: [{ id: 'Status', value: 'closed' }], type: 'column' },
   ]
 
   return (
     <CippTablePage
-      title="SOC Triage"
+      title="Triage SOC"
       apiUrl="/api/PSITListSocCases"
       queryKey={queryKey}
       cardButton={<PsitSocCaseDrawer relatedQueryKeys={[queryKey]} />}

@@ -1,7 +1,8 @@
 // The catalogue of the SOC triage dashboard: one entry per alert type the SOC feeds us, with the
 // investigation guide and the FP/TP clues the case view renders. This is data, not code: adding a
-// type is adding an entry, and the analyst-facing strings are in French because the dashboard is
-// strictly internal to PSIT (the page chrome around them stays in English, upstream convention).
+// type is adding an entry. The whole SOC Plein Sud section is strictly internal to PSIT, so its
+// user-facing strings are in French - catalogue and page chrome alike (decision of 2026-08-24;
+// the upstream English-only convention applies everywhere else).
 //
 // Type 8 (Google Workspace) is deliberately absent: out of the CIPP scope by decision of
 // 2026-08-24, those alerts are triaged outside the tool. Third-party EDR alerts are equally out
@@ -23,10 +24,10 @@
 export const PSIT_LEGITIMATE_RMM = []
 
 export const PSIT_SOC_SOURCES = {
-  extsoc: 'External SOC',
+  extsoc: 'SOC externe',
   xdr: 'Defender XDR',
   mdo: 'Defender for Office 365',
-  manual: 'Manual entry',
+  manual: 'Saisie manuelle',
 }
 
 export const PSIT_SOC_STATUSES = [

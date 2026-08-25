@@ -72,35 +72,40 @@ const Page = () => {
   // Succeeded, and returned nothing. Distinct from a failure and equally distinct from good
   // news: a tenant that is not onboarded in Lighthouse produces exactly the same four zeros as a
   // fleet where every machine is protected.
-  const empty = !failed && rows.length === 0
+  const empty = !failed && rows.length === 0 && tenantRows.length === 0
 
-  const attention = rows.filter((row) => row.NeedsAttention)
-  const threatened = rows.filter((row) => row.ActiveThreatCount > 0)
+  const signatureOverdue = rows.filter((row) => row.SignatureUpdateOverdue)
   const protectionOff = rows.filter((row) => row.ProtectionInDefault)
+
+  // A single client is read live. The whole fleet is read from the last daily snapshot, because
+  // forty live Graph calls behind a page load is not a page load. Which one it is has to be on
+  // screen: a snapshot presented as the present is a wrong answer, not a slow one.
+  const live = metadata?.Live !== false
+  const asOf = metadata?.AsOf
 
   const summary = [
     {
       label: 'Machines rapportées',
       value: metadata?.TotalDevices ?? rows.length,
       tone: 'default',
-      note: 'connues de Lighthouse',
+      note: 'connues d’Intune',
     },
     {
       label: 'Protection en défaut',
-      value: protectionOff.length,
-      tone: empty ? 'default' : protectionOff.length > 0 ? 'error' : 'success',
+      value: metadata?.ProtectionInDefault ?? protectionOff.length,
+      tone: empty ? 'default' : (metadata?.ProtectionInDefault ?? protectionOff.length) > 0 ? 'error' : 'success',
       note: 'temps réel ou antimalware désactivé',
     },
     {
-      label: 'Menaces actives',
-      value: threatened.length,
-      tone: empty ? 'default' : threatened.length > 0 ? 'error' : 'success',
-      note: 'machines portant une menace non traitée',
+      label: 'Signatures obsolètes',
+      value: metadata?.SignatureOverdue ?? signatureOverdue.length,
+      tone: empty ? 'default' : (metadata?.SignatureOverdue ?? signatureOverdue.length) > 0 ? 'warning' : 'success',
+      note: 'antivirus actif mais définitions en retard',
     },
     {
       label: 'Tenants concernés',
-      value: new Set(attention.map((row) => row.Tenant)).size,
-      tone: empty ? 'default' : attention.length > 0 ? 'warning' : 'success',
+      value: tenantRows.filter((row) => row.NeedsAttention > 0).length,
+      tone: empty ? 'default' : tenantRows.some((row) => row.NeedsAttention > 0) ? 'warning' : 'success',
       note: 'clients avec au moins une machine à regarder',
     },
   ]
@@ -135,9 +140,16 @@ const Page = () => {
 
           {empty && !fleetRequest.isFetching && (
             <Alert severity="warning">
-              La lecture a abouti et n’a rapporté aucune machine. Un périmètre non intégré à
-              Lighthouse renvoie les mêmes zéros qu’un parc entièrement protégé : vérifier
-              l’intégration du client avant de lire ces compteurs comme un bon résultat.
+              La lecture a abouti et n’a rapporté aucune machine. Un client sans appareil inscrit
+              dans Intune renvoie les mêmes zéros qu’un parc entièrement protégé : vérifier
+              l’inscription des postes avant de lire ces compteurs comme un bon résultat.
+            </Alert>
+          )}
+
+          {!failed && !live && (
+            <Alert severity="info">
+              Vue multi-clients : relevé quotidien du {asOf || 'dernier passage'}, pas l’état de
+              l’instant. Sélectionner un client dans le bandeau pour une lecture en direct.
             </Alert>
           )}
 
@@ -236,7 +248,7 @@ const Page = () => {
           )}
 
           <CippDataTable
-            title="Machines"
+            title={live ? 'Machines' : 'Machines à regarder'}
             data={rows}
             isFetching={fleetRequest.isFetching && !failed}
             simple={false}
@@ -244,8 +256,7 @@ const Page = () => {
               'Tenant',
               'DeviceName',
               'ProtectionInDefault',
-              'ActiveThreatCount',
-              'ActiveThreats',
+              'SignatureUpdateOverdue',
               'ManagedDeviceHealthState',
               'AttentionRequired',
               'OsVersion',
@@ -266,8 +277,8 @@ const Page = () => {
           />
 
           <Typography variant="caption" color="text.secondary">
-            Source : agrégat Lighthouse des tenants gérés. Pour l’analyse détaillée d’une machine,
-            passer par le portail Defender.{' '}
+            Source : appareils gérés Intune et leur état de protection Windows. Pour l’analyse
+            détaillée d’une machine, passer par le portail Defender.{' '}
             <Link href="/security/soc">Retour à la file d’attente</Link>
           </Typography>
         </Stack>

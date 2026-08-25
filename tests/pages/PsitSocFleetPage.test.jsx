@@ -4,10 +4,10 @@ import { renderWithProviders } from '../test-utils'
 import Page from '../../src/pages/security/soc/fleet'
 import { ApiGetCall } from '../../src/api/ApiCall'
 
-// The fleet page exists to answer one question no portal answers: which machines, across every
-// client, have their protection off or something running on them. What is pinned here is that its
-// counters never overstate what they measure - a failed read must not look like a healthy fleet,
-// and a machine that stopped reporting must not read as a green row.
+// What is pinned here is that the page's counters never overstate what they measure. A failed
+// read must not look like a healthy fleet, a machine that stopped reporting must not read as a
+// green row, and the fleet-wide view must say it is showing yesterday's snapshot rather than the
+// present.
 
 vi.setConfig({ testTimeout: 60000 })
 
@@ -27,8 +27,7 @@ const fleet = {
       Tenant: 'contoso.test',
       DeviceName: 'PC-042',
       ProtectionInDefault: true,
-      ActiveThreatCount: 0,
-      ActiveThreats: [],
+      SignatureUpdateOverdue: false,
       NeedsAttention: true,
       ManagedDeviceHealthState: 'active',
     },
@@ -36,8 +35,7 @@ const fleet = {
       Tenant: 'fabrikam.test',
       DeviceName: 'PC-101',
       ProtectionInDefault: false,
-      ActiveThreatCount: 2,
-      ActiveThreats: ['Wacatac'],
+      SignatureUpdateOverdue: true,
       NeedsAttention: true,
       ManagedDeviceHealthState: 'active',
     },
@@ -45,8 +43,7 @@ const fleet = {
       Tenant: 'fabrikam.test',
       DeviceName: 'PC-102',
       ProtectionInDefault: false,
-      ActiveThreatCount: 0,
-      ActiveThreats: [],
+      SignatureUpdateOverdue: false,
       NeedsAttention: false,
       ManagedDeviceHealthState: 'active',
     },
@@ -55,7 +52,14 @@ const fleet = {
     { Tenant: 'contoso.test', DevicesReported: 1, NeedsAttention: 1 },
     { Tenant: 'fabrikam.test', DevicesReported: 2, NeedsAttention: 1 },
   ],
-  Metadata: { TotalDevices: 3, NeedsAttention: 2, ActiveThreats: 1 },
+  Metadata: {
+    TotalDevices: 3,
+    NeedsAttention: 2,
+    ProtectionInDefault: 1,
+    SignatureOverdue: 1,
+    Live: true,
+    AsOf: '2026-08-25T06:00:00Z',
+  },
 }
 
 // Url-aware: the table makes its own calls internally, and feeding them the fleet payload would
@@ -73,12 +77,14 @@ const wire = (data, history = undefined) =>
   })
 
 describe('fleet health page', () => {
-  it('counts what it measures: devices in default, devices carrying a threat, clients touched', () => {
+  it('counts what it measures: protection off, signatures behind, clients touched', () => {
     wire(fleet)
     renderWithProviders(<Page />)
 
     expect(screen.getByText('Protection en défaut')).toBeInTheDocument()
-    expect(screen.getByText('Menaces actives')).toBeInTheDocument()
+    // Signatures behind is its own counter: an antivirus running on old definitions is not an
+    // antivirus switched off, and one number for both would overstate the second.
+    expect(screen.getByText('Signatures obsolètes')).toBeInTheDocument()
     // Two clients have at least one machine to look at.
     expect(screen.getByText('Tenants concernés')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
@@ -104,9 +110,9 @@ describe('fleet health page', () => {
   })
 
   it('separates a read that returned nothing from a fleet in good health', () => {
-    // Reported from production: a tenant the aggregate knows nothing about rendered as four
-    // green zeros, which is the same picture as a fleet where every machine is protected.
-    wire({ Results: [], Tenants: [], Metadata: { TotalDevices: 0, NeedsAttention: 0, ActiveThreats: 0 } })
+    // Reported from production: a tenant the read knows nothing about rendered as four green
+    // zeros, which is the same picture as a fleet where every machine is protected.
+    wire({ Results: [], Tenants: [], Metadata: { TotalDevices: 0, NeedsAttention: 0, Live: true } })
     renderWithProviders(<Page />)
 
     expect(screen.getByText(/n’a rapporté aucune machine/)).toBeInTheDocument()
@@ -115,11 +121,31 @@ describe('fleet health page', () => {
     expect(screen.getByText('Machines rapportées')).toBeInTheDocument()
   })
 
+  it('says the fleet-wide view is a snapshot, and gives its date', () => {
+    // A snapshot presented as the present is a wrong answer, not a slow one.
+    wire({
+      ...fleet,
+      Metadata: { ...fleet.Metadata, Live: false, AsOf: '2026-08-24' },
+    })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText(/relevé quotidien du 2026-08-24/)).toBeInTheDocument()
+    // The table only holds what needs attention on that path, and says so in its title.
+    expect(screen.getByText('Machines à regarder')).toBeInTheDocument()
+  })
+
+  it('does not call a live single-tenant read a snapshot', () => {
+    wire(fleet)
+    renderWithProviders(<Page />)
+
+    expect(screen.queryByText(/relevé quotidien/)).not.toBeInTheDocument()
+  })
+
   it('names its source and points at the portal for a single machine', () => {
     wire(fleet)
     renderWithProviders(<Page />)
 
-    expect(screen.getByText(/agrégat Lighthouse/)).toBeInTheDocument()
+    expect(screen.getByText(/appareils gérés Intune/)).toBeInTheDocument()
     expect(screen.getByText(/passer par le portail Defender/)).toBeInTheDocument()
   })
 

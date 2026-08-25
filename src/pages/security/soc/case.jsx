@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import {
+  Alert,
   Button,
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { PropertyList } from '../../../components/property-list'
 import { PropertyListItem } from '../../../components/property-list-item'
+import { psitSocNextStep } from '../../../utils/psit-soc-next-step'
 import { PsitSocGuidePanel } from '../../../components/psit/soc/PsitSocGuidePanel'
 import { PsitSocQualificationPanel } from '../../../components/psit/soc/PsitSocQualificationPanel'
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
@@ -55,6 +57,9 @@ const Page = () => {
   const socCase = Array.isArray(caseRequest.data) ? caseRequest.data[0] : caseRequest.data
 
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
+  // Read once, above everything else: the status, the guide and the verdict already said where
+  // the case stood, but only to someone willing to read three panels and put them together.
+  const nextStep = psitSocNextStep(socCase)
   // Gathered once and shared: the guide answers its steps from the same requests the panels
   // below already make, so showing the answers costs no extra call.
   const evidence = usePsitSocEvidence(socCase)
@@ -109,6 +114,21 @@ const Page = () => {
                 </Typography>
               </CardContent>
             </Card>
+          )}
+
+          {socCase && nextStep && (
+            <Alert
+              severity={
+                nextStep.tone === 'done'
+                  ? 'success'
+                  : nextStep.tone === 'critical'
+                    ? 'warning'
+                    : 'info'
+              }
+            >
+              <Typography variant="subtitle2">{nextStep.title}</Typography>
+              <Typography variant="body2">{nextStep.detail}</Typography>
+            </Alert>
           )}
 
           {socCase && (

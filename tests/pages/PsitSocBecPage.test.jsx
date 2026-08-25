@@ -55,12 +55,24 @@ const wireApi = ({ bec = becData } = {}) => {
 }
 
 describe('SOC BEC investigation page', () => {
-  it('says what it needs when opened without a target instead of rendering an empty shell', () => {
+  it('asks which mailbox to look at when opened without a target', () => {
+    // Reached from the menu, the page has no user. It used to say so and stop there, which made
+    // the menu entry a dead end: clicking it could never work. It now asks the one thing missing.
     routerQuery.current = {}
     wireApi()
     renderWithProviders(<Page />)
 
-    expect(screen.getByText(/Aucun utilisateur ciblé/)).toBeInTheDocument()
+    expect(screen.getByText(/Choisir la boîte à investiguer/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lancer l’investigation/ })).toBeInTheDocument()
+  })
+
+  it('keeps the investigation button out of reach until a mailbox is chosen', () => {
+    // A run with no target would land back on this same picker: better to say it is not ready.
+    routerQuery.current = {}
+    wireApi()
+    renderWithProviders(<Page />)
+
+    expect(screen.getByRole('button', { name: /Lancer l’investigation/ })).toBeDisabled()
   })
 
   it('renders the PSIT decision panel for the targeted mailbox', () => {

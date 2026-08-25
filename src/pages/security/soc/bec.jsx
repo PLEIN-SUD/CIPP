@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router'
+import { useForm, useWatch } from 'react-hook-form'
 import Link from 'next/link'
 import {
   Button,
@@ -15,6 +16,8 @@ import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
+import { CippFormTenantSelector } from '../../../components/CippComponents/CippFormTenantSelector'
+import { CippFormUserSelector } from '../../../components/CippComponents/CippFormUserSelector'
 import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPanel'
 import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
 import { psitAsArray } from '../../../utils/psit-as-array'
@@ -33,6 +36,60 @@ import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
  * it, it gathers the PSIT work in one place. A case in the queue links straight here with its
  * user, which is the path this page exists for.
  */
+/**
+ * Opened from a case, the page investigates that case's user. Opened from the menu, it has no
+ * user, and used to say so and stop there: a menu entry that cannot work when clicked. It now
+ * asks which mailbox to look at, which is the only thing it was missing.
+ */
+const PsitBecTargetPicker = () => {
+  const router = useRouter()
+  const formControl = useForm({ mode: 'onChange' })
+  const tenant = useWatch({ control: formControl.control, name: 'tenantFilter' })
+  const user = useWatch({ control: formControl.control, name: 'user' })
+
+  const chosenTenant = tenant?.value ?? tenant
+  const chosenUser = user?.value ?? user
+
+  return (
+    <Card variant="outlined">
+      <CardContent>
+        <Stack spacing={2}>
+          <Typography variant="body2" color="text.secondary">
+            Choisir la boîte à investiguer. Ouverte depuis un cas SOC, cette page cible
+            directement l’utilisateur du cas.
+          </Typography>
+          <CippFormTenantSelector
+            formControl={formControl}
+            name="tenantFilter"
+            label="Client"
+            allTenants={false}
+            multiple={false}
+          />
+          <CippFormUserSelector
+            formControl={formControl}
+            name="user"
+            label="Utilisateur"
+            multiple={false}
+            select="id,userPrincipalName,displayName"
+            disabled={!chosenTenant}
+          />
+          <Button
+            variant="contained"
+            disabled={!chosenTenant || !chosenUser}
+            onClick={() =>
+              router.push(
+                `/security/soc/bec?userId=${chosenUser}&tenantFilter=${chosenTenant}`
+              )
+            }
+          >
+            Lancer l’investigation
+          </Button>
+        </Stack>
+      </CardContent>
+    </Card>
+  )
+}
+
 const Page = () => {
   const router = useRouter()
   const { userId, tenantFilter, caseId } = router.query
@@ -102,14 +159,7 @@ const Page = () => {
           </Stack>
 
           {!userId || !tenantFilter ? (
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="body2">
-                  Aucun utilisateur ciblé : ouvrir cette page depuis un cas SOC, ou passer userId
-                  et tenantFilter dans l’adresse.
-                </Typography>
-              </CardContent>
-            </Card>
+            <PsitBecTargetPicker />
           ) : (
             <>
               <PsitBecDecisionPanel

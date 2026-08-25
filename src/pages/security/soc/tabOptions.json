@@ -1,7 +1,7 @@
 [
   {
     "label": "File d’attente",
-    "path": "/security/soc",
+    "path": "/security/soc/queue",
     "icon": "Security"
   },
   {

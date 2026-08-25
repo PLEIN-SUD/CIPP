@@ -67,7 +67,7 @@ const Page = () => {
           <Stack direction="row" spacing={2} alignItems="center">
             <Button
               component={Link}
-              href="/security/soc"
+              href="/security/soc/queue"
               startIcon={
                 <SvgIcon fontSize="small">
                   <ArrowBack />

@@ -68,7 +68,7 @@ const Page = () => {
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
             <Button
               component={Link}
-              href={caseId ? `/security/soc/case?caseId=${caseId}&tenantFilter=${tenantFilter}` : '/security/soc'}
+              href={caseId ? `/security/soc/case?caseId=${caseId}&tenantFilter=${tenantFilter}` : '/security/soc/queue'}
               startIcon={
                 <SvgIcon fontSize="small">
                   <ArrowBack />

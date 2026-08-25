@@ -279,7 +279,7 @@ const Page = () => {
           <Typography variant="caption" color="text.secondary">
             Source : appareils gérés Intune et leur état de protection Windows. Pour l’analyse
             détaillée d’une machine, passer par le portail Defender.{' '}
-            <Link href="/security/soc">Retour à la file d’attente</Link>
+            <Link href="/security/soc/queue">Retour à la file d’attente</Link>
           </Typography>
         </Stack>
       </Container>

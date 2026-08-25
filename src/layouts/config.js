@@ -42,7 +42,7 @@ export const nativeMenuItems = [
         items: [
           {
             title: 'File d’attente',
-            path: '/security/soc',
+            path: '/security/soc/queue',
             permissions: ['Security.Incident.*'],
           },
           {
@@ -76,6 +76,17 @@ export const nativeMenuItems = [
             title: 'Santé du parc',
             path: '/security/soc/fleet',
             permissions: ['Endpoint.MEM.*'],
+          },
+        ],
+      },
+      {
+        title: 'Configuration',
+        permissions: ['Security.Incident.ReadWrite'],
+        items: [
+          {
+            title: 'Ingestion',
+            path: '/security/soc/ingestion',
+            permissions: ['Security.Incident.ReadWrite'],
           },
         ],
       },

@@ -15,12 +15,10 @@ import {
 import { Grid } from '@mui/system'
 import { Sync } from '@mui/icons-material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
-import { TabbedLayout } from '../../../layouts/TabbedLayout.jsx'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippDataTable } from '../../../components/CippTable/CippDataTable.js'
 import { useSettings } from '../../../hooks/use-settings'
-import tabOptions from './tabOptions.json'
 
 /**
  * Defender protection across every managed tenant, in one screen: protection disabled, active
@@ -71,6 +69,11 @@ const Page = () => {
   )
   const metadata = fleetRequest.data?.Metadata
 
+  // Succeeded, and returned nothing. Distinct from a failure and equally distinct from good
+  // news: a tenant that is not onboarded in Lighthouse produces exactly the same four zeros as a
+  // fleet where every machine is protected.
+  const empty = !failed && rows.length === 0
+
   const attention = rows.filter((row) => row.NeedsAttention)
   const threatened = rows.filter((row) => row.ActiveThreatCount > 0)
   const protectionOff = rows.filter((row) => row.ProtectionInDefault)
@@ -85,19 +88,19 @@ const Page = () => {
     {
       label: 'Protection en défaut',
       value: protectionOff.length,
-      tone: protectionOff.length > 0 ? 'error' : 'success',
+      tone: empty ? 'default' : protectionOff.length > 0 ? 'error' : 'success',
       note: 'temps réel ou antimalware désactivé',
     },
     {
       label: 'Menaces actives',
       value: threatened.length,
-      tone: threatened.length > 0 ? 'error' : 'success',
+      tone: empty ? 'default' : threatened.length > 0 ? 'error' : 'success',
       note: 'machines portant une menace non traitée',
     },
     {
       label: 'Tenants concernés',
       value: new Set(attention.map((row) => row.Tenant)).size,
-      tone: attention.length > 0 ? 'warning' : 'success',
+      tone: empty ? 'default' : attention.length > 0 ? 'warning' : 'success',
       note: 'clients avec au moins une machine à regarder',
     },
   ]
@@ -125,8 +128,16 @@ const Page = () => {
 
           {failed && (
             <Alert severity="error">
-              {failureText} — aucun compteur n’est affiché : des chiffres calculés sur une lecture
+              {failureText} Aucun compteur n’est affiché : des chiffres calculés sur une lecture
               qui a échoué se liraient comme un parc en bonne santé.
+            </Alert>
+          )}
+
+          {empty && !fleetRequest.isFetching && (
+            <Alert severity="warning">
+              La lecture a abouti et n’a rapporté aucune machine. Un périmètre non intégré à
+              Lighthouse renvoie les mêmes zéros qu’un parc entièrement protégé : vérifier
+              l’intégration du client avant de lire ces compteurs comme un bon résultat.
             </Alert>
           )}
 
@@ -265,10 +276,6 @@ const Page = () => {
   )
 }
 
-Page.getLayout = (page) => (
-  <DashboardLayout>
-    <TabbedLayout tabOptions={tabOptions}>{page}</TabbedLayout>
-  </DashboardLayout>
-)
+Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>
 
 export default Page

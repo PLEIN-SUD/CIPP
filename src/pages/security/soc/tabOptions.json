@@ -13,15 +13,5 @@
     "label": "Adoption alertes MDO",
     "path": "/security/soc/adopt-mdo",
     "icon": "Email"
-  },
-  {
-    "label": "Investigation BEC",
-    "path": "/security/soc/bec",
-    "icon": "Shield"
-  },
-  {
-    "label": "Santé du parc",
-    "path": "/security/soc/fleet",
-    "icon": "Laptop"
   }
 ]

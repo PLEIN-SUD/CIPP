@@ -12,7 +12,6 @@ import {
 } from '@mui/material'
 import { ArrowBack, Launch } from '@mui/icons-material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
-import { TabbedLayout } from '../../../layouts/TabbedLayout.jsx'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
@@ -20,7 +19,6 @@ import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPa
 import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
-import tabOptions from './tabOptions.json'
 
 /**
  * The BEC investigation, inside the security centre.
@@ -143,10 +141,6 @@ const Page = () => {
   )
 }
 
-Page.getLayout = (page) => (
-  <DashboardLayout>
-    <TabbedLayout tabOptions={tabOptions}>{page}</TabbedLayout>
-  </DashboardLayout>
-)
+Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>
 
 export default Page

@@ -55,11 +55,23 @@ export const nativeMenuItems = [
             path: '/security/soc/adopt-mdo',
             permissions: ['Security.Incident.*'],
           },
+        ],
+      },
+      {
+        title: 'Investigation',
+        permissions: ['Identity.User.*'],
+        items: [
           {
-            title: 'Investigation BEC',
+            title: 'BEC',
             path: '/security/soc/bec',
             permissions: ['Identity.User.*'],
           },
+        ],
+      },
+      {
+        title: 'Supervision',
+        permissions: ['Endpoint.MEM.*'],
+        items: [
           {
             title: 'Santé du parc',
             path: '/security/soc/fleet',

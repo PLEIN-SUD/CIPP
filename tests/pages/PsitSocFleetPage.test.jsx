@@ -103,6 +103,18 @@ describe('fleet health page', () => {
     expect(screen.queryByText('Machines rapportées')).not.toBeInTheDocument()
   })
 
+  it('separates a read that returned nothing from a fleet in good health', () => {
+    // Reported from production: a tenant the aggregate knows nothing about rendered as four
+    // green zeros, which is the same picture as a fleet where every machine is protected.
+    wire({ Results: [], Tenants: [], Metadata: { TotalDevices: 0, NeedsAttention: 0, ActiveThreats: 0 } })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText(/n’a rapporté aucune machine/)).toBeInTheDocument()
+    // The counters stay on screen, because zero reported machines is itself a reading, but none
+    // of them is coloured as good news.
+    expect(screen.getByText('Machines rapportées')).toBeInTheDocument()
+  })
+
   it('names its source and points at the portal for a single machine', () => {
     wire(fleet)
     renderWithProviders(<Page />)

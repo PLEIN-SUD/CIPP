@@ -14,18 +14,29 @@ import {
 // contract.
 
 describe('PSIT_SOC_TYPES', () => {
-  it('carries the seventeen retained types: 1-7 and 9-18, never 8', () => {
+  it('carries the retained types: 1-7, 9-19 and the catch-all, never 8', () => {
+    // 8 was Google Workspace, out of scope for a portal that only manages Microsoft tenants.
+    // 19 is application activity, which the emitter does not separate from consent. 99 is the
+    // catch-all a subject lands on when its label matches nothing.
     const ids = PSIT_SOC_TYPES.map((type) => type.id)
 
-    expect(ids).toHaveLength(17)
-    expect(new Set(ids).size).toBe(17)
+    expect(ids).toHaveLength(19)
+    expect(new Set(ids).size).toBe(19)
     expect(ids).not.toContain(8)
-    expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]))
+    expect(ids).toEqual(
+      expect.arrayContaining([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 99])
+    )
   })
 
   it('says which entities each type investigates, so the drawer knows what to ask for', () => {
     const known = ['user', 'app', 'device', 'mail']
     for (const type of PSIT_SOC_TYPES) {
+      // The catch-all is the exception, and deliberately so: it does not know what the alert is
+      // about, and a picker for the wrong entity fills the case with a fact that does not apply.
+      if (type.id === 99) {
+        expect(type.entities).toEqual([])
+        continue
+      }
       expect(type.entities.length).toBeGreaterThan(0)
       for (const entity of type.entities) expect(known).toContain(entity)
     }
@@ -103,7 +114,7 @@ describe('constants the rest of the dashboard leans on', () => {
   })
 
   it('builds one autocomplete option per type, labelled with its id', () => {
-    expect(PSIT_SOC_TYPE_OPTIONS).toHaveLength(17)
+    expect(PSIT_SOC_TYPE_OPTIONS).toHaveLength(19)
     expect(PSIT_SOC_TYPE_OPTIONS[0].label).toMatch(/^1 - /)
   })
 })

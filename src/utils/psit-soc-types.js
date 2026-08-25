@@ -402,6 +402,63 @@ export const PSIT_SOC_TYPES = [
       'URL toujours active',
     ],
   },
+  {
+    // The external SOC groups three distinct actions under one subject label, and the message
+    // never says which one fired. Routing them to the consent type would invent a fact the
+    // source does not carry, so this type exists to find that fact first.
+    id: 19,
+    source: 'extsoc',
+    family: 'identity-persistence',
+    entities: ['app', 'user'],
+    severity: 'P4',
+    label: 'Activité applicative : ajout, modification ou consentement',
+    guide: [
+      {
+        id: 'action',
+        label:
+          'Déterminer l’action réelle dans le journal d’audit Entra : ajout, modification ou consentement. L’alerte ne le dit pas.',
+      },
+      { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
+      { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
+      { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
+      {
+        id: 'route',
+        label: 'Si l’action est un consentement, requalifier le cas en type 6 pour son guide dédié',
+      },
+    ],
+    fpClues: [
+      'Synchronisation d’un outil métier connu',
+      'Éditeur vérifié, permissions en lecture seule',
+      'Application déjà présente depuis longtemps',
+    ],
+    tpClues: [
+      'Présente au catalogue malveillant',
+      'Permissions messagerie et offline_access',
+      'Application apparue le jour de l’alerte',
+      'Nom imitant Microsoft ou un outil connu',
+    ],
+  },
+  {
+    // Reached when a subject matches no pattern. The emitter adds rules without telling anyone,
+    // and an unrecognised label is a table to complete, never an alert to drop: the case opens
+    // here so an analyst sees it and gives it its real type.
+    id: 99,
+    source: 'extsoc',
+    family: 'unknown',
+    entities: [],
+    severity: 'P3',
+    label: 'Type non déterminé : libellé absent de la table de correspondance',
+    guide: [
+      { id: 'read', label: 'Lire le sujet et le corps de l’alerte d’origine, dans le ticket' },
+      { id: 'assign', label: 'Corriger le type sur le cas : le guide correspondant apparaît alors' },
+      {
+        id: 'report',
+        label: 'Signaler le libellé pour compléter la table, sans quoi la prochaine alerte identique reviendra ici',
+      },
+    ],
+    fpClues: ['Rien à conclure tant que le type n’est pas déterminé'],
+    tpClues: ['Rien à conclure tant que le type n’est pas déterminé'],
+  },
 ]
 
 /** The catalogue entry for a type id, or null: an unknown id renders as unknown, never throws. */

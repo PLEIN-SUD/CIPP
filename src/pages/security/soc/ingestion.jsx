@@ -134,18 +134,19 @@ const Page = () => {
             <CardContent>
               <Stack spacing={2}>
                 <Typography variant="body2" color="text.secondary">
-                  <strong>TenantName</strong> ou <strong>TenantFilter</strong> : le nom du client
-                  tel que le connaît l’émetteur. Le domaine, le nom affiché ou l’identifiant de
-                  client sont acceptés.
+                  <strong>Subject</strong> : le sujet brut du mail d’alerte, préfixes de réponse
+                  compris. Le type d’alerte, le client concerné et l’entité visée en sont
+                  extraits ici. C’est le seul champ nécessaire.
                   <br />
-                  <strong>TypeId</strong> : le type d’alerte du catalogue, qui détermine le guide
-                  d’investigation présenté à l’analyste.
+                  <strong>ExternalRef</strong> : l’identifiant de fil de l’émetteur. C’est la clé
+                  de déduplication : une relance sur le même fil met à jour le cas au lieu d’en
+                  créer un second.
                   <br />
-                  <strong>Title</strong> : ce que l’analyste lira dans sa file.
+                  <strong>TicketRef</strong> : le numéro de ticket, pour relier le cas au ticket.
                   <br />
-                  <strong>Severity</strong>, <strong>ExternalRef</strong>,{' '}
-                  <strong>TicketRef</strong>, <strong>Entities</strong> : facultatifs. La
-                  référence de ticket est ce qui permettra de relier le cas au ticket.
+                  <strong>TenantName</strong>, <strong>TypeId</strong>, <strong>Title</strong>,{' '}
+                  <strong>Severity</strong>, <strong>Entities</strong> : facultatifs, et
+                  prioritaires sur ce que dit le sujet quand l’émetteur en sait plus.
                 </Typography>
 
                 <Divider />
@@ -162,12 +163,21 @@ const Page = () => {
                   alerte, et ouvrir un cas vide à chaque fois apprendrait à l’analyste à ignorer
                   des lignes. Le refus est journalisé avec le nom reçu, pour qu’une faute de frappe
                   sur un client géré se voie au lieu de disparaître.
+                  <br />
+                  <strong>Ingested faux, Reason out-of-scope</strong> : l’alerte porte sur un
+                  produit que ce portail ne couvre pas. Même raisonnement, autre cause.
                 </Typography>
 
                 <Alert severity="info">
                   Un nom qui correspond à deux clients ne suit pas ce chemin : le cas est bien
                   créé, sous le tenant <code>unmapped</code>, pour qu’un analyste le réaffecte. Une
                   alerte réelle ne doit pas se perdre parce que le nom était ambigu.
+                </Alert>
+
+                <Alert severity="info">
+                  Un sujet dont le libellé n’est dans aucune table ouvre également un cas, sur le
+                  type « non déterminé ». L’émetteur ajoute des règles sans prévenir : un libellé
+                  inconnu est une table à compléter, pas une alerte à jeter.
                 </Alert>
               </Stack>
             </CardContent>

@@ -138,11 +138,12 @@ const Page = () => {
                   compris. Le type d’alerte, le client concerné et l’entité visée en sont
                   extraits ici. C’est le seul champ nécessaire.
                   <br />
-                  <strong>ExternalRef</strong> : l’identifiant de fil de l’émetteur. C’est la clé
-                  de déduplication : une relance sur le même fil met à jour le cas au lieu d’en
-                  créer un second.
+                  <strong>ExternalRef</strong> : le numéro de ticket. C’est la clé de
+                  déduplication : un second envoi portant le même numéro met à jour le cas au lieu
+                  d’en ouvrir un autre.
                   <br />
-                  <strong>TicketRef</strong> : le numéro de ticket, pour relier le cas au ticket.
+                  <strong>TicketRef</strong> : facultatif, pour une seconde référence quand ce
+                  n’est pas le numéro de ticket qui déduplique.
                   <br />
                   <strong>TenantName</strong>, <strong>TypeId</strong>, <strong>Title</strong>,{' '}
                   <strong>Severity</strong>, <strong>Entities</strong> : facultatifs, et

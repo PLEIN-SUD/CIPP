@@ -1,7 +1,18 @@
+import { useMemo } from 'react'
+import { Alert, Chip, Container, Stack, Typography } from '@mui/material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import { TabbedLayout } from '../../../layouts/TabbedLayout.jsx'
-import { CippTablePage } from '../../../components/CippComponents/CippTablePage.jsx'
+import { CippHead } from '../../../components/CippComponents/CippHead'
+import { CippDataTable } from '../../../components/CippTable/CippDataTable.js'
+import { ApiGetCall } from '../../../api/ApiCall'
 import { useSettings } from '../../../hooks/use-settings'
+import {
+  psitSocAge,
+  psitSocGuideProgress,
+  psitSocQueueOrder,
+  psitSocQueueSummary,
+  psitSocTypeLabel,
+} from '../../../utils/psit-soc-queue'
 import { PlayArrow, Done, Block, GppGood, LockOpen } from '@mui/icons-material'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
@@ -15,10 +26,29 @@ import tabOptions from './tabOptions.json'
  * Every action here writes the case record only. The actions that touch the customer tenant
  * (revoke sessions, remove a rule) live on the case view next to the evidence that justifies
  * them, never on a list where the wrong row is one click away.
+ *
+ * It is also the screen an analyst opens first and returns to between cases, so it answers "what
+ * do I do now" before he reads a row: the counts, and the untouched case that has waited longest,
+ * named rather than counted. The rows are then ordered the way they are worth working, open cases
+ * first, most severe first, oldest first. Finished cases sink rather than disappear, because
+ * yesterday's closure has to stay findable and a list that quietly drops rows is not trusted.
  */
 const Page = () => {
   const tenant = useSettings().currentTenant
   const queryKey = `PSITSocCases-${tenant}`
+
+  const casesRequest = ApiGetCall({
+    url: `/api/PSITListSocCases?tenantFilter=${tenant}`,
+    queryKey,
+    waiting: Boolean(tenant),
+  })
+  const failed = typeof casesRequest.data?.Results === 'string' || casesRequest.isError
+  const cases = useMemo(
+    () => (Array.isArray(casesRequest.data?.Results) ? casesRequest.data.Results : []),
+    [casesRequest.data]
+  )
+  const rows = useMemo(() => psitSocQueueOrder(cases), [cases])
+  const summary = useMemo(() => psitSocQueueSummary(cases), [cases])
 
   const actions = [
     {
@@ -148,16 +178,29 @@ const Page = () => {
     actions: actions,
   }
 
-  const simpleColumns = [
-    'UpdatedUtc',
-    'Severity',
-    'Status',
-    'Tenant',
-    'TypeId',
-    'Title',
-    'Source',
-    'ExternalRef',
-    'CaseId',
+  const columns = [
+    { id: 'Severity', header: 'Criticité', accessorKey: 'Severity' },
+    { id: 'Status', header: 'Statut', accessorKey: 'Status' },
+    { id: 'Tenant', header: 'Client', accessorKey: 'Tenant' },
+    {
+      id: 'TypeLabel',
+      header: 'Type',
+      // The number alone asked the analyst to know a catalogue of nineteen entries by heart.
+      accessorFn: (row) => psitSocTypeLabel(row?.TypeId),
+    },
+    { id: 'Title', header: 'Titre', accessorKey: 'Title' },
+    {
+      id: 'Guide',
+      header: 'Guide',
+      // Where he left off, so returning to a case does not start with rereading it.
+      accessorFn: (row) => psitSocGuideProgress(row)?.label ?? '',
+    },
+    {
+      id: 'Age',
+      header: 'Âge',
+      accessorFn: (row) => psitSocAge(row?.CreatedUtc)?.label ?? '',
+    },
+    { id: 'ExternalRef', header: 'Ticket', accessorKey: 'ExternalRef' },
   ]
 
   const filterList = [
@@ -182,16 +225,50 @@ const Page = () => {
   ]
 
   return (
-    <CippTablePage
-      title="Triage SOC"
-      apiUrl="/api/PSITListSocCases"
-      queryKey={queryKey}
-      cardButton={<PsitSocCaseDrawer relatedQueryKeys={[queryKey]} />}
-      actions={actions}
-      offCanvas={offCanvas}
-      simpleColumns={simpleColumns}
-      filters={filterList}
-    />
+    <>
+      <CippHead title="Triage SOC" />
+      <Container maxWidth={false} sx={{ py: 2 }}>
+        <Stack spacing={2}>
+          {failed && (
+            <Alert severity="error">
+              La file n’a pas pu être lue. Rien n’est affiché plutôt qu’une liste vide, qui se
+              lirait comme « aucun cas en attente ».
+            </Alert>
+          )}
+
+          {!failed && (
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Chip
+                color={summary.counts.new > 0 ? 'error' : 'default'}
+                label={`${summary.counts.new ?? 0} à prendre`}
+              />
+              <Chip
+                color={summary.counts.investigating > 0 ? 'warning' : 'default'}
+                label={`${summary.counts.investigating ?? 0} en cours`}
+              />
+              <Chip label={`${summary.counts.contained ?? 0} confinés`} />
+              <Typography variant="body2" color="text.secondary">
+                {summary.oldestUntaken
+                  ? `Le plus ancien non pris : ${summary.oldestUntaken.row.CaseId}, il y a ${summary.oldestUntaken.age.label}.`
+                  : 'Aucun cas en attente de prise en charge.'}
+              </Typography>
+            </Stack>
+          )}
+
+          <CippDataTable
+            title="Triage SOC"
+            data={failed ? [] : rows}
+            isFetching={casesRequest.isFetching && !failed}
+            cardButton={<PsitSocCaseDrawer relatedQueryKeys={[queryKey]} />}
+            actions={actions}
+            offCanvas={offCanvas}
+            columns={columns}
+            filters={filterList}
+            simple={false}
+          />
+        </Stack>
+      </Container>
+    </>
   )
 }
 

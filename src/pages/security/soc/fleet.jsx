@@ -51,9 +51,16 @@ const Page = () => {
     [historyRequest.data]
   )
 
-  // On failure the endpoint answers with a message in Results rather than a list: rows must stay
-  // an array whatever comes back, or the page crashes exactly when something is already wrong.
-  const failed = typeof fleetRequest.data?.Results === 'string'
+  // Two ways this can fail, and both must look like a failure rather than like an empty fleet:
+  // the endpoint answering with a message in Results, and the call not landing at all (a 404 on
+  // an endpoint the running API does not have yet, an auth error, a timeout).
+  const failed = typeof fleetRequest.data?.Results === 'string' || fleetRequest.isError
+  const failureText =
+    typeof fleetRequest.data?.Results === 'string'
+      ? fleetRequest.data.Results
+      : (fleetRequest.error?.response?.data?.Results ??
+        fleetRequest.error?.message ??
+        'La lecture a échoué.')
   const rows = useMemo(
     () => (Array.isArray(fleetRequest.data?.Results) ? fleetRequest.data.Results : []),
     [fleetRequest.data]
@@ -118,8 +125,8 @@ const Page = () => {
 
           {failed && (
             <Alert severity="error">
-              {fleetRequest.data.Results} — les compteurs ci-dessous ne veulent rien dire tant que
-              la lecture échoue.
+              {failureText} — aucun compteur n’est affiché : des chiffres calculés sur une lecture
+              qui a échoué se liraient comme un parc en bonne santé.
             </Alert>
           )}
 
@@ -220,7 +227,7 @@ const Page = () => {
           <CippDataTable
             title="Machines"
             data={rows}
-            isFetching={fleetRequest.isFetching}
+            isFetching={fleetRequest.isFetching && !failed}
             simple={false}
             simpleColumns={[
               'Tenant',

@@ -131,4 +131,26 @@ describe('fleet health page', () => {
 
     expect(screen.getByText(/après le premier passage de la tâche quotidienne/)).toBeInTheDocument()
   })
+
+  it('shows a call that never landed as a failure, not as an empty fleet', () => {
+    // A 404 on an endpoint the running API does not have yet used to render as "0 machines,
+    // 0 threats" - the exact reading this page must never produce.
+    ApiGetCall.mockImplementation((opts) => {
+      if (String(opts?.url ?? '').includes('PSITListFleetHealth')) {
+        return {
+          data: undefined,
+          isFetching: false,
+          isSuccess: false,
+          isError: true,
+          error: { response: { status: 404 }, message: 'Request failed with status code 404' },
+          refetch: vi.fn(),
+        }
+      }
+      return { data: undefined, isFetching: false, isSuccess: false, refetch: vi.fn() }
+    })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText(/404/)).toBeInTheDocument()
+    expect(screen.queryByText('Machines rapportées')).not.toBeInTheDocument()
+  })
 })

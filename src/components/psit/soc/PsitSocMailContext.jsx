@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { ApiPostCall } from '../../../api/ApiCall'
+import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 
 /**
@@ -21,11 +21,28 @@ import { CippApiResults } from '../../CippComponents/CippApiResults'
  *   irreversible and this one is not;
  * - Safe Links click data is not collected by CIPP, so the absence of a recorded click means
  *   nothing. The panel states it instead of letting an empty screen suggest "nobody clicked".
+ *
+ * The purge also needs Defender for Office 365 Plan 2. Rather than offer a button that answers
+ * "Invalid subscription", the panel asks what the tenant is licensed for and says where to do it
+ * instead. A licence that could not be read leaves the button in place: "we could not check" is
+ * not "you cannot", and hiding an action on a failed lookup hides one the tenant may well have.
  */
 export const PsitSocMailContext = ({ socCase, queryKey }) => {
   const tenant = socCase?.Tenant
   const networkMessageId = socCase?.Entities?.networkMessageId
   const [recipients, setRecipients] = useState('')
+
+  const capabilities = ApiGetCall({
+    url: `/api/PSITListSocCapabilities?tenantFilter=${tenant}`,
+    queryKey: `PSITSocCapabilities-${tenant}`,
+    waiting: Boolean(tenant),
+  })
+  const purgeCapability = (capabilities.data?.Actions ?? []).find(
+    (entry) => entry.Action === 'mail-remediate'
+  )
+  // Unlicensed is the only state that removes the button. 'unknown' and a lookup still in flight
+  // both keep it: the API refuses cleanly if the licence is genuinely missing.
+  const purgeUnlicensed = purgeCapability?.State === 'unlicensed'
 
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
 
@@ -98,23 +115,35 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
             helperText="Adresses séparées par des virgules"
           />
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              disabled={action.isPending}
-              onClick={runPurge}
-            >
-              Supprimer le message (réversible)
-            </Button>
-          </Stack>
+          {purgeUnlicensed ? (
+            <Alert severity="warning">
+              Suppression indisponible sur ce tenant : elle demande{' '}
+              {purgeCapability?.SkuName ?? 'Defender for Office 365 Plan 2'}. Supprimer le message
+              depuis Threat Explorer ou la quarantaine, puis consigner l’action sur le cas.
+            </Alert>
+          ) : (
+            <>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  disabled={action.isPending}
+                  onClick={runPurge}
+                >
+                  Supprimer le message (réversible)
+                </Button>
+              </Stack>
 
-          <Typography variant="body2" color="text.secondary">
-            Le message est déplacé vers les éléments supprimés des boîtes concernées, pas détruit :
-            une purge décidée à tort reste rattrapable. Nécessite Defender for Office 365 Plan 2 sur
-            le tenant.
-          </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Le message est déplacé vers les éléments supprimés des boîtes concernées, pas
+                détruit : une purge décidée à tort reste rattrapable.
+                {purgeCapability?.State === 'unknown'
+                  ? ' Les licences du tenant n’ont pas pu être vérifiées : si la suppression échoue, passer par Threat Explorer.'
+                  : ''}
+              </Typography>
+            </>
+          )}
 
           <CippApiResults apiObject={action} />
         </Stack>

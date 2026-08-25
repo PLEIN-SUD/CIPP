@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test-utils'
 import { PsitSocMailContext } from '../../../src/components/psit/soc/PsitSocMailContext'
-import { ApiPostCall } from '../../../src/api/ApiCall'
+import { ApiGetCall, ApiPostCall } from '../../../src/api/ApiCall'
 
 // Rendering MUI through jsdom on a cold cache runs past Vitest's 5 s default on a laptop, and a
 // timeout reads exactly like a broken assertion. Set per file rather than in vitest.config.mjs,
@@ -76,5 +76,47 @@ describe('PsitSocMailContext', () => {
 
     await waitFor(() => expect(mutate).toHaveBeenCalled())
     expect(mutate.mock.calls[0][0].data.Recipients).toEqual(['a@contoso.test', 'b@contoso.test'])
+  })
+
+  const wireCapability = (state) =>
+    ApiGetCall.mockImplementation((opts) => {
+      if (String(opts?.url ?? '').includes('PSITListSocCapabilities')) {
+        return {
+          data: state
+            ? { Actions: [{ Action: 'mail-remediate', State: state, SkuName: 'Defender for Office 365 Plan 2' }] }
+            : undefined,
+          isFetching: false,
+          isFetched: true,
+          isSuccess: true,
+          isError: false,
+        }
+      }
+      return { data: undefined, isFetching: false, isFetched: false, isSuccess: false, isError: false }
+    })
+
+  it('replaces the button with where to go when the tenant is not licensed', () => {
+    wireCapability('unlicensed')
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.queryByRole('button', { name: /réversible/ })).not.toBeInTheDocument()
+    // The replacement says where to go instead, and names the plan that is missing.
+    expect(screen.getByText(/Suppression indisponible sur ce tenant/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Threat Explorer/).length).toBeGreaterThan(0)
+  })
+
+  it('keeps the button when the licence could not be checked, and says so', () => {
+    // "We could not check" is not "you cannot": hiding the action would hide one the tenant has.
+    wireCapability('unknown')
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByRole('button', { name: /réversible/ })).toBeInTheDocument()
+    expect(screen.getByText(/n’ont pas pu être vérifiées/)).toBeInTheDocument()
+  })
+
+  it('keeps the button while the licence lookup is still in flight', () => {
+    wireCapability(null)
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByRole('button', { name: /réversible/ })).toBeInTheDocument()
   })
 })

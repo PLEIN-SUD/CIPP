@@ -39,6 +39,18 @@ const Page = () => {
     waiting: Boolean(tenant),
   })
 
+  // Recorded daily by the snapshot timer: the live aggregate has no history, so without this a
+  // protection switched off three weeks ago and a fleet that went silent yesterday look alike.
+  const historyRequest = ApiGetCall({
+    url: `/api/PSITListFleetHistory?tenantFilter=${tenant}&days=30`,
+    queryKey: `PSITFleetHistory-${tenant}`,
+    waiting: Boolean(tenant),
+  })
+  const daily = useMemo(
+    () => (Array.isArray(historyRequest.data?.Daily) ? historyRequest.data.Daily : []),
+    [historyRequest.data]
+  )
+
   // On failure the endpoint answers with a message in Results rather than a list: rows must stay
   // an array whatever comes back, or the page crashes exactly when something is already wrong.
   const failed = typeof fleetRequest.data?.Results === 'string'
@@ -171,6 +183,38 @@ const Page = () => {
                 </Typography>
               </CardContent>
             </Card>
+          )}
+
+          {daily.length > 0 && (
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  Évolution ({daily.length} jour(s) enregistré(s) sur 30)
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {daily.map((day) => (
+                    <Chip
+                      key={day.Date}
+                      size="small"
+                      variant="outlined"
+                      color={day.NeedsAttention > 0 ? 'error' : 'success'}
+                      label={`${day.Date.slice(5)} — ${day.NeedsAttention}/${day.DevicesReported}`}
+                    />
+                  ))}
+                </Stack>
+                <Typography variant="caption" color="text.secondary">
+                  Machines à regarder sur machines rapportées, par jour. Les jours absents sont des
+                  jours sans relevé, pas des jours sans problème.
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
+
+          {daily.length === 0 && !failed && (
+            <Typography variant="caption" color="text.secondary">
+              Aucun relevé enregistré pour l’instant : la tendance apparaîtra après le premier
+              passage de la tâche quotidienne.
+            </Typography>
           )}
 
           <CippDataTable

@@ -60,9 +60,13 @@ const fleet = {
 
 // Url-aware: the table makes its own calls internally, and feeding them the fleet payload would
 // test the mock rather than the page.
-const wire = (data) =>
+const wire = (data, history = undefined) =>
   ApiGetCall.mockImplementation((opts) => {
-    if (String(opts?.url ?? '').includes('PSITListFleetHealth')) {
+    const url = String(opts?.url ?? '')
+    if (url.includes('PSITListFleetHistory')) {
+      return { data: history, isFetching: false, isSuccess: true, refetch: vi.fn() }
+    }
+    if (url.includes('PSITListFleetHealth')) {
       return { data, isFetching: false, isSuccess: true, refetch: vi.fn() }
     }
     return { data: undefined, isFetching: false, isSuccess: false, refetch: vi.fn() }
@@ -105,5 +109,26 @@ describe('fleet health page', () => {
 
     expect(screen.getByText(/agrégat Lighthouse/)).toBeInTheDocument()
     expect(screen.getByText(/passer par le portail Defender/)).toBeInTheDocument()
+  })
+
+  it('shows the recorded trend, and says missing days are missing readings', () => {
+    wire(fleet, {
+      Daily: [
+        { Date: '2026-08-23', DevicesReported: 42, NeedsAttention: 0 },
+        { Date: '2026-08-24', DevicesReported: 42, NeedsAttention: 2 },
+      ],
+    })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText('08-24 — 2/42')).toBeInTheDocument()
+    // A day with no reading must not read as a day with no problem.
+    expect(screen.getByText(/pas des jours sans problème/)).toBeInTheDocument()
+  })
+
+  it('says the trend is empty rather than drawing an empty one', () => {
+    wire(fleet, { Daily: [] })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText(/après le premier passage de la tâche quotidienne/)).toBeInTheDocument()
   })
 })

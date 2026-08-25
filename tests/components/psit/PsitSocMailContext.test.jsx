@@ -78,6 +78,88 @@ describe('PsitSocMailContext', () => {
     expect(mutate.mock.calls[0][0].data.Recipients).toEqual(['a@contoso.test', 'b@contoso.test'])
   })
 
+  const evidence = {
+    Message: {
+      NetworkMessageId: 'b0f2a3c4-1111-2222-3333-444455556666',
+      Subject: 'Votre facture en attente',
+      SenderDisplayName: 'Comptabilite',
+      SenderFrom: 'billing@sender.test',
+      SenderMailFrom: 'bounce@sender.test',
+      SenderIp: '203.0.113.9',
+      ThreatTypes: ['Phish'],
+      DetectionMethods: ['URL malicious reputation'],
+      Spf: 'fail',
+      Dkim: 'none',
+      Dmarc: 'fail',
+      Urls: ['https://sender.test/pay'],
+    },
+    Recipients: [
+      { Recipient: 'first@contoso.test', OriginalAction: 'Delivered', OriginalLocation: 'Inbox', LatestLocation: 'Inbox', StillDelivered: true },
+      { Recipient: 'second@contoso.test', OriginalAction: 'Delivered', OriginalLocation: 'Inbox', LatestLocation: 'Quarantine', StillDelivered: false },
+    ],
+    Metadata: { Found: true, RecipientCount: 2, StillDelivered: 1, WindowStart: '2026-08-19T09:00:00Z', WindowEnd: '2026-08-21T09:00:00Z', WindowFromReport: true },
+  }
+
+  const wireEvidence = (data, extra = {}) =>
+    ApiGetCall.mockImplementation((opts) => {
+      const url = String(opts?.url ?? '')
+      if (url.includes('PSITListMailEvidence')) {
+        return { data, isFetching: false, isFetched: true, isSuccess: true, isError: false, ...extra }
+      }
+      return { data: undefined, isFetching: false, isFetched: false, isSuccess: false, isError: false }
+    })
+
+  it('shows who sent the message and what Defender made of it', () => {
+    // The panel used to offer a delete button and no evidence, which asked an analyst to remove a
+    // message he could not see.
+    wireEvidence(evidence)
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByText('Votre facture en attente')).toBeInTheDocument()
+    expect(screen.getByText(/billing@sender.test/)).toBeInTheDocument()
+    expect(screen.getByText('Phish')).toBeInTheDocument()
+    expect(screen.getByText(/SPF fail/)).toBeInTheDocument()
+  })
+
+  it('flags an envelope sender that differs from the displayed address', () => {
+    wireEvidence(evidence)
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByText(/Enveloppe expéditeur différente/)).toBeInTheDocument()
+  })
+
+  it('says per recipient where the copy sits, not one verdict for the message', () => {
+    // Delivered to one mailbox and quarantined in another is two situations, and only the first
+    // is worth purging.
+    wireEvidence(evidence)
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByText('first@contoso.test')).toBeInTheDocument()
+    expect(screen.getByText('second@contoso.test')).toBeInTheDocument()
+    expect(screen.getByText('encore lisible')).toBeInTheDocument()
+    expect(screen.getByText('hors boîte')).toBeInTheDocument()
+  })
+
+  it('names the window and both causes when nothing was found', () => {
+    wireEvidence({
+      Message: null,
+      Recipients: [],
+      Metadata: { Found: false, WindowStart: '2026-08-19T09:00:00Z', WindowEnd: '2026-08-21T09:00:00Z', WindowFromReport: true },
+    })
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByText(/Aucun message analysé trouvé/)).toBeInTheDocument()
+    expect(screen.getByText(/licence Defender for Office 365 Plan 2/)).toBeInTheDocument()
+  })
+
+  it('shows a failed read as a failure, never as a message nobody received', () => {
+    wireEvidence(undefined, { isError: true, isFetched: true, isSuccess: false })
+    renderWithProviders(<PsitSocMailContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.getByText(/La lecture du message a échoué/)).toBeInTheDocument()
+    expect(screen.queryByText('first@contoso.test')).not.toBeInTheDocument()
+  })
+
   const wireCapability = (state) =>
     ApiGetCall.mockImplementation((opts) => {
       if (String(opts?.url ?? '').includes('PSITListSocCapabilities')) {

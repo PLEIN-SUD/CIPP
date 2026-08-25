@@ -5,7 +5,14 @@ import {
   Card,
   CardContent,
   CardHeader,
+  Chip,
+  Skeleton,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material'
@@ -13,8 +20,13 @@ import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 
 /**
- * The mail-side context of a case, for an incomplete ZAP (type 18): the message identifiers and
- * the containment gesture that finishes what the automatic purge did not.
+ * The mail-side context of a case, for an incomplete ZAP (type 18): what Defender knows about
+ * the message, and the containment gesture that finishes what the automatic purge did not.
+ *
+ * The evidence comes first, and it is not decoration. This panel used to show an identifier and a
+ * delete button, which asked an analyst to remove a message he could not see. He now reads who
+ * sent it, what it was called, what Defender made of it, and where each copy sits, before the
+ * button is worth pressing.
  *
  * Two honesty rules are written into the panel rather than left to the analyst's memory:
  * - the purge is a soft delete, and the panel says so on the button, because "purge" reads as
@@ -31,6 +43,19 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
   const tenant = socCase?.Tenant
   const networkMessageId = socCase?.Entities?.networkMessageId
   const [recipients, setRecipients] = useState('')
+
+  // The same read the purge performs server-side. The panel and the action therefore agree on
+  // what exists: a screen saying four people received it and a purge finding nothing is the kind
+  // of contradiction that costs an analyst's trust in every other screen.
+  const evidence = ApiGetCall({
+    url: `/api/PSITListMailEvidence?tenantFilter=${tenant}&NetworkMessageId=${networkMessageId}&ReceivedUtc=${socCase?.Entities?.receivedUtc ?? ''}`,
+    queryKey: `PSITMailEvidence-${tenant}-${networkMessageId}`,
+    waiting: Boolean(tenant && networkMessageId),
+  })
+  const message = evidence.data?.Message
+  const deliveries = Array.isArray(evidence.data?.Recipients) ? evidence.data.Recipients : []
+  const evidenceMeta = evidence.data?.Metadata
+  const evidenceFailed = typeof evidence.data?.Results === 'string' || evidence.isError
 
   const capabilities = ApiGetCall({
     url: `/api/PSITListSocCapabilities?tenantFilter=${tenant}`,
@@ -100,6 +125,104 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
       <CardHeader title="Contexte message" subheader={networkMessageId} />
       <CardContent>
         <Stack spacing={2}>
+          {evidence.isFetching && !message && <Skeleton variant="rounded" height={140} />}
+
+          {evidenceFailed && (
+            <Alert severity="error">
+              La lecture du message a échoué. Rien n’est affiché plutôt qu’un message vide, qui se
+              lirait comme « aucun destinataire touché ».
+            </Alert>
+          )}
+
+          {!evidenceFailed && evidence.isFetched && evidenceMeta?.Found === false && (
+            <Alert severity="warning">
+              Aucun message analysé trouvé entre {evidenceMeta?.WindowStart} et{' '}
+              {evidenceMeta?.WindowEnd}.
+              {evidenceMeta?.WindowFromReport
+                ? ' La fenêtre encadre l’heure de réception déclarée sur le cas.'
+                : ' Le cas ne porte pas d’heure de réception, la recherche couvre les quinze derniers jours.'}{' '}
+              Deux causes possibles : le message est hors de cette fenêtre, ou le client n’a pas la
+              licence Defender for Office 365 Plan 2 que cette lecture demande.
+            </Alert>
+          )}
+
+          {message && (
+            <Stack spacing={1}>
+              <Typography variant="subtitle2">{message.Subject || 'Message sans objet'}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                De {message.SenderDisplayName || 'expéditeur inconnu'} &lt;{message.SenderFrom}&gt;
+                {message.SenderIp ? ` depuis ${message.SenderIp}` : ''}
+              </Typography>
+              {message.SenderMailFrom && message.SenderMailFrom !== message.SenderFrom && (
+                <Typography variant="body2" color="warning.main">
+                  Enveloppe expéditeur différente de l’adresse affichée : {message.SenderMailFrom}
+                </Typography>
+              )}
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {(message.ThreatTypes ?? []).map((threat) => (
+                  <Chip key={threat} size="small" color="error" label={threat} />
+                ))}
+                {(message.DetectionMethods ?? []).map((method) => (
+                  <Chip key={method} size="small" variant="outlined" label={method} />
+                ))}
+                {['Spf', 'Dkim', 'Dmarc'].map((check) =>
+                  message[check] ? (
+                    <Chip
+                      key={check}
+                      size="small"
+                      variant="outlined"
+                      color={/pass/i.test(message[check]) ? 'success' : 'error'}
+                      label={`${check.toUpperCase()} ${message[check]}`}
+                    />
+                  ) : null
+                )}
+              </Stack>
+              {(message.Urls ?? []).length > 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  {message.Urls.length} lien(s) dans le message, dont {message.Urls[0]}
+                </Typography>
+              )}
+            </Stack>
+          )}
+
+          {deliveries.length > 0 && (
+            <div>
+              <Typography variant="subtitle2" gutterBottom>
+                Destinataires ({evidenceMeta?.StillDelivered ?? 0} copie(s) encore en boîte sur{' '}
+                {evidenceMeta?.RecipientCount ?? deliveries.length})
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Destinataire</TableCell>
+                    <TableCell>Remise initiale</TableCell>
+                    <TableCell>Où est la copie</TableCell>
+                    <TableCell>Lecture</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {deliveries.map((row) => (
+                    <TableRow key={row.Recipient}>
+                      <TableCell>{row.Recipient}</TableCell>
+                      <TableCell>
+                        {row.OriginalAction || 'N/D'}
+                        {row.OriginalLocation ? ` (${row.OriginalLocation})` : ''}
+                      </TableCell>
+                      <TableCell>{row.LatestLocation || 'N/D'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          color={row.StillDelivered ? 'error' : 'success'}
+                          label={row.StillDelivered ? 'encore lisible' : 'hors boîte'}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
           <Alert severity="info">
             Les clics sur les liens (Safe Links) ne sont pas collectés par cet outil : l’absence de
             clic enregistré ne vaut pas absence de clic. Vérifier dans Threat Explorer avant de

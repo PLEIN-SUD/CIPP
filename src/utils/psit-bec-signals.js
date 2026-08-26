@@ -834,7 +834,19 @@ export const buildVerdict = (signals = [], triage = []) => {
     signal,
     determination: determinations.get(signal.id) || null,
   }))
-  const unexpected = qualified.filter((entry) => entry.determination?.Verdict === 'unexpected')
+
+  // A signal the rules discarded, which the analyst has explicitly called unexpected, counts.
+  // The rules read the data; the analyst knows the client. Only 'unexpected' promotes a discarded
+  // signal: marking it expected, or undetermined, leaves it where the rules put it, so an
+  // analyst's answer can raise a verdict but never quietly lower one.
+  const reinstated = signals
+    .filter((signal) => signal.class === SIGNAL_CLASS.NOISE)
+    .map((signal) => ({ signal, determination: determinations.get(signal.id) || null }))
+    .filter((entry) => entry.determination?.Verdict === 'unexpected')
+
+  const unexpected = qualified
+    .filter((entry) => entry.determination?.Verdict === 'unexpected')
+    .concat(reinstated)
   const unanswered = qualified.filter((entry) => !entry.determination)
   const undetermined = qualified.filter((entry) => entry.determination?.Verdict === 'undetermined')
 

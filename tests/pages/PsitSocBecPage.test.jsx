@@ -76,13 +76,14 @@ describe('SOC BEC investigation page', () => {
     expect(screen.getByRole('button', { name: /Lancer l’investigation/ })).toBeDisabled()
   })
 
-  it('renders the PSIT decision panel for the targeted mailbox', () => {
+  it('reaches the decision panel from its tab, with the qualification alongside the evidence', async () => {
     routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
     wireApi()
     renderWithProviders(<Page />)
 
     expect(screen.getByText('Anna T')).toBeInTheDocument()
-    // The decision panel is the whole point of the move: qualification, incident record, reports.
+    // Qualification moved to the evidence tab, where the judgement is actually made.
+    await userEvent.click(screen.getByRole('tab', { name: 'Contrôles' }))
     expect(screen.getByText(/Qualification avant diffusion/)).toBeInTheDocument()
   })
 
@@ -115,7 +116,7 @@ describe('SOC BEC investigation page', () => {
 })
 
 describe('SOC BEC investigation, tabs', () => {
-  it('opens on the decision, with the evidence one tab away rather than below it', () => {
+  it('offers the three stages of the work as tabs', () => {
     routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
     wireApi()
     renderWithProviders(<Page />)
@@ -125,13 +126,14 @@ describe('SOC BEC investigation, tabs', () => {
     expect(screen.getByRole('tab', { name: 'Contrôles' })).toBeInTheDocument()
   })
 
-  it('shows the account holder tab only when asked for it', async () => {
+  it('opens on the account holder, and swaps panels when another tab is picked', async () => {
     routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
     wireApi()
     renderWithProviders(<Page />)
 
-    expect(screen.queryByText('Seconds facteurs')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('tab', { name: 'Titulaire' }))
+    // The page now opens on the account holder, so the assertion runs the other way round.
     expect(screen.getByText('Seconds facteurs')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: 'Contrôles' }))
+    expect(screen.queryByText('Seconds facteurs')).not.toBeInTheDocument()
   })
 })

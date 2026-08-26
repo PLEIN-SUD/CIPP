@@ -561,3 +561,33 @@ describe('partitionDeterminations', () => {
     expect(current).toHaveLength(1)
   })
 })
+
+describe('an analyst overriding the rules', () => {
+  // The rules read the data, the analyst knows the client. A signal filed as noise that the
+  // analyst calls unexpected has to count, otherwise the control offered is decoration.
+  const noiseSignal = { id: 'safelist-unchanged', title: 'Liste d’expéditeurs inchangée', class: SIGNAL_CLASS.NOISE }
+
+  it('reinstates a discarded signal the analyst calls unexpected', () => {
+    const verdict = buildVerdict(
+      [noiseSignal],
+      [{ SignalId: 'safelist-unchanged', Verdict: 'unexpected' }]
+    )
+    expect(verdict.status).not.toBe(VERDICT_STATUS.CLEAN)
+  })
+
+  it('leaves a discarded signal discarded when it is called expected', () => {
+    const verdict = buildVerdict(
+      [noiseSignal],
+      [{ SignalId: 'safelist-unchanged', Verdict: 'expected' }]
+    )
+    expect(verdict.status).toBe(VERDICT_STATUS.CLEAN)
+  })
+
+  it('leaves it discarded on undetermined, so an answer can raise a verdict but never lower one', () => {
+    const verdict = buildVerdict(
+      [noiseSignal],
+      [{ SignalId: 'safelist-unchanged', Verdict: 'undetermined' }]
+    )
+    expect(verdict.status).toBe(VERDICT_STATUS.CLEAN)
+  })
+})

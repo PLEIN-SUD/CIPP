@@ -21,6 +21,7 @@ import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
 import { CippFormTenantSelector } from '../../../components/CippComponents/CippFormTenantSelector'
 import { CippFormUserSelector } from '../../../components/CippComponents/CippFormUserSelector'
+import { PsitBecTriagePanel } from '../../../components/psit/PsitBecTriagePanel'
 import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPanel'
 import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
 import { PsitBecIdentityPanel } from '../../../components/psit/soc/PsitBecIdentityPanel'
@@ -97,9 +98,10 @@ const PsitBecTargetPicker = () => {
 const Page = () => {
   const router = useRouter()
   const { userId, tenantFilter, caseId } = router.query
-  // Three tabs rather than one column: the decision, the person, the evidence. Stacked, the
-  // analyst scrolled past the reading to reach what it was based on, and back up to act on it.
-  const [tab, setTab] = useState('decision')
+  // Left to right in the order the work happens: who the account holder is, what was found and
+  // how the analyst reads it, then the conclusion. Stacked in one column, the analyst scrolled
+  // past the reading to reach what it rested on, and back up to act on it.
+  const [tab, setTab] = useState('identity')
 
   const userRequest = ApiGetCall({
     url: `/api/ListUsers?UserId=${userId}&tenantFilter=${tenantFilter}`,
@@ -175,11 +177,26 @@ const Page = () => {
                 variant="scrollable"
                 allowScrollButtonsMobile
               >
-                <Tab value="decision" label="Décision" />
                 <Tab value="identity" label="Titulaire" />
                 <Tab value="checks" label="Contrôles" />
+                <Tab value="decision" label="Décision" />
               </Tabs>
 
+              {tab === 'identity' && (
+                <PsitBecIdentityPanel userData={userData} becData={becData} />
+              )}
+              {tab === 'checks' && (
+                <>
+                  {/* The qualification sits with the evidence, not two screens from it: deciding
+                      whether a signal is expected is a judgement made while looking at it. */}
+                  <PsitBecTriagePanel
+                    userData={userData}
+                    becData={becData}
+                    tenantFilter={tenantFilter}
+                  />
+                  <PsitBecCheckList becData={becData} />
+                </>
+              )}
               {tab === 'decision' && (
                 <PsitBecDecisionPanel
                   userData={userData}
@@ -189,10 +206,6 @@ const Page = () => {
                   onRestart={restartCollection}
                 />
               )}
-              {tab === 'identity' && (
-                <PsitBecIdentityPanel userData={userData} becData={becData} />
-              )}
-              {tab === 'checks' && <PsitBecCheckList becData={becData} />}
             </>
           )}
 

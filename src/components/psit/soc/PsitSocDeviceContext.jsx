@@ -55,6 +55,12 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
   // No case, no journal to receive a gesture: the panel then shows and never acts.
   const caseless = !socCase?.CaseId
 
+  // The Entra id can come from Intune, or from the merged device list via the case's entities.
+  // The second is what lets an MDE-only machine be isolated: Defender resolves it by this id, and
+  // Intune has nothing to say about that machine at all.
+  const aadDeviceId = device?.azureADDeviceId || socCase?.Entities?.azureADDeviceId
+  const mdeOnly = socCase?.Entities?.managedBy === 'MDE'
+
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const runAction = (payload, logAction) => {
     action.mutate(
@@ -94,9 +100,10 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
       <CardContent>
         <Stack spacing={2}>
           {!device && deviceRequest.isFetched && (
-            <Alert severity="warning">
-              Machine introuvable dans Intune : elle peut être non inscrite, ou connue seulement de
-              Defender. Le portail Defender reste la source pour la chronologie.
+            <Alert severity={mdeOnly ? 'info' : 'warning'}>
+              {mdeOnly
+                ? 'Machine gérée par Defender seul : les lectures Intune (conformité, chiffrement, dernière synchronisation) sont indisponibles ici. L’isolation reste possible, et le portail Defender reste la source pour la chronologie.'
+                : 'Machine introuvable dans Intune : elle peut être non inscrite, ou connue seulement de Defender. Le portail Defender reste la source pour la chronologie.'}
             </Alert>
           )}
 
@@ -210,11 +217,11 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                 size="small"
                 variant="outlined"
                 color="error"
-                disabled={caseless || !device?.azureADDeviceId || action.isPending}
+                disabled={caseless || !aadDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: device.azureADDeviceId, Comment: `Cas ${socCase.CaseId}` } },
-                    { Action: 'mde-isolate', Detail: `Isolation réseau demandée sur ${device?.deviceName}` }
+                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Comment: `Cas ${socCase.CaseId}` } },
+                    { Action: 'mde-isolate', Detail: `Isolation réseau demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
                   )
                 }
               >
@@ -223,11 +230,11 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
               <Button
                 size="small"
                 variant="text"
-                disabled={caseless || !device?.azureADDeviceId || action.isPending}
+                disabled={caseless || !aadDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: device.azureADDeviceId, Release: true, Comment: `Cas ${socCase.CaseId}` } },
-                    { Action: 'mde-unisolate', Detail: `Levée d’isolation demandée sur ${device?.deviceName}` }
+                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Release: true, Comment: `Cas ${socCase.CaseId}` } },
+                    { Action: 'mde-unisolate', Detail: `Levée d’isolation demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
                   )
                 }
               >

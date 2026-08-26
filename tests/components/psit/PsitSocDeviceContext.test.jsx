@@ -100,3 +100,35 @@ describe('PsitSocDeviceContext', () => {
     expect(screen.getByText(/Machine introuvable dans Intune/)).toBeInTheDocument()
   })
 })
+
+describe('an MDE-only machine', () => {
+  // The merged device list made these selectable; this is what the panel owes them: say honestly
+  // that Intune has nothing, and keep isolation reachable through the Entra id the entity carries.
+  it('says Intune has nothing and keeps isolation armed through the entity id', () => {
+    ApiGetCall.mockImplementation(() => ({
+      data: [],
+      isFetching: false,
+      isFetched: true,
+      isSuccess: true,
+    }))
+    renderWithProviders(
+      <PsitSocDeviceContext
+        socCase={{
+          CaseId: 'PSIT-SOC-1',
+          Tenant: 'contoso.test',
+          Entities: {
+            deviceName: 'SRV-LEGACY',
+            azureADDeviceId: 'aad-guid',
+            managedBy: 'MDE',
+          },
+        }}
+        queryKey="k"
+      />
+    )
+
+    expect(screen.getByText(/gérée par Defender seul/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Isoler du réseau' })).toBeEnabled()
+    // The Intune gestures stay out of reach: there is no Intune record to act on.
+    expect(screen.getByRole('button', { name: /Lancer une analyse complète/ })).toBeDisabled()
+  })
+})

@@ -61,9 +61,14 @@ export const PsitSocAppSelector = ({ formControl, name, label, ...other }) => {
 }
 
 /**
- * Intune managed devices, labelled by name and primary user: on a fleet where a dozen machines
- * are called PC-04x, the user is what tells them apart. The value is the managed device id, which
- * every device action takes.
+ * Every machine the tenant's two managers know, from the merged PSIT list: Intune enrolls,
+ * Defender onboards, and reading Intune alone made MDE-only machines unselectable, and therefore
+ * uninvestigable, from this portal. The label carries who manages the machine because that
+ * decides what works on it: Intune readings need Intune, isolation needs Defender.
+ *
+ * The value is the device name, the one field every row has. The identifiers each world needs
+ * travel as added fields. Creatable, as the last resort for a machine neither world knows: the
+ * case is then a work record, investigated outside the portal.
  */
 export const PsitSocDeviceSelector = ({ formControl, name, label, ...other }) => {
   const tenant = useSelectedTenant(formControl)
@@ -75,26 +80,23 @@ export const PsitSocDeviceSelector = ({ formControl, name, label, ...other }) =>
       type="autoComplete"
       formControl={formControl}
       multiple={false}
-      creatable={false}
+      creatable={true}
       api={{
         tenantFilter: tenant,
-        url: '/api/ListGraphRequest',
+        url: '/api/PSITListSocDevices',
         dataKey: 'Results',
         labelField: (option) =>
-          option.userPrincipalName
-            ? `${option.deviceName} (${option.userPrincipalName})`
-            : `${option.deviceName}`,
-        valueField: 'id',
-        addedField: { deviceDisplayName: 'deviceName', azureADDeviceId: 'azureADDeviceId' },
-        queryKey: `PSITSocDevices-${tenant}`,
-        data: {
-          Endpoint: 'deviceManagement/managedDevices',
-          manualPagination: true,
-          $select: 'id,deviceName,userPrincipalName,azureADDeviceId',
-          $count: true,
-          $orderby: 'deviceName',
-          $top: 999,
+          `${option.DeviceName} — ${option.ManagedBy}${
+            option.UserPrincipalName ? ` (${option.UserPrincipalName})` : ''
+          }`,
+        valueField: 'DeviceName',
+        addedField: {
+          intuneId: 'IntuneId',
+          azureADDeviceId: 'AzureADDeviceId',
+          managedBy: 'ManagedBy',
         },
+        queryKey: `PSITSocDevices-${tenant}`,
+        data: {},
       }}
       {...other}
     />

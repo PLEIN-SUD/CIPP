@@ -44,8 +44,8 @@ const Page = () => {
   const rotatedUtc = secretRequest.data?.RotatedUtc ?? rotate.data?.RotatedUtc
 
   const origin = typeof window === 'undefined' ? '' : window.location.origin
-  const url = secret ? `${origin}/api/PSITSocWebhook?secret=${secret}` : ''
-  const masked = secret ? `${origin}/api/PSITSocWebhook?secret=${'•'.repeat(16)}` : ''
+  const url = secret ? `${origin}/api/PublicPSITSocWebhook?secret=${secret}` : ''
+  const masked = secret ? `${origin}/api/PublicPSITSocWebhook?secret=${'•'.repeat(16)}` : ''
 
   return (
     <>

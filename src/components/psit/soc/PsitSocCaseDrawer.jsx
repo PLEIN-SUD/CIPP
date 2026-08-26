@@ -72,8 +72,15 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
       entities.appDisplayName = values.app.addedFields?.appDisplayName ?? values.app.label
     }
     if (kinds.includes('device') && values.device?.value) {
-      entities.deviceId = values.device.value
-      entities.deviceName = values.device.addedFields?.deviceDisplayName ?? values.device.label
+      // The selector's value is the device name since the merged list took over: an MDE-only
+      // machine has no Intune id to be worth being keyed by. Each world's identifier travels
+      // when it exists; a typed name carries none, and the case is then a work record.
+      entities.deviceName = values.device.value
+      if (values.device.addedFields?.intuneId) entities.deviceId = values.device.addedFields.intuneId
+      if (values.device.addedFields?.azureADDeviceId) {
+        entities.azureADDeviceId = values.device.addedFields.azureADDeviceId
+      }
+      if (values.device.addedFields?.managedBy) entities.managedBy = values.device.addedFields.managedBy
     }
     if (kinds.includes('mail') && values.networkMessageId) {
       entities.networkMessageId = values.networkMessageId.trim()

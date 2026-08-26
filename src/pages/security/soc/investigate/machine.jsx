@@ -12,20 +12,27 @@ const Page = () => (
   <PsitSocInvestigatePage
     title="Investigation machine"
     intro="Choisir la machine à examiner. Son état de protection et sa dernière remontée s’affichent sans créer de cas."
-    hasTarget={(query) => Boolean(query.tenantFilter && query.deviceId)}
+    hasTarget={(query) => Boolean(query.tenantFilter && query.deviceName)}
     buildQuery={(q) => {
-      if (!q?.tenantFilter || !q?.deviceId) return null
+      if (!q?.tenantFilter || !q?.deviceName) return null
       return {
-        entities: { deviceId: q.deviceId, deviceName: q.deviceDisplayName },
+        entities: {
+          deviceName: q.deviceName,
+          deviceId: q.intuneId,
+          azureADDeviceId: q.azureADDeviceId,
+          managedBy: q.managedBy,
+        },
         params: {
           tenantFilter: q.tenantFilter,
-          deviceId: q.deviceId,
-          ...(q.deviceDisplayName ? { deviceDisplayName: q.deviceDisplayName } : {}),
+          deviceName: q.deviceName,
+          ...(q.intuneId ? { intuneId: q.intuneId } : {}),
+          ...(q.azureADDeviceId ? { azureADDeviceId: q.azureADDeviceId } : {}),
+          ...(q.managedBy ? { managedBy: q.managedBy } : {}),
         },
       }
     }}
     pickerFields={(formControl) => (
-      <PsitSocDeviceSelector formControl={formControl} name="deviceId" label="Machine" />
+      <PsitSocDeviceSelector formControl={formControl} name="deviceName" label="Machine (saisir un nom si elle n'est dans aucune liste)" />
     )}
     renderPanel={(pseudoCase) => <PsitSocDeviceContext socCase={pseudoCase} />}
     buildCase={(query) => ({
@@ -33,12 +40,17 @@ const Page = () => (
       // Type 9 is the catalogue's unmitigated-endpoint-threat entry, the closest to a machine
       // worth a case. Corrected on the case if it came in another way.
       TypeId: 9,
-      Title: `Machine : ${query.deviceDisplayName || query.deviceId}`,
-      Entities: { deviceId: query.deviceId, deviceName: query.deviceDisplayName },
-      ExternalRef: `INV:DEV:${query.tenantFilter}:${query.deviceId}`,
+      Title: `Machine : ${query.deviceName}`,
+      Entities: {
+        deviceName: query.deviceName,
+        deviceId: query.intuneId,
+        azureADDeviceId: query.azureADDeviceId,
+        managedBy: query.managedBy,
+      },
+      ExternalRef: `INV:DEV:${query.tenantFilter}:${query.deviceName}`,
       LogAction: {
         Action: 'investigation-import',
-        Detail: `Cas ouvert depuis l'investigation de la machine ${query.deviceDisplayName || query.deviceId}.`,
+        Detail: `Cas ouvert depuis l'investigation de la machine ${query.deviceName}.`,
       },
     })}
   />

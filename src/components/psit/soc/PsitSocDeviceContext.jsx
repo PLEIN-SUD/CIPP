@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
+import { psitSocAge } from '../../../utils/psit-soc-queue'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { PropertyList } from '../../property-list'
 import { PropertyListItem } from '../../property-list-item'
@@ -45,6 +46,11 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
   const defenderState = Array.isArray(defenderRequest.data)
     ? defenderRequest.data[0]?.windowsProtectionState
     : defenderRequest.data?.windowsProtectionState
+
+  // A raw timestamp does not answer the first question asked of a machine under suspicion: is it
+  // still reporting. Twelve days of silence is a finding, and "2026-08-13T04:12:00Z" is not.
+  const syncAge = psitSocAge(device?.lastSyncDateTime)
+  const syncStale = Boolean(syncAge && syncAge.minutes > 7 * 24 * 60)
 
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const runAction = (payload, logAction) => {
@@ -106,6 +112,15 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                     label={protectionStale ? 'protection en défaut' : 'protection à jour'}
                   />
                 )}
+                <Chip
+                  size="small"
+                  color={syncStale ? 'warning' : 'default'}
+                  label={
+                    syncAge
+                      ? `vue il y a ${syncAge.label}`
+                      : 'dernière remontée inconnue'
+                  }
+                />
               </Stack>
 
               <PropertyList>
@@ -120,6 +135,20 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                 <PropertyListItem
                   label="Dernière synchronisation"
                   value={device.lastSyncDateTime || 'inconnue'}
+                />
+                <PropertyListItem
+                  label="Chiffrement"
+                  value={
+                    device.isEncrypted === true
+                      ? 'activé'
+                      : device.isEncrypted === false
+                        ? 'désactivé'
+                        : 'non renseigné'
+                  }
+                />
+                <PropertyListItem
+                  label="Propriété"
+                  value={device.managedDeviceOwnerType || 'non renseignée'}
                 />
                 <PropertyListItem
                   label="Identifiant Entra"

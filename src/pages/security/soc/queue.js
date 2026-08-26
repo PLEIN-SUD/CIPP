@@ -13,7 +13,7 @@ import {
   psitSocQueueSummary,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
-import { PlayArrow, Done, Block, GppGood, LockOpen } from '@mui/icons-material'
+import { PlayArrow, Done, Block, GppGood, LockOpen, SwapHoriz } from '@mui/icons-material'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
 import tabOptions from './tabOptions.json'
@@ -47,7 +47,19 @@ const Page = () => {
     () => (Array.isArray(casesRequest.data?.Results) ? casesRequest.data.Results : []),
     [casesRequest.data]
   )
-  const rows = useMemo(() => psitSocQueueOrder(cases), [cases])
+  // The derived readings are baked onto the rows rather than computed in a column accessor. It
+  // is the pattern the rest of the portal uses, and it costs nothing to gain search, sort and
+  // export on them: an analyst can look for "Voyage impossible" instead of remembering it is 2.
+  const rows = useMemo(
+    () =>
+      psitSocQueueOrder(cases).map((row) => ({
+        ...row,
+        TypeLabel: psitSocTypeLabel(row?.TypeId),
+        Guide: psitSocGuideProgress(row)?.label ?? '',
+        Age: psitSocAge(row?.CreatedUtc)?.label ?? '',
+      })),
+    [cases]
+  )
   const summary = useMemo(() => psitSocQueueSummary(cases), [cases])
 
   const actions = [
@@ -67,8 +79,26 @@ const Page = () => {
         CaseId: 'CaseId',
         tenantFilter: 'Tenant',
         Status: '!investigating',
+        // The server assigns the case to the caller. A name sent from here could be anyone's.
+        TakeOwnership: '!true',
       },
       confirmText: 'Prendre ce cas et le passer en investigation ?',
+      relatedQueryKeys: [queryKey],
+    },
+    {
+      label: 'Réattribuer',
+      type: 'POST',
+      icon: <SwapHoriz />,
+      url: '/api/PSITExecSocCase',
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      fields: [
+        {
+          type: 'textField',
+          name: 'AssignedTo',
+          label: 'Analyste (vide pour rendre le cas à la file)',
+        },
+      ],
+      confirmText: 'Réattribuer ce cas ?',
       relatedQueryKeys: [queryKey],
     },
     {
@@ -165,6 +195,7 @@ const Page = () => {
       'TypeId',
       'Severity',
       'Status',
+      'AssignedTo',
       'Title',
       'ExternalRef',
       'TicketRef',
@@ -178,29 +209,16 @@ const Page = () => {
     actions: actions,
   }
 
-  const columns = [
-    { id: 'Severity', header: 'Criticité', accessorKey: 'Severity' },
-    { id: 'Status', header: 'Statut', accessorKey: 'Status' },
-    { id: 'Tenant', header: 'Client', accessorKey: 'Tenant' },
-    {
-      id: 'TypeLabel',
-      header: 'Type',
-      // The number alone asked the analyst to know a catalogue of nineteen entries by heart.
-      accessorFn: (row) => psitSocTypeLabel(row?.TypeId),
-    },
-    { id: 'Title', header: 'Titre', accessorKey: 'Title' },
-    {
-      id: 'Guide',
-      header: 'Guide',
-      // Where he left off, so returning to a case does not start with rereading it.
-      accessorFn: (row) => psitSocGuideProgress(row)?.label ?? '',
-    },
-    {
-      id: 'Age',
-      header: 'Âge',
-      accessorFn: (row) => psitSocAge(row?.CreatedUtc)?.label ?? '',
-    },
-    { id: 'ExternalRef', header: 'Ticket', accessorKey: 'ExternalRef' },
+  const simpleColumns = [
+    'Severity',
+    'Status',
+    'AssignedTo',
+    'Tenant',
+    'TypeLabel',
+    'Title',
+    'Guide',
+    'Age',
+    'ExternalRef',
   ]
 
   const filterList = [
@@ -262,7 +280,7 @@ const Page = () => {
             cardButton={<PsitSocCaseDrawer relatedQueryKeys={[queryKey]} />}
             actions={actions}
             offCanvas={offCanvas}
-            columns={columns}
+            simpleColumns={simpleColumns}
             filters={filterList}
             simple={false}
           />

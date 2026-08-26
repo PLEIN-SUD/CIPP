@@ -112,3 +112,20 @@ describe('queue order', () => {
     expect(ordered).toHaveLength(2)
   })
 })
+
+describe('the readings baked onto a row', () => {
+  // The table body does not render cells under jsdom in this repository, so no page test can
+  // assert a column's content. These are the values the columns display, checked where they are
+  // produced: the reading is covered even though the cell is not.
+  it('gives a row its type in words, its guide progress and its age', () => {
+    const row = {
+      TypeId: 2,
+      GuideProgress: { sessions: { State: 'done' } },
+      CreatedUtc: '2026-08-25T07:00:00Z',
+    }
+
+    expect(psitSocTypeLabel(row.TypeId)).toMatch(/Voyage impossible/)
+    expect(psitSocGuideProgress(row).label).toBe('1/5')
+    expect(psitSocAge(row.CreatedUtc, NOW).label).toBe('5 h')
+  })
+})

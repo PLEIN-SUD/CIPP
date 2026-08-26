@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Alert, Chip, Container, Stack, Typography } from '@mui/material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
-import { TabbedLayout } from '../../../layouts/TabbedLayout.jsx'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippDataTable } from '../../../components/CippTable/CippDataTable.js'
 import { ApiGetCall } from '../../../api/ApiCall'
@@ -16,7 +15,7 @@ import {
 import { PlayArrow, Done, Block, GppGood, LockOpen, SwapHoriz } from '@mui/icons-material'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
-import tabOptions from './tabOptions.json'
+import { PsitSocImportDrawer } from '../../../components/psit/soc/PsitSocImportDrawer'
 
 /**
  * The SOC triage queue: one row per case, whatever the source (external SOC notification typed
@@ -277,7 +276,13 @@ const Page = () => {
             title="Triage SOC"
             data={failed ? [] : rows}
             isFetching={casesRequest.isFetching && !failed}
-            cardButton={<PsitSocCaseDrawer relatedQueryKeys={[queryKey]} />}
+            cardButton={
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <PsitSocCaseDrawer relatedQueryKeys={[queryKey]} />
+                <PsitSocImportDrawer source="xdr" relatedQueryKeys={[queryKey]} />
+                <PsitSocImportDrawer source="mdo" relatedQueryKeys={[queryKey]} />
+              </Stack>
+            }
             actions={actions}
             offCanvas={offCanvas}
             simpleColumns={simpleColumns}
@@ -290,10 +295,6 @@ const Page = () => {
   )
 }
 
-Page.getLayout = (page) => (
-  <DashboardLayout>
-    <TabbedLayout tabOptions={tabOptions}>{page}</TabbedLayout>
-  </DashboardLayout>
-)
+Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>
 
 export default Page

@@ -1,5 +1,6 @@
 import React from 'react'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../test-utils'
 import Page from '../../src/pages/security/soc/case'
 import { ApiGetCall } from '../../src/api/ApiCall'
@@ -63,5 +64,36 @@ describe('SOC case view', () => {
     renderWithProviders(<Page />)
 
     expect(screen.getByText('Cas clos')).toBeInTheDocument()
+  })
+})
+
+describe('SOC case view, tabs', () => {
+  // The same three tabs as the BEC screen, in the same order: one mental model for both
+  // investigation views. Sixteen stacked panels is the layout the user rejected on BEC.
+  it('opens on the summary, with the journal beside the record', () => {
+    wire(socCase({}))
+    renderWithProviders(<Page />)
+
+    expect(screen.getByRole('tab', { name: 'Synthèse' })).toBeInTheDocument()
+    expect(screen.getByText('Journal des actions')).toBeInTheDocument()
+    // The guide belongs to the investigation tab, not the summary.
+    expect(screen.queryByText('Guide d’investigation')).not.toBeInTheDocument()
+  })
+
+  it('keeps the next step visible whatever the tab', async () => {
+    wire(socCase({ Status: 'new' }))
+    renderWithProviders(<Page />)
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Décision' }))
+    expect(screen.getByText('Prendre le cas en charge')).toBeInTheDocument()
+    expect(screen.getByText('Qualification')).toBeInTheDocument()
+  })
+
+  it('puts the guide and the evidence under Investigation', async () => {
+    wire(socCase({}))
+    renderWithProviders(<Page />)
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Investigation' }))
+    expect(screen.getByText('Guide d’investigation')).toBeInTheDocument()
   })
 })

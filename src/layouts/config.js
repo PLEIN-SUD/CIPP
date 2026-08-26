@@ -37,58 +37,24 @@ export const nativeMenuItems = [
     permissions: ['Security.Incident.*'],
     items: [
       {
-        title: 'Triage',
+        title: 'File d’attente',
+        path: '/security/soc/queue',
         permissions: ['Security.Incident.*'],
-        items: [
-          {
-            title: 'File d’attente',
-            path: '/security/soc/queue',
-            permissions: ['Security.Incident.*'],
-          },
-          {
-            title: 'Adoption incidents Defender',
-            path: '/security/soc/adopt-defender',
-            permissions: ['Security.Incident.*'],
-          },
-          {
-            title: 'Adoption alertes MDO',
-            path: '/security/soc/adopt-mdo',
-            permissions: ['Security.Incident.*'],
-          },
-        ],
       },
       {
-        title: 'Investigation',
+        title: 'Investigation BEC',
+        path: '/security/soc/bec',
         permissions: ['Identity.User.*'],
-        items: [
-          {
-            title: 'BEC',
-            path: '/security/soc/bec',
-            permissions: ['Identity.User.*'],
-          },
-        ],
       },
       {
-        title: 'Supervision',
+        title: 'Santé du parc',
+        path: '/security/soc/fleet',
         permissions: ['Endpoint.MEM.*'],
-        items: [
-          {
-            title: 'Santé du parc',
-            path: '/security/soc/fleet',
-            permissions: ['Endpoint.MEM.*'],
-          },
-        ],
       },
       {
-        title: 'Configuration',
+        title: 'Ingestion',
+        path: '/security/soc/ingestion',
         permissions: ['Security.Incident.ReadWrite'],
-        items: [
-          {
-            title: 'Ingestion',
-            path: '/security/soc/ingestion',
-            permissions: ['Security.Incident.ReadWrite'],
-          },
-        ],
       },
     ],
   },

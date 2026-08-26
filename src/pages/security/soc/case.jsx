@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import {
@@ -11,6 +12,8 @@ import {
   Skeleton,
   Stack,
   SvgIcon,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material'
 import { Grid } from '@mui/system'
@@ -57,6 +60,10 @@ const Page = () => {
   const socCase = Array.isArray(caseRequest.data) ? caseRequest.data[0] : caseRequest.data
 
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
+  // The same three tabs as the BEC screen, in the same order, so the two investigation views
+  // share one mental model: the situation, then the evidence and the gestures, then the decision.
+  // The next-step line stays above all three.
+  const [tab, setTab] = useState('summary')
   // Read once, above everything else: the status, the guide and the verdict already said where
   // the case stood, but only to someone willing to read three panels and put them together.
   const nextStep = psitSocNextStep(socCase)
@@ -132,56 +139,80 @@ const Page = () => {
           )}
 
           {socCase && (
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Stack spacing={2}>
-                  <Card variant="outlined">
-                    <CardHeader title="Cas" subheader={socCase.CaseId} />
-                    <CardContent>
-                      <PropertyList>
-                        <PropertyListItem label="Tenant" value={socCase.Tenant} />
-                        <PropertyListItem
-                          label="Type"
-                          value={
-                            catalogueEntry
-                              ? `${socCase.TypeId} - ${catalogueEntry.label}`
-                              : String(socCase.TypeId ?? 'inconnu')
-                          }
-                        />
-                        <PropertyListItem
-                          label="Source"
-                          value={PSIT_SOC_SOURCES[socCase.Source] ?? socCase.Source}
-                        />
-                        <PropertyListItem
-                          label="Référence externe"
-                          value={socCase.ExternalRef || 'aucune'}
-                        />
-                        <PropertyListItem
-                          label="Référence ticket"
-                          value={socCase.TicketRef || 'aucune'}
-                        />
-                        <PropertyListItem
-                          label="Entités"
-                          value={JSON.stringify(socCase.Entities ?? {})}
-                        />
-                        <PropertyListItem
-                          label="Créé"
-                          value={`${socCase.CreatedUtc} par ${socCase.CreatedBy}`}
-                        />
-                        <PropertyListItem
-                          label="Mis à jour"
-                          value={`${socCase.UpdatedUtc} par ${socCase.UpdatedBy}`}
-                        />
-                        {socCase.ClosedUtc && (
-                          <PropertyListItem
-                            label="Clos"
-                            value={`${socCase.ClosedUtc} par ${socCase.ClosedBy}`}
-                          />
-                        )}
-                      </PropertyList>
-                    </CardContent>
-                  </Card>
+            <>
+              <Tabs
+                value={tab}
+                onChange={(event, value) => setTab(value)}
+                variant="scrollable"
+                allowScrollButtonsMobile
+              >
+                <Tab value="summary" label="Synthèse" />
+                <Tab value="investigation" label="Investigation" />
+                <Tab value="decision" label="Décision" />
+              </Tabs>
 
+              {tab === 'summary' && (
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 7 }}>
+                    <Card variant="outlined">
+                      <CardHeader title="Cas" subheader={socCase.CaseId} />
+                      <CardContent>
+                        <PropertyList>
+                          <PropertyListItem label="Tenant" value={socCase.Tenant} />
+                          <PropertyListItem
+                            label="Type"
+                            value={
+                              catalogueEntry
+                                ? `${socCase.TypeId} - ${catalogueEntry.label}`
+                                : String(socCase.TypeId ?? 'inconnu')
+                            }
+                          />
+                          <PropertyListItem
+                            label="Source"
+                            value={PSIT_SOC_SOURCES[socCase.Source] ?? socCase.Source}
+                          />
+                          <PropertyListItem
+                            label="Pris par"
+                            value={socCase.AssignedTo || 'personne'}
+                          />
+                          <PropertyListItem
+                            label="Référence externe"
+                            value={socCase.ExternalRef || 'aucune'}
+                          />
+                          <PropertyListItem
+                            label="Référence ticket"
+                            value={socCase.TicketRef || 'aucune'}
+                          />
+                          <PropertyListItem
+                            label="Entités"
+                            value={JSON.stringify(socCase.Entities ?? {})}
+                          />
+                          <PropertyListItem
+                            label="Créé"
+                            value={`${socCase.CreatedUtc} par ${socCase.CreatedBy}`}
+                          />
+                          <PropertyListItem
+                            label="Mis à jour"
+                            value={`${socCase.UpdatedUtc} par ${socCase.UpdatedBy}`}
+                          />
+                          {socCase.ClosedUtc && (
+                            <PropertyListItem
+                              label="Clos"
+                              value={`${socCase.ClosedUtc} par ${socCase.ClosedBy}`}
+                            />
+                          )}
+                        </PropertyList>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 5 }}>
+                    <PsitSocActionLog socCase={socCase} queryKey={queryKey} />
+                  </Grid>
+                </Grid>
+              )}
+
+              {tab === 'investigation' && (
+                <Stack spacing={2}>
                   <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} evidence={evidence} />
                   {(socCase.Entities?.upn || socCase.Entities?.userId) && (
                     <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
@@ -195,14 +226,13 @@ const Page = () => {
                   {socCase.Entities?.appId && (
                     <PsitSocAppContext socCase={socCase} queryKey={queryKey} />
                   )}
-                  <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
                 </Stack>
-              </Grid>
+              )}
 
-              <Grid size={{ xs: 12, md: 4 }}>
-                <PsitSocActionLog socCase={socCase} queryKey={queryKey} />
-              </Grid>
-            </Grid>
+              {tab === 'decision' && (
+                <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
+              )}
+            </>
           )}
         </Stack>
       </Container>

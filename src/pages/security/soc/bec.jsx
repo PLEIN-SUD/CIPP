@@ -27,6 +27,7 @@ import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPa
 import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
 import { PsitBecIdentityPanel } from '../../../components/psit/soc/PsitBecIdentityPanel'
 import { PsitBecCollectionProgress } from '../../../components/psit/soc/PsitBecCollectionProgress'
+import { PsitBecOpenCaseButton } from '../../../components/psit/soc/PsitBecOpenCaseButton'
 import { useSettings } from '../../../hooks/use-settings'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
@@ -209,14 +210,23 @@ const Page = () => {
                 </>
               )}
               {tab === 'decision' && (
-                <PsitBecDecisionPanel
+                <>
+                  <PsitBecOpenCaseButton
+                    userData={userData}
+                    becData={becData}
+                    tenantFilter={tenantFilter}
+                    triage={triage}
+                    caseId={caseId}
+                  />
+                  <PsitBecDecisionPanel
                   userData={userData}
                   becData={becData}
                   tenantFilter={tenantFilter}
                   triage={triage}
                   onRestart={restartCollection}
                   showTriage={false}
-                />
+                  />
+                </>
               )}
             </>
           )}

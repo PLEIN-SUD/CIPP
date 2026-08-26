@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, Chip, Divider, Stack, Typography } from '@mui/material'
+import { Alert, Card, CardContent, CardHeader, Chip, Divider, Stack, Typography } from '@mui/material'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
 import { psitSocAge } from '../../../utils/psit-soc-queue'
@@ -19,25 +19,34 @@ import { psitSocAge } from '../../../utils/psit-soc-queue'
  * guessed field name printed four rows saying "méthode", which is how this was found.
  */
 const METHOD_KINDS = {
-  phoneAuthenticationMethod: { label: 'Téléphone', detail: (m) => m.phoneNumber },
-  emailAuthenticationMethod: { label: 'Adresse de secours', detail: (m) => m.emailAddress },
-  fido2AuthenticationMethod: { label: 'Clé FIDO2', detail: (m) => m.model ?? m.displayName },
+  phoneAuthenticationMethod: { label: 'Téléphone', detail: (m) => m.phoneNumber, mfa: true },
+  emailAuthenticationMethod: {
+    label: 'Adresse de secours',
+    detail: (m) => m.emailAddress,
+    // SSPR only: it resets the password, it never satisfies an MFA prompt.
+    mfa: false,
+  },
+  fido2AuthenticationMethod: { label: 'Clé FIDO2', detail: (m) => m.model ?? m.displayName, mfa: true },
   microsoftAuthenticatorAuthenticationMethod: {
     label: 'Microsoft Authenticator',
     detail: (m) => m.displayName ?? m.deviceTag,
+    mfa: true,
   },
   windowsHelloForBusinessAuthenticationMethod: {
     label: 'Windows Hello',
     detail: (m) => m.displayName,
+    mfa: true,
   },
-  softwareOathAuthenticationMethod: { label: 'Application OTP', detail: () => null },
+  softwareOathAuthenticationMethod: { label: 'Application OTP', detail: () => null, mfa: true },
   temporaryAccessPassAuthenticationMethod: {
     label: 'Pass d’accès temporaire',
     detail: (m) => (m.isUsable ? 'utilisable' : 'expiré'),
+    mfa: true,
   },
   passwordlessMicrosoftAuthenticatorAuthenticationMethod: {
     label: 'Authenticator sans mot de passe',
     detail: (m) => m.displayName,
+    mfa: true,
   },
 }
 
@@ -45,11 +54,12 @@ const readMethod = (method) => {
   const type = String(method?.['@odata.type'] ?? '').replace('#microsoft.graph.', '')
   const kind = METHOD_KINDS[type]
   if (!kind) {
-    // Named rather than hidden: an unknown method is still a second factor on the account, and
-    // the raw type is what lets us add it here.
-    return { label: type || 'méthode inconnue', detail: null }
+    // Named rather than hidden: an unknown method is still a method on the account, and the raw
+    // type is what lets us add it here. Counted as MFA-capable by prudence: claiming a factor is
+    // absent because we do not know it is the worse mistake.
+    return { label: type || 'méthode inconnue', detail: null, mfa: true }
   }
-  return { label: kind.label, detail: kind.detail(method) ?? null }
+  return { label: kind.label, detail: kind.detail(method) ?? null, mfa: kind.mfa }
 }
 
 export const PsitBecIdentityPanel = ({ userData, becData }) => {
@@ -91,20 +101,43 @@ export const PsitBecIdentityPanel = ({ userData, becData }) => {
         />
         <CardContent>
           {methods.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              Aucune méthode remontée par la collecte.
-            </Typography>
+            <Alert severity="error">
+              Aucun second facteur enregistré d’après la collecte : ce compte ne tient que par son
+              mot de passe. C’est à la fois un facteur de risque et une information pour la
+              remédiation.
+            </Alert>
           ) : (
-            <Stack spacing={1}>
-              {methods.map((method, index) => {
-                const read = readMethod(method)
-                return (
-                  <Typography key={method?.id ?? index} variant="body2">
-                    {read.label}
-                    {read.detail ? ` · ${read.detail}` : ''}
-                  </Typography>
-                )
-              })}
+            <Stack spacing={1.5}>
+              {!methods.map(readMethod).some((read) => read.mfa) && (
+                <Alert severity="error">
+                  Aucune des méthodes enregistrées n’est utilisable comme second facteur : une
+                  adresse de secours ne sert qu’à réinitialiser le mot de passe. Ce compte ne
+                  tient que par son mot de passe.
+                </Alert>
+              )}
+              <Stack spacing={1}>
+                {methods.map((method, index) => {
+                  const read = readMethod(method)
+                  return (
+                    <Stack
+                      key={method?.id ?? index}
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
+                      <Typography variant="body2">
+                        {read.label}
+                        {read.detail ? ` · ${read.detail}` : ''}
+                      </Typography>
+                      {!read.mfa && (
+                        <Chip size="small" variant="outlined" label="réinitialisation seulement" />
+                      )}
+                    </Stack>
+                  )
+                })}
+              </Stack>
             </Stack>
           )}
         </CardContent>

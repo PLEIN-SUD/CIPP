@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import Link from 'next/link'
 import {
@@ -8,6 +9,8 @@ import {
   Chip,
   Container,
   Stack,
+  Tab,
+  Tabs,
   SvgIcon,
   Typography,
 } from '@mui/material'
@@ -20,6 +23,7 @@ import { CippFormTenantSelector } from '../../../components/CippComponents/CippF
 import { CippFormUserSelector } from '../../../components/CippComponents/CippFormUserSelector'
 import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPanel'
 import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
+import { PsitBecIdentityPanel } from '../../../components/psit/soc/PsitBecIdentityPanel'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
 
@@ -93,6 +97,9 @@ const PsitBecTargetPicker = () => {
 const Page = () => {
   const router = useRouter()
   const { userId, tenantFilter, caseId } = router.query
+  // Three tabs rather than one column: the decision, the person, the evidence. Stacked, the
+  // analyst scrolled past the reading to reach what it was based on, and back up to act on it.
+  const [tab, setTab] = useState('decision')
 
   const userRequest = ApiGetCall({
     url: `/api/ListUsers?UserId=${userId}&tenantFilter=${tenantFilter}`,
@@ -162,16 +169,30 @@ const Page = () => {
             <PsitBecTargetPicker />
           ) : (
             <>
-              <PsitBecDecisionPanel
-                userData={userData}
-                becData={becData}
-                tenantFilter={tenantFilter}
-                triage={triage}
-                onRestart={restartCollection}
-              />
-              {/* The material the decision rests on, below the decision: the checks are the
-                  evidence, and evidence comes after the reading of it. */}
-              <PsitBecCheckList becData={becData} />
+              <Tabs
+                value={tab}
+                onChange={(event, value) => setTab(value)}
+                variant="scrollable"
+                allowScrollButtonsMobile
+              >
+                <Tab value="decision" label="Décision" />
+                <Tab value="identity" label="Titulaire" />
+                <Tab value="checks" label="Contrôles" />
+              </Tabs>
+
+              {tab === 'decision' && (
+                <PsitBecDecisionPanel
+                  userData={userData}
+                  becData={becData}
+                  tenantFilter={tenantFilter}
+                  triage={triage}
+                  onRestart={restartCollection}
+                />
+              )}
+              {tab === 'identity' && (
+                <PsitBecIdentityPanel userData={userData} becData={becData} />
+              )}
+              {tab === 'checks' && <PsitBecCheckList becData={becData} />}
             </>
           )}
 

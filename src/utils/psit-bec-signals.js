@@ -897,7 +897,9 @@ export const buildVerdict = (signals = [], triage = []) => {
     label: 'Aucun signal retenu',
     colour: '#22543D',
     detail: toQualify.length
-      ? `${cardinal(toQualify.length, 'signal')} relevé a été qualifié attendu par l'analyste.`
+      ? `${cardinal(toQualify.length, 'signal')} ${agree(toQualify.length, 'signal', 'relevé')} ${
+          toQualify.length > 1 ? 'ont été' : 'a été'
+        } ${agree(toQualify.length, 'signal', 'qualifié', 'attendu')} par l'analyste.`
       : 'Aucun signal établi ni à qualifier sur la fenêtre analysée.',
     openQuestions: [],
     established: [],

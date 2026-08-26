@@ -1,5 +1,6 @@
 import React from 'react'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../test-utils'
 import Page from '../../src/pages/security/soc/bec'
 import { ApiGetCall } from '../../src/api/ApiCall'
@@ -110,5 +111,27 @@ describe('SOC BEC investigation page', () => {
       'href',
       '/identity/administration/users/user/bec?userId=user-guid'
     )
+  })
+})
+
+describe('SOC BEC investigation, tabs', () => {
+  it('opens on the decision, with the evidence one tab away rather than below it', () => {
+    routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
+    wireApi()
+    renderWithProviders(<Page />)
+
+    expect(screen.getByRole('tab', { name: 'Décision' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Titulaire' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Contrôles' })).toBeInTheDocument()
+  })
+
+  it('shows the account holder tab only when asked for it', async () => {
+    routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
+    wireApi()
+    renderWithProviders(<Page />)
+
+    expect(screen.queryByText('Seconds facteurs')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: 'Titulaire' }))
+    expect(screen.getByText('Seconds facteurs')).toBeInTheDocument()
   })
 })

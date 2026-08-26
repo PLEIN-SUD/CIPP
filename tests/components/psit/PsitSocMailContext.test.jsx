@@ -202,3 +202,16 @@ describe('PsitSocMailContext', () => {
     expect(screen.getByRole('button', { name: /réversible/ })).toBeInTheDocument()
   })
 })
+
+describe('outside a case', () => {
+  // Every action journals onto its case. Without one, the gesture would run and the trace would
+  // fail: the panel therefore shows its evidence and keeps its actions for the case view.
+  it('shows the evidence but keeps the purge for a case', () => {
+    renderWithProviders(
+      <PsitSocMailContext socCase={{ Tenant: 'contoso.test', Entities: socCase.Entities }} queryKey="k" />
+    )
+
+    expect(screen.getByRole('button', { name: /réversible/ })).toBeDisabled()
+    expect(screen.getByText(/les actions s’exécutent depuis un cas/)).toBeInTheDocument()
+  })
+})

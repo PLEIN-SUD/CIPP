@@ -68,6 +68,9 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
     [signInsRequest.data, usageLocation]
   )
 
+  // No case, no journal to receive a gesture: the panel then shows and never acts.
+  const caseless = !socCase?.CaseId
+
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const runAction = (payload, logAction) => {
     action.mutate(
@@ -208,11 +211,17 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
             <Typography variant="subtitle2" gutterBottom>
               Actions graduées
             </Typography>
+            {caseless && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+                geste laisse sa trace au journal.
+              </Typography>
+            )}
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Button
                 size="small"
                 variant="outlined"
-                disabled={!effectiveUserId || action.isPending}
+                disabled={caseless || !effectiveUserId || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/ExecRevokeSessions', data: { id: effectiveUserId, Username: upn } },
@@ -225,7 +234,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
               <Button
                 size="small"
                 variant="outlined"
-                disabled={!effectiveUserId || action.isPending}
+                disabled={caseless || !effectiveUserId || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/ExecResetPass', data: { ID: effectiveUserId, displayName: upn, MustChange: true } },
@@ -239,7 +248,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
                 size="small"
                 variant="outlined"
                 color="error"
-                disabled={!effectiveUserId || action.isPending}
+                disabled={caseless || !effectiveUserId || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/ExecDisableUser', data: { ID: effectiveUserId, Enable: false } },
@@ -259,7 +268,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
               size="small"
               variant="text"
               sx={{ mt: 1 }}
-              disabled={!effectiveUserId}
+              disabled={caseless || !effectiveUserId}
               component={Link}
               href={`/security/soc/bec?userId=${effectiveUserId}&tenantFilter=${tenant}&caseId=${socCase?.CaseId}`}
             >

@@ -52,6 +52,9 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
   // of what its consents allow, not as the last one an analyst happened to look at.
   const scopes = readAppScopes(appGrants.map((grant) => grant?.Scope).join(' '))
 
+  // No case, no journal to receive a gesture: the panel then shows and never acts.
+  const caseless = !socCase?.CaseId
+
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const revoke = () => {
     action.mutate(
@@ -159,11 +162,17 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
             <Typography variant="subtitle2" gutterBottom>
               Action
             </Typography>
+            {caseless && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+                geste laisse sa trace au journal.
+              </Typography>
+            )}
             <Button
               size="small"
               variant="outlined"
               color="error"
-              disabled={action.isPending}
+              disabled={caseless || action.isPending}
               onClick={revoke}
             >
               Révoquer le consentement

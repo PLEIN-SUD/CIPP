@@ -42,9 +42,30 @@ export const nativeMenuItems = [
         permissions: ['Security.Incident.*'],
       },
       {
-        title: 'Investigation BEC',
-        path: '/security/soc/bec',
-        permissions: ['Identity.User.*'],
+        title: 'Investigation',
+        permissions: ['Security.Incident.*'],
+        items: [
+          {
+            title: 'BEC (utilisateur)',
+            path: '/security/soc/bec',
+            permissions: ['Identity.User.*'],
+          },
+          {
+            title: 'Application',
+            path: '/security/soc/investigate/app',
+            permissions: ['Tenant.Application.*'],
+          },
+          {
+            title: 'Machine',
+            path: '/security/soc/investigate/machine',
+            permissions: ['Endpoint.MEM.*'],
+          },
+          {
+            title: 'Message',
+            path: '/security/soc/investigate/message',
+            permissions: ['Security.Incident.*'],
+          },
+        ],
       },
       {
         title: 'Santé du parc',

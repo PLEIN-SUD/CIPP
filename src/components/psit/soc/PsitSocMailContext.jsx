@@ -69,6 +69,9 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
   // both keep it: the API refuses cleanly if the licence is genuinely missing.
   const purgeUnlicensed = purgeCapability?.State === 'unlicensed'
 
+  // No case, no journal to receive a gesture: the panel then shows and never acts.
+  const caseless = !socCase?.CaseId
+
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
 
   const runPurge = () => {
@@ -229,9 +232,17 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
             conclure.
           </Alert>
 
+          {caseless && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+            geste laisse sa trace au journal.
+          </Typography>
+          )}
+
           <TextField
             size="small"
             fullWidth
+            disabled={caseless}
             label="Destinataires à purger (vide = tous)"
             value={recipients}
             onChange={(event) => setRecipients(event.target.value)}
@@ -251,7 +262,7 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
                   size="small"
                   variant="outlined"
                   color="error"
-                  disabled={action.isPending}
+                  disabled={caseless || action.isPending}
                   onClick={runPurge}
                 >
                   Supprimer le message (réversible)

@@ -52,6 +52,9 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
   const syncAge = psitSocAge(device?.lastSyncDateTime)
   const syncStale = Boolean(syncAge && syncAge.minutes > 7 * 24 * 60)
 
+  // No case, no journal to receive a gesture: the panel then shows and never acts.
+  const caseless = !socCase?.CaseId
+
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const runAction = (payload, logAction) => {
     action.mutate(
@@ -170,11 +173,17 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
             <Typography variant="subtitle2" gutterBottom>
               Actions graduées
             </Typography>
+            {caseless && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+                geste laisse sa trace au journal.
+              </Typography>
+            )}
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Button
                 size="small"
                 variant="outlined"
-                disabled={!device?.id || action.isPending}
+                disabled={caseless || !device?.id || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/ExecDeviceAction', data: { GUID: device.id, Action: 'windowsDefenderScan', quickScan: false } },
@@ -187,7 +196,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
               <Button
                 size="small"
                 variant="outlined"
-                disabled={!device?.id || action.isPending}
+                disabled={caseless || !device?.id || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/ExecDeviceAction', data: { GUID: device.id, Action: 'rebootNow' } },
@@ -201,7 +210,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                 size="small"
                 variant="outlined"
                 color="error"
-                disabled={!device?.azureADDeviceId || action.isPending}
+                disabled={caseless || !device?.azureADDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: device.azureADDeviceId, Comment: `Cas ${socCase.CaseId}` } },
@@ -214,7 +223,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
               <Button
                 size="small"
                 variant="text"
-                disabled={!device?.azureADDeviceId || action.isPending}
+                disabled={caseless || !device?.azureADDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
                     { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: device.azureADDeviceId, Release: true, Comment: `Cas ${socCase.CaseId}` } },

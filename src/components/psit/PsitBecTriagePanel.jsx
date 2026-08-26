@@ -109,7 +109,7 @@ export const PsitBecTriagePanel = ({
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const noise = signals.filter((signal) => signal.class === SIGNAL_CLASS.NOISE)
 
-  const pending = toQualify.filter((signal) => {
+  const pending = toQualify.concat(noise).filter((signal) => {
     const verdict = shownVerdict(signal.id)
     if (!verdict) return false
     const saved = storedById.get(signal.id)
@@ -269,6 +269,86 @@ export const PsitBecTriagePanel = ({
                 })}
               </Stack>
 
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Aucun signal ne requiert de qualification humaine sur cette fenêtre.
+            </Typography>
+          )}
+
+          {noise.length > 0 && (
+            <Accordion variant="outlined" sx={{ mt: 2 }}>
+              <AccordionSummary
+                expandIcon={
+                  <SvgIcon fontSize="small">
+                    <ExpandMoreIcon />
+                  </SvgIcon>
+                }
+              >
+                <Typography variant="subtitle2">
+                  Écarté par les règles ({noise.length}) : à retenir si l’analyste n’est pas
+                  d’accord
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={1}>
+                  {noise.map((signal) => {
+                    const saved = storedById.get(signal.id)
+                    return (
+                      <Stack key={signal.id} spacing={1} sx={{ pb: 1 }}>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {signal.title}
+                          </Typography>
+                          {saved?.Verdict === 'unexpected' && (
+                            <Chip size="small" color="error" label="retenu par l’analyste" />
+                          )}
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {signal.detail}
+                        </Typography>
+                        <ToggleButtonGroup
+                          exclusive
+                          size="small"
+                          value={shownVerdict(signal.id)}
+                          onChange={(event, value) => {
+                            if (!value) return
+                            setEdits((previous) => ({
+                              ...previous,
+                              [signal.id]: { ...previous[signal.id], verdict: value },
+                            }))
+                          }}
+                        >
+                          {VERDICT_CHOICES.map((choice) => (
+                            <ToggleButton key={choice.value} value={choice.value}>
+                              {choice.label}
+                            </ToggleButton>
+                          ))}
+                        </ToggleButtonGroup>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          label="Justification (pourquoi le retenir malgré la règle)"
+                          value={shownJustification(signal.id)}
+                          onChange={(event) =>
+                            setEdits((previous) => ({
+                              ...previous,
+                              [signal.id]: {
+                                ...previous[signal.id],
+                                justification: event.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Stack>
+                    )
+                  })}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+          )}
+
+          {(toQualify.length > 0 || noise.length > 0) && (
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
@@ -293,41 +373,6 @@ export const PsitBecTriagePanel = ({
                   </Typography>
                 )}
               </Stack>
-            </>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Aucun signal ne requiert de qualification humaine sur cette fenêtre.
-            </Typography>
-          )}
-
-          {noise.length > 0 && (
-            <Accordion variant="outlined" sx={{ mt: 2 }}>
-              <AccordionSummary
-                expandIcon={
-                  <SvgIcon fontSize="small">
-                    <ExpandMoreIcon />
-                  </SvgIcon>
-                }
-              >
-                <Typography variant="subtitle2">
-                  Écarté du verdict ({noise.length}) : conservé pour audit
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack spacing={1}>
-                  {noise.map((signal) => (
-                    <Stack key={signal.id}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {signal.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {signal.detail}
-                      </Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
           )}
         </CardContent>
       </Collapse>

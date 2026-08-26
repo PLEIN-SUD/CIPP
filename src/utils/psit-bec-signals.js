@@ -699,7 +699,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       )} externe, ${counted(
         mail.counts.systemGenerated,
         'message'
-      )} généré par le service et ${counted(
+      )} ${agree(mail.counts.systemGenerated, 'message', 'généré')} par le service et ${counted(
         mail.counts.internal,
         'destinataire'
       )} interne, exclus du calcul.`,
@@ -775,7 +775,7 @@ export const buildSignals = (becData = {}, userData = {}) => {
       id: 'mail-service-generated',
       class: SIGNAL_CLASS.NOISE,
       category: 'mail',
-      title: `${counted(serviceMail, 'message')} généré par le service, exclu de l'analyse`,
+      title: `${counted(serviceMail, 'message')} ${agree(serviceMail, 'message', 'généré')} par le service, ${agree(serviceMail, 'message', 'exclu')} de l'analyse`,
       detail:
         "Réponses automatiques et avis de non-remise soumis par l'infrastructure Exchange Online : leur adresse source est une adresse Microsoft, sans rapport avec la localisation du titulaire du compte.",
       evidence: ['SentMessageAnalysis'],

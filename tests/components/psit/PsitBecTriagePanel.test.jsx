@@ -75,8 +75,10 @@ describe('PsitBecTriagePanel', () => {
       screen.getByText(/1 connexion réussie depuis 203\.0\.113\.42/)
     ).toBeInTheDocument()
     expect(screen.getByText(/derrière un VPN ou un roaming/)).toBeInTheDocument()
-    // The spray attempts are present but filed as noise, not as a question.
-    expect(screen.getByText(/Écarté du verdict/)).toBeInTheDocument()
+    // The spray attempts are present but filed as discarded, not as a question. The section
+    // says what an analyst can do about it: the rules read the data, he knows the client.
+    expect(screen.getByText(/Écarté par les règles/)).toBeInTheDocument()
+    expect(screen.getByText(/à retenir si l’analyste n’est pas d’accord/)).toBeInTheDocument()
   })
 
   it('offers the three answers and only enables saving once one is picked', async () => {
@@ -158,5 +160,36 @@ describe('PsitBecTriagePanel', () => {
       />
     )
     expect(container).toBeEmptyDOMElement()
+  })
+})
+
+describe('overruling the rules', () => {
+  // The engine has counted a reinstated signal since the previous change, but the control to
+  // reinstate one was never added: the row was read-only. A verdict nobody can express is a
+  // verdict that does not exist.
+  it('offers the same three answers on a discarded signal', async () => {
+    renderWithProviders(
+      <PsitBecTriagePanel userData={userData} becData={becData} tenantFilter="contoso.test" />
+    )
+
+    const discarded = screen.getByText(/Écarté par les règles/)
+    expect(discarded).toBeInTheDocument()
+    await userEvent.click(discarded)
+
+    // The justification asked for is the one that matters here: why keep it despite the rule.
+    // One field per discarded signal, so the fixture legitimately yields several.
+    expect(
+      (await screen.findAllByLabelText(/pourquoi le retenir malgré la règle/)).length
+    ).toBeGreaterThan(0)
+  })
+
+  it('keeps a way to save an answer given only on a discarded signal', () => {
+    // The save button used to live inside the "awaiting qualification" block, so a case with
+    // nothing to qualify offered the control and no way to record the answer.
+    renderWithProviders(
+      <PsitBecTriagePanel userData={userData} becData={becData} tenantFilter="contoso.test" />
+    )
+
+    expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument()
   })
 })

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
+import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
 import {
   Alert,
   Button,
@@ -76,6 +77,7 @@ const Page = () => {
       <CippHead title={`Cas SOC ${caseId ?? ''}`} />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
+          <PsitSocWipBanner />
           <Stack direction="row" spacing={2} alignItems="center">
             <Button
               component={Link}

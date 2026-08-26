@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
+import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
@@ -51,6 +52,7 @@ const Page = () => {
       <CippHead title="Ingestion des alertes" />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
+          <PsitSocWipBanner />
           <Typography variant="h5">Ingestion des alertes</Typography>
 
           <Card variant="outlined">

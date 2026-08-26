@@ -15,6 +15,7 @@ import {
 import { Grid } from '@mui/system'
 import { Sync } from '@mui/icons-material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
+import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippDataTable } from '../../../components/CippTable/CippDataTable.js'
@@ -115,6 +116,7 @@ const Page = () => {
       <CippHead title="Santé du parc" />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
+          <PsitSocWipBanner />
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography variant="h5">Santé du parc</Typography>
             <Button

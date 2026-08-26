@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Alert, Chip, Container, Stack, Typography } from '@mui/material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
+import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippDataTable } from '../../../components/CippTable/CippDataTable.js'
 import { ApiGetCall } from '../../../api/ApiCall'
@@ -246,6 +247,7 @@ const Page = () => {
       <CippHead title="Triage SOC" />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
+          <PsitSocWipBanner />
           {failed && (
             <Alert severity="error">
               La file n’a pas pu être lue. Rien n’est affiché plutôt qu’une liste vide, qui se

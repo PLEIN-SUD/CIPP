@@ -142,3 +142,27 @@ describe('SOC BEC investigation, tabs', () => {
     expect(screen.queryByText('Seconds facteurs')).not.toBeInTheDocument()
   })
 })
+
+describe('SOC BEC investigation, while the collection runs', () => {
+  // Launching an investigation used to land on the tabs over empty panels for the one to two
+  // minutes the collection takes, which read as a broken page.
+  it('stands the progress panel in for the tabs while the run is in flight', () => {
+    routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
+    wireApi({ bec: { Waiting: true } })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText('Collecte en cours')).toBeInTheDocument()
+    // What a collection is, named: the analyst reads what is being gathered, not a bare spinner.
+    expect(screen.getByText(/en train d’être rassemblé/)).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Contrôles' })).not.toBeInTheDocument()
+  })
+
+  it('hands over to the tabs once the collection lands', () => {
+    routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
+    wireApi()
+    renderWithProviders(<Page />)
+
+    expect(screen.queryByText('Collecte en cours')).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Contrôles' })).toBeInTheDocument()
+  })
+})

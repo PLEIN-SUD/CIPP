@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import { ArrowBack, Launch } from '@mui/icons-material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
+import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
@@ -25,6 +26,8 @@ import { PsitBecTriagePanel } from '../../../components/psit/PsitBecTriagePanel'
 import { PsitBecDecisionPanel } from '../../../components/psit/PsitBecDecisionPanel'
 import { PsitBecCheckList } from '../../../components/psit/soc/PsitBecCheckList'
 import { PsitBecIdentityPanel } from '../../../components/psit/soc/PsitBecIdentityPanel'
+import { PsitBecCollectionProgress } from '../../../components/psit/soc/PsitBecCollectionProgress'
+import { useSettings } from '../../../hooks/use-settings'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
 
@@ -48,6 +51,7 @@ import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
  */
 const PsitBecTargetPicker = () => {
   const router = useRouter()
+  const currentTenant = useSettings().currentTenant
   const formControl = useForm({ mode: 'onChange' })
   const tenant = useWatch({ control: formControl.control, name: 'tenantFilter' })
   const user = useWatch({ control: formControl.control, name: 'user' })
@@ -68,7 +72,11 @@ const PsitBecTargetPicker = () => {
             name="tenantFilter"
             label="Client"
             allTenants={false}
+            type="single"
             multiple={false}
+            // The tenant picked in the top bar is almost always the one being investigated, so it
+            // arrives preselected. AllTenants preselects nothing: it is not an answer here.
+            preselectedEnabled={Boolean(currentTenant && currentTenant !== 'AllTenants')}
           />
           <CippFormUserSelector
             formControl={formControl}
@@ -131,6 +139,7 @@ const Page = () => {
       <CippHead title={`Investigation BEC ${userData?.userPrincipalName ?? ''}`} />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
+          <PsitSocWipBanner />
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
             <Button
               component={Link}
@@ -169,6 +178,8 @@ const Page = () => {
 
           {!userId || !tenantFilter ? (
             <PsitBecTargetPicker />
+          ) : isFetching || !becData || becData.Waiting ? (
+            <PsitBecCollectionProgress userPrincipalName={userData?.userPrincipalName} />
           ) : (
             <>
               <Tabs
@@ -210,16 +221,6 @@ const Page = () => {
             </>
           )}
 
-          {userId && tenantFilter && isFetching && !becData && (
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  Collecte en cours : les onze contrôles s’exécutent en tâche de fond, la page se
-                  met à jour toute seule.
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
         </Stack>
       </Container>
     </>

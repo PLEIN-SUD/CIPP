@@ -55,7 +55,7 @@ const wire = (data, extra = {}) =>
 
 describe('SOC triage queue', () => {
   it('says what is waiting before any row is read', () => {
-    wire({ Results: cases })
+    wire(cases)
     renderWithProviders(<Page />)
 
     expect(screen.getByText('1 à prendre')).toBeInTheDocument()
@@ -63,14 +63,14 @@ describe('SOC triage queue', () => {
   })
 
   it('names the untouched case that has waited longest, rather than counting them', () => {
-    wire({ Results: cases })
+    wire(cases)
     renderWithProviders(<Page />)
 
     expect(screen.getByText(/PSIT-SOC-OLD, il y a 5 h/)).toBeInTheDocument()
   })
 
   it('says so when nothing is waiting, instead of leaving the line blank', () => {
-    wire({ Results: [{ ...cases[1] }] })
+    wire([{ ...cases[1] }])
     renderWithProviders(<Page />)
 
     expect(screen.getByText(/Aucun cas en attente de prise en charge/)).toBeInTheDocument()

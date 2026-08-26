@@ -42,9 +42,12 @@ const Page = () => {
     queryKey,
     waiting: Boolean(tenant),
   })
+  // The endpoint answers with a bare array on success and { Results: '<message>' } on failure.
+  // The first version of this read data.Results for both, which emptied the queue while the
+  // cases sat untouched in the store: zero counts, no columns, no error - the worst kind of wrong.
   const failed = typeof casesRequest.data?.Results === 'string' || casesRequest.isError
   const cases = useMemo(
-    () => (Array.isArray(casesRequest.data?.Results) ? casesRequest.data.Results : []),
+    () => (Array.isArray(casesRequest.data) ? casesRequest.data : []),
     [casesRequest.data]
   )
   // The derived readings are baked onto the rows rather than computed in a column accessor. It

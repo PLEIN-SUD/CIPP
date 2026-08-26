@@ -76,7 +76,7 @@ describe('SOC BEC investigation page', () => {
     expect(screen.getByRole('button', { name: /Lancer l’investigation/ })).toBeDisabled()
   })
 
-  it('reaches the decision panel from its tab, with the qualification alongside the evidence', async () => {
+  it('shows the qualification once, with the evidence, and not again on the decision tab', async () => {
     routerQuery.current = { userId: 'user-guid', tenantFilter: 'contoso.test' }
     wireApi()
     renderWithProviders(<Page />)
@@ -85,6 +85,11 @@ describe('SOC BEC investigation page', () => {
     // Qualification moved to the evidence tab, where the judgement is actually made.
     await userEvent.click(screen.getByRole('tab', { name: 'Contrôles' }))
     expect(screen.getByText(/Qualification avant diffusion/)).toBeInTheDocument()
+
+    // The decision tab carries the verdict, the report and the case record. Repeating the
+    // qualification there put the same panel on two tabs.
+    await userEvent.click(screen.getByRole('tab', { name: 'Décision' }))
+    expect(screen.queryByText(/Qualification avant diffusion/)).not.toBeInTheDocument()
   })
 
   it('offers the way back to the case it was opened from', () => {

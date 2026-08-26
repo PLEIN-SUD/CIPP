@@ -34,6 +34,10 @@ export const PsitBecDecisionPanel = ({
   tenantFilter,
   triage = [],
   onRestart,
+  // The original BEC page keeps the qualification inline, where it has always been. The SOC case
+  // view puts it in the tab that holds the evidence, since that is where the judgement is made,
+  // and would otherwise show the same panel twice.
+  showTriage = true,
 }) => {
   if (!userData || !becData || becData.Waiting) return null
 
@@ -104,13 +108,15 @@ export const PsitBecDecisionPanel = ({
         </Stack>
       </CippButtonCard>
 
-      <PsitBecTriagePanel
-        userData={userData}
-        becData={becData}
-        tenantFilter={tenantFilter}
-        collapsible
-        defaultExpanded={qualifying}
-      />
+      {showTriage && (
+        <PsitBecTriagePanel
+          userData={userData}
+          becData={becData}
+          tenantFilter={tenantFilter}
+          collapsible
+          defaultExpanded={qualifying}
+        />
+      )}
 
       {/* Le ticket Autotask est toujours saisissable ; les champs propres à l'incident
           n'apparaissent qu'une fois une compromission retenue. */}

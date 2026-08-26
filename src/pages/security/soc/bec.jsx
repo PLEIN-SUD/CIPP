@@ -204,6 +204,7 @@ const Page = () => {
                   tenantFilter={tenantFilter}
                   triage={triage}
                   onRestart={restartCollection}
+                  showTriage={false}
                 />
               )}
             </>

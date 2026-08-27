@@ -81,7 +81,8 @@ describe('SOC BEC investigation page', () => {
     wireApi()
     renderWithProviders(<Page />)
 
-    expect(screen.getByText('Anna T')).toBeInTheDocument()
+    // The name now appears in the header and on the native info card: both are the same person.
+    expect(screen.getAllByText('Anna T').length).toBeGreaterThan(0)
     // Qualification moved to the evidence tab, where the judgement is actually made.
     await userEvent.click(screen.getByRole('tab', { name: 'Contrôles' }))
     expect(screen.getByText(/Qualification avant diffusion/)).toBeInTheDocument()

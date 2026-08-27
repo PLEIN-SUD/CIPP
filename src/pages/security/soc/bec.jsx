@@ -195,7 +195,7 @@ const Page = () => {
               </Tabs>
 
               {tab === 'identity' && (
-                <PsitBecIdentityPanel userData={userData} becData={becData} />
+                <PsitBecIdentityPanel userData={userData} becData={becData} tenant={tenantFilter} />
               )}
               {tab === 'checks' && (
                 <>

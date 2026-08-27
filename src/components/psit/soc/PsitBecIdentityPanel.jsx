@@ -1,22 +1,19 @@
-import { Alert, Card, CardContent, CardHeader, Chip, Divider, Stack, Typography } from '@mui/material'
+import { Alert, Stack, Typography } from '@mui/material'
+import { Grid } from '@mui/system'
+import { CippUserInfoCard } from '../../CippCards/CippUserInfoCard'
+import { CippBannerListCard } from '../../CippCards/CippBannerListCard'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
 import { psitSocAge } from '../../../utils/psit-soc-queue'
 
 /**
- * Who the account holder is, and how they normally connect.
+ * Who the account holder is, and how they normally connect - drawn with the same components as
+ * the native user page, because the analyst already knows how to read that screen and a second
+ * visual language for the same person was a cost without a benefit.
  *
- * Facts an analyst needs early and that were only reachable by leaving for the upstream user page:
- * the declared usage country to compare sign-in countries against, the second factors registered,
- * and where the recent connections came from.
- *
- * No new call: the collection already gathers the sign-ins and the authentication methods, and the
- * page already holds the directory record. This reads them.
- */
-/**
- * The registered methods come from Graph as authenticationMethods, distinguished by their
- * @odata.type, with the useful detail under a different property for each kind. Reading them by a
- * guessed field name printed four rows saying "méthode", which is how this was found.
+ * What stays PSIT here is the reading, not the drawing: which methods count as second factors,
+ * which connections sit outside the declared country, and the refusal to let an empty collection
+ * pass for a healthy one.
  */
 const METHOD_KINDS = {
   phoneAuthenticationMethod: { label: 'Téléphone', detail: (m) => m.phoneNumber, mfa: true },
@@ -54,52 +51,52 @@ const readMethod = (method) => {
   const type = String(method?.['@odata.type'] ?? '').replace('#microsoft.graph.', '')
   const kind = METHOD_KINDS[type]
   if (!kind) {
-    // Named rather than hidden: an unknown method is still a method on the account, and the raw
-    // type is what lets us add it here. Counted as MFA-capable by prudence: claiming a factor is
-    // absent because we do not know it is the worse mistake.
+    // Named rather than hidden, and counted as MFA-capable by prudence: claiming a factor absent
+    // because we do not know it is the worse mistake.
     return { label: type || 'méthode inconnue', detail: null, mfa: true }
   }
   return { label: kind.label, detail: kind.detail(method) ?? null, mfa: kind.mfa }
 }
 
-export const PsitBecIdentityPanel = ({ userData, becData }) => {
+export const PsitBecIdentityPanel = ({ userData, becData, tenant }) => {
   const methods = psitAsArray(becData?.MFADevices)
+  const readings = methods.map(readMethod)
   const signInGroups = groupSignInsByIp(psitAsArray(becData?.SuspectUserSignIns)).slice(0, 6)
+  const usage = userData?.usageLocation
 
-  const facts = [
-    ['Fonction', userData?.jobTitle],
-    ['Service', userData?.department],
-    ['Pays d’usage déclaré', userData?.usageLocation],
-    ['Compte actif', userData?.accountEnabled === false ? 'non' : 'oui'],
-    ['Créé le', userData?.createdDateTime],
-  ].filter(([, value]) => value)
+  const methodItems = readings.map((read, index) => ({
+    id: methods[index]?.id ?? `method-${index}`,
+    text: `${read.label}${read.detail ? ` · ${read.detail}` : ''}`,
+    subtext: read.mfa
+      ? 'Peut répondre à une demande MFA.'
+      : 'Sert uniquement à réinitialiser le mot de passe : ne protège pas la connexion.',
+    statusColor: read.mfa ? 'success.main' : 'warning.main',
+    statusText: read.mfa ? 'second facteur' : 'réinitialisation seulement',
+  }))
+
+  const signInItems = signInGroups.map((group) => {
+    const foreign = usage && group.country && group.country !== usage
+    const age = psitSocAge(group.lastSeenUtc)
+    const apps = [...(group.apps ?? [])].slice(0, 3).join(', ')
+    return {
+      id: group.ip,
+      text: `${group.ip} — ${group.country || 'pays inconnu'}`,
+      subtext: `${group.successes} réussie(s), ${group.failures} échec(s)${
+        age ? ` · vue il y a ${age.label}` : ''
+      }${apps ? ` · ${apps}` : ''}`,
+      statusColor: foreign ? 'error.main' : group.country && usage ? 'success.main' : 'warning.main',
+      statusText: foreign ? 'hors zone déclarée' : group.country && usage ? 'zone déclarée' : 'zone inconnue',
+    }
+  })
 
   return (
-    <Stack spacing={2}>
-      <Card variant="outlined">
-        <CardHeader title="Titulaire" subheader={userData?.userPrincipalName} />
-        <CardContent>
-          <Stack spacing={0.5}>
-            {facts.map(([label, value]) => (
-              <Typography key={label} variant="body2">
-                <strong>{label} :</strong> {value}
-              </Typography>
-            ))}
-            {facts.length === 0 && (
-              <Typography variant="body2" color="text.secondary">
-                Aucune information d’annuaire chargée pour ce compte.
-              </Typography>
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Card variant="outlined">
-        <CardHeader
-          title="Seconds facteurs"
-          subheader="Une méthode ajoutée le jour de l’alerte est un signal, pas un détail"
-        />
-        <CardContent>
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12, lg: 4 }}>
+        <CippUserInfoCard user={userData} tenant={tenant} isFetching={!userData} />
+      </Grid>
+      <Grid size={{ xs: 12, lg: 8 }}>
+        <Stack spacing={3}>
+          <Typography variant="h6">Seconds facteurs</Typography>
           {methods.length === 0 ? (
             <Alert severity="error">
               Aucun second facteur enregistré d’après la collecte : ce compte ne tient que par son
@@ -107,86 +104,31 @@ export const PsitBecIdentityPanel = ({ userData, becData }) => {
               remédiation.
             </Alert>
           ) : (
-            <Stack spacing={1.5}>
-              {!methods.map(readMethod).some((read) => read.mfa) && (
+            <>
+              {!readings.some((read) => read.mfa) && (
                 <Alert severity="error">
                   Aucune des méthodes enregistrées n’est utilisable comme second facteur : une
                   adresse de secours ne sert qu’à réinitialiser le mot de passe. Ce compte ne
                   tient que par son mot de passe.
                 </Alert>
               )}
-              <Stack spacing={1}>
-                {methods.map((method, index) => {
-                  const read = readMethod(method)
-                  return (
-                    <Stack
-                      key={method?.id ?? index}
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      flexWrap="wrap"
-                      useFlexGap
-                    >
-                      <Typography variant="body2">
-                        {read.label}
-                        {read.detail ? ` · ${read.detail}` : ''}
-                      </Typography>
-                      {!read.mfa && (
-                        <Chip size="small" variant="outlined" label="réinitialisation seulement" />
-                      )}
-                    </Stack>
-                  )
-                })}
-              </Stack>
-            </Stack>
+              <CippBannerListCard items={methodItems} isCollapsible={false} />
+            </>
           )}
-        </CardContent>
-      </Card>
 
-      <Card variant="outlined">
-        <CardHeader
-          title="Connexions récentes"
-          subheader="Groupées par adresse, la plus active en premier"
-        />
-        <CardContent>
-          {signInGroups.length === 0 ? (
+          <Typography variant="h6">
+            Connexions récentes
+            {usage ? ` — pays d’usage déclaré : ${usage}` : ''}
+          </Typography>
+          {signInItems.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               Aucune connexion récupérée sur la fenêtre analysée.
             </Typography>
           ) : (
-            <Stack spacing={1} divider={<Divider flexItem />}>
-              {signInGroups.map((group) => {
-                const foreign =
-                  userData?.usageLocation &&
-                  group.country &&
-                  group.country !== userData.usageLocation
-                const age = psitSocAge(group.lastSeenUtc)
-                return (
-                  <Stack
-                    key={group.ip}
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    flexWrap="wrap"
-                    useFlexGap
-                  >
-                    <Typography variant="body2">{group.ip}</Typography>
-                    <Chip
-                      size="small"
-                      color={foreign ? 'warning' : 'default'}
-                      label={group.country || 'pays inconnu'}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      {group.successes} réussie(s), {group.failures} échec(s)
-                      {age ? ` · vue il y a ${age.label}` : ''}
-                    </Typography>
-                  </Stack>
-                )
-              })}
-            </Stack>
+            <CippBannerListCard items={signInItems} isCollapsible={false} />
           )}
-        </CardContent>
-      </Card>
-    </Stack>
+        </Stack>
+      </Grid>
+    </Grid>
   )
 }

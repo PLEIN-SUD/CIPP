@@ -3,6 +3,12 @@ import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../test-utils'
 import { PsitBecIdentityPanel } from '../../../src/components/psit/soc/PsitBecIdentityPanel'
 
+vi.mock('../../../src/api/ApiCall', () => ({
+  ApiGetCall: vi.fn(() => ({ data: undefined, isFetching: false, isSuccess: false })),
+  ApiPostCall: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false })),
+  ApiGetCallWithPagination: vi.fn(() => ({ data: undefined, isFetching: false })),
+}))
+
 // The second-factors card sits under a title that promises factors. What is pinned here is that
 // the promise is honest: no method at all is said loudly, and a method that cannot satisfy an MFA
 // prompt - the recovery address resets a password, nothing more - is not allowed to make a

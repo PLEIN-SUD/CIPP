@@ -1,4 +1,5 @@
 import { ApiGetCall } from '../api/ApiCall'
+import { readConsentAudit } from '../utils/psit-soc-consent'
 
 /**
  * The case's evidence, gathered once for the guide and the panels.
@@ -36,16 +37,26 @@ export const usePsitSocEvidence = (socCase) => {
   })
 
   // --- application ---------------------------------------------------------------------------
-  const grants = ApiGetCall({
-    url: `/api/ListOAuthApps?tenantFilter=${tenant}`,
-    queryKey: `PSITSocOAuth-${tenant}`,
-    waiting: Boolean(tenant && appId),
-  })
   const principal = ApiGetCall({
     url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=servicePrincipals&$filter=appId eq '${appId}'&$select=id,appId,displayName,publisherName,verifiedPublisher,createdDateTime,accountEnabled`,
     queryKey: `PSITSocSp-${tenant}-${appId}`,
     waiting: Boolean(tenant && appId),
   })
+  const principalRow = principal.data?.Results?.[0] ?? principal.data?.[0]
+
+  // The same grant rows the panel reads: two sources for the same fact would drift, and the
+  // guide's one-line answer must never disagree with the detail below it.
+  const grants = ApiGetCall({
+    url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=oauth2PermissionGrants&$filter=clientId eq '${principalRow?.id}'`,
+    queryKey: `PSITSocGrants-${tenant}-${principalRow?.id}`,
+    waiting: Boolean(tenant && principalRow?.id),
+  })
+  const consentAudit = ApiGetCall({
+    url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=auditLogs/directoryAudits&$filter=activityDisplayName eq 'Consent to application'&$top=100`,
+    queryKey: `PSITSocConsentAudit-${tenant}`,
+    waiting: Boolean(tenant && appId),
+  })
+
   // The catalogue ships with CIPP and never changes between two cases: keyed globally so it is
   // fetched once per session rather than once per case.
   const catalogue = ApiGetCall({
@@ -69,9 +80,7 @@ export const usePsitSocEvidence = (socCase) => {
     waiting: Boolean(tenant && deviceData?.id),
   })
 
-  const appGrants = (Array.isArray(grants.data) ? grants.data : []).filter(
-    (grant) => String(grant?.ApplicationID ?? '').toLowerCase() === String(appId ?? '').toLowerCase()
-  )
+  const grantRows = Array.isArray(grants.data?.Results) ? grants.data.Results : []
 
   return {
     user: {
@@ -84,9 +93,15 @@ export const usePsitSocEvidence = (socCase) => {
     },
     app: {
       appId: appId ?? null,
-      scope: grants.isSuccess ? appGrants.map((grant) => grant?.Scope).join(' ') : undefined,
-      principal: principal.data?.Results?.[0] ?? principal.data?.[0],
+      scope: grants.isSuccess ? grantRows.map((row) => row?.scope).join(' ') : undefined,
+      principal: principalRow,
       catalogue: catalogue.isSuccess ? catalogue.data : undefined,
+      consentAudit: consentAudit.isSuccess
+        ? readConsentAudit(
+            Array.isArray(consentAudit.data?.Results) ? consentAudit.data.Results : [],
+            { servicePrincipalId: principalRow?.id, appDisplayName: principalRow?.displayName }
+          )
+        : undefined,
     },
     device: {
       device: deviceData,

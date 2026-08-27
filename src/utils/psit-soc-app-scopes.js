@@ -30,10 +30,16 @@ const PERSISTENCE = { pattern: /\boffline_access\b/i, why: 'jeton de rafraîchis
  *   readOnly: boolean}}
  */
 export const readAppScopes = (scope) => {
-  const granted = String(scope ?? '')
-    .split(/[,\s]+/)
-    .map((entry) => entry.trim())
-    .filter(Boolean)
+  // Deduplicated: several consents repeat openid/profile/email, and 27 chips where 7 scopes
+  // exist buries the one that matters under the wallpaper.
+  const granted = [
+    ...new Set(
+      String(scope ?? '')
+        .split(/[,\s]+/)
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    ),
+  ]
 
   const risky = []
   for (const entry of granted) {

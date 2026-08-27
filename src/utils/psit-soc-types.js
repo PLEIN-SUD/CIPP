@@ -180,7 +180,7 @@ export const PSIT_SOC_TYPES = [
       { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
       { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
       { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
-      { id: 'consent', label: 'Retrouver le consentement dans l’audit : qui, quand, HNO ?' },
+      { id: 'consent', label: 'Retrouver le consentement dans l’audit : qui, quand, HNO ?', evidence: 'app.consent' },
     ],
     fpClues: [
       'Application métier connue de PSIT',
@@ -417,6 +417,7 @@ export const PSIT_SOC_TYPES = [
         id: 'action',
         label:
           'Déterminer l’action réelle dans le journal d’audit Entra : ajout, modification ou consentement. L’alerte ne le dit pas.',
+        evidence: 'app.consent',
       },
       { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
       { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },

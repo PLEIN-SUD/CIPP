@@ -169,3 +169,30 @@ describe('the resolver contract', () => {
     for (const key of referenced) expect(PSIT_SOC_EVIDENCE_KEYS).toContain(key)
   })
 })
+
+describe('consent evidence', () => {
+  // The one guide step that used to send the analyst to the Entra portal.
+  it('names who consented, when, from where, and flags the off-hours instant', () => {
+    const answer = psitSocStepEvidence('app.consent', {
+      app: {
+        consentAudit: [
+          { who: 'p.durand@contoso.test', whenUtc: '2026-08-17T20:10:00Z', ip: '203.0.113.9', offHours: true },
+        ],
+      },
+    })
+    expect(answer.tone).toBe('bad')
+    expect(answer.text).toContain('p.durand@contoso.test')
+    expect(answer.text).toContain('HNO')
+  })
+
+  it('says the audit window is the limit, never that nobody consented', () => {
+    const answer = psitSocStepEvidence('app.consent', { app: { consentAudit: [] } })
+    expect(answer.tone).toBe('unknown')
+    expect(answer.text).toMatch(/30 j/)
+  })
+
+  it('keeps "not loaded" apart from "nothing found"', () => {
+    const answer = psitSocStepEvidence('app.consent', { app: {} })
+    expect(answer.text).toMatch(/non chargé/)
+  })
+})

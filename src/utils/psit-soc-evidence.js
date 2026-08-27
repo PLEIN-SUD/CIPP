@@ -108,6 +108,23 @@ const RESOLVERS = {
   },
 
   /** Who published it, and since when it has been in the tenant. */
+  /** The audit events proving the consent: who, when, and whether that instant was off-hours. */
+  'app.consent': (evidence) => {
+    const events = evidence?.app?.consentAudit
+    if (events === undefined) return unknown('journal d’audit non chargé')
+    if (events.length === 0) {
+      return unknown(
+        'aucun consentement visant cette application dans le journal (rétention ~30 j) : plus ancien, ou hors de portée de l’audit'
+      )
+    }
+    const first = events[0]
+    const hno = first.offHours === true ? ', HNO' : ''
+    return answer(
+      first.offHours === true ? 'bad' : 'good',
+      `consenti par ${first.who} le ${first.whenUtc}${first.ip ? ` depuis ${first.ip}` : ''}${hno}${events.length > 1 ? ` (+${events.length - 1} autre(s))` : ''}`
+    )
+  },
+
   'app.publisher': (evidence) => {
     const principal = evidence?.app?.principal
     if (!principal) return unknown('application non trouvée dans le tenant')

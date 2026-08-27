@@ -22,6 +22,9 @@ import { CippApiResults } from '../../CippComponents/CippApiResults'
 export const PsitSocActionLog = ({ socCase, queryKey }) => {
   const [action, setAction] = useState('')
   const [detail, setDetail] = useState('')
+  // When the gesture actually happened, when that differs from now: a mail sent this morning and
+  // logged after lunch are two facts, and the journal keeps both.
+  const [occurredUtc, setOccurredUtc] = useState('')
 
   const logWrite = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
 
@@ -37,13 +40,18 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
         data: {
           tenantFilter: socCase.Tenant,
           CaseId: socCase.CaseId,
-          LogAction: { Action: action.trim(), Detail: detail.trim() },
+          LogAction: {
+            Action: action.trim(),
+            Detail: detail.trim(),
+            ...(occurredUtc.trim() ? { OccurredUtc: occurredUtc.trim() } : {}),
+          },
         },
       },
       {
         onSuccess: () => {
           setAction('')
           setDetail('')
+          setOccurredUtc('')
         },
       }
     )
@@ -65,6 +73,14 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
             label="Détail (où, sur quoi)"
             value={detail}
             onChange={(event) => setDetail(event.target.value)}
+          />
+          <TextField
+            size="small"
+            fullWidth
+            label="Quand (optionnel, ex. 2026-08-27T09:12)"
+            helperText="L’heure réelle du geste, si elle diffère du moment où il est consigné. Refusée si illisible ou dans le futur."
+            value={occurredUtc}
+            onChange={(event) => setOccurredUtc(event.target.value)}
           />
           <Button
             variant="outlined"
@@ -90,7 +106,9 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
                 {entry.Detail ? `: ${entry.Detail}` : ''}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {entry.Utc} • {entry.Analyst}
+                {entry.OccurredUtc
+                  ? `fait le ${entry.OccurredUtc} • consigné le ${entry.Utc} • ${entry.Analyst}`
+                  : `${entry.Utc} • ${entry.Analyst}`}
               </Typography>
             </Stack>
           ))}

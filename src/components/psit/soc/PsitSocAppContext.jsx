@@ -14,6 +14,7 @@ import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { PropertyList } from '../../property-list'
 import { PropertyListItem } from '../../property-list-item'
 import { readAppScopes } from '../../../utils/psit-soc-app-scopes'
+import { readConsentAudit, readConsentGrants } from '../../../utils/psit-soc-consent'
 
 /**
  * The application side of a case: what an OAuth consent actually granted, and the gesture that
@@ -31,16 +32,6 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
   const tenant = socCase?.Tenant
   const appId = socCase?.Entities?.appId
 
-  const grantsRequest = ApiGetCall({
-    url: `/api/ListOAuthApps?tenantFilter=${tenant}`,
-    queryKey: `PSITSocOAuth-${tenant}`,
-    waiting: Boolean(tenant && appId),
-  })
-  const grants = Array.isArray(grantsRequest.data) ? grantsRequest.data : []
-  const appGrants = grants.filter(
-    (grant) => String(grant?.ApplicationID ?? '').toLowerCase() === String(appId ?? '').toLowerCase()
-  )
-
   const principalRequest = ApiGetCall({
     url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=servicePrincipals&$filter=appId eq '${appId}'&$select=id,appId,displayName,publisherName,verifiedPublisher,createdDateTime,accountEnabled`,
     queryKey: `PSITSocSp-${tenant}-${appId}`,
@@ -48,9 +39,44 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
   })
   const principal = principalRequest.data?.Results?.[0] ?? principalRequest.data?.[0]
 
-  // Every grant of this application, read together: an application is as dangerous as the union
-  // of what its consents allow, not as the last one an analyst happened to look at.
-  const scopes = readAppScopes(appGrants.map((grant) => grant?.Scope).join(' '))
+  // This application's grants, with who each one covers. The upstream OAuth list flattens
+  // consentType and principalId away, which is how this panel used to count consents without
+  // being able to name one.
+  const grantsRequest = ApiGetCall({
+    url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=oauth2PermissionGrants&$filter=clientId eq '${principal?.id}'`,
+    queryKey: `PSITSocGrants-${tenant}-${principal?.id}`,
+    waiting: Boolean(tenant && principal?.id),
+  })
+  const grantRows = Array.isArray(grantsRequest.data?.Results) ? grantsRequest.data.Results : []
+
+  // The people the user consents cover, resolved in one call. Capped at fifteen ids to keep the
+  // filter within bounds; past that the rows keep their ids, which stay searchable.
+  const principalIds = [...new Set(grantRows.map((row) => row?.principalId).filter(Boolean))].slice(0, 15)
+  const usersRequest = ApiGetCall({
+    url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=users&$filter=id in (${principalIds.map((id) => `'${id}'`).join(',')})&$select=id,userPrincipalName,displayName`,
+    queryKey: `PSITSocGrantUsers-${tenant}-${principalIds.join('|')}`,
+    waiting: Boolean(tenant && principalIds.length > 0),
+  })
+  const consents = readConsentGrants(
+    grantRows,
+    Array.isArray(usersRequest.data?.Results) ? usersRequest.data.Results : []
+  )
+
+  // The audit trail that proves the consent: who, from where, when. Entra keeps roughly thirty
+  // days of it, and the section says so rather than letting an empty list read as "nobody did".
+  const auditRequest = ApiGetCall({
+    url: `/api/ListGraphRequest?tenantFilter=${tenant}&Endpoint=auditLogs/directoryAudits&$filter=activityDisplayName eq 'Consent to application'&$top=100`,
+    queryKey: `PSITSocConsentAudit-${tenant}`,
+    waiting: Boolean(tenant && appId),
+  })
+  const auditEvents = readConsentAudit(
+    Array.isArray(auditRequest.data?.Results) ? auditRequest.data.Results : [],
+    { servicePrincipalId: principal?.id, appDisplayName: principal?.displayName }
+  )
+
+  // Every grant read together: an application is as dangerous as the union of what its consents
+  // allow, not as the last one an analyst happened to look at.
+  const scopes = readAppScopes(grantRows.map((row) => row?.scope).join(' '))
 
   // No case, no journal to receive a gesture: the panel then shows and never acts.
   const caseless = !socCase?.CaseId
@@ -63,7 +89,7 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
         data: {
           tenantFilter: tenant,
           AppId: appId,
-          ServicePrincipalId: principal?.id ?? appGrants[0]?.ObjectID,
+          ServicePrincipalId: principal?.id,
         },
       },
       {
@@ -100,7 +126,23 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
 
   return (
     <Card variant="outlined">
-      <CardHeader title="Contexte application" subheader={principal?.displayName ?? appId} />
+      <CardHeader
+        title="Contexte application"
+        subheader={principal?.displayName ?? appId}
+        action={
+          principal?.id ? (
+            <Button
+              size="small"
+              component="a"
+              target="_blank"
+              rel="noreferrer"
+              href={`https://entra.microsoft.com/${tenant}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/${principal.id}/appId/${appId}`}
+            >
+              Ouvrir dans Entra
+            </Button>
+          ) : null
+        }
+      />
       <CardContent>
         <Stack spacing={2}>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -124,15 +166,86 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
               label="Apparue dans le tenant"
               value={principal?.createdDateTime ?? 'inconnue'}
             />
-            <PropertyListItem
-              label="Consentements"
-              value={`${appGrants.length} enregistré(s)`}
-            />
           </PropertyList>
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              Permissions accordées
+              Consentements ({consents.length})
+            </Typography>
+            {consents.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {grantsRequest.isFetched
+                  ? 'Aucun consentement délégué enregistré. Des droits d’application (app-only) restent possibles : vérifier dans Entra.'
+                  : 'Consentements en cours de lecture.'}
+              </Typography>
+            ) : (
+              <Stack spacing={1} divider={<Divider flexItem />}>
+                {consents.map((consent, index) => (
+                  <Stack key={index} spacing={0.5}>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {consent.who}
+                      </Typography>
+                      {consent.kind === 'admin' && (
+                        <Chip size="small" color="warning" label="admin" />
+                      )}
+                    </Stack>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                      {consent.scopes.map((scope) => {
+                        const risky = consent.risky.find((entry) => entry.scope === scope)
+                        return (
+                          <Chip
+                            key={scope}
+                            size="small"
+                            variant="outlined"
+                            color={risky ? 'error' : 'default'}
+                            label={scope}
+                            title={risky?.why}
+                          />
+                        )
+                      })}
+                    </Stack>
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+          </div>
+
+          <div>
+            <Typography variant="subtitle2" gutterBottom>
+              Trace du consentement dans l’audit
+            </Typography>
+            {!auditRequest.isFetched ? (
+              <Typography variant="body2" color="text.secondary">
+                Lecture du journal d’audit en cours.
+              </Typography>
+            ) : auditEvents.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                Aucun événement de consentement visant cette application dans le journal. Entra ne
+                conserve que trente jours d’audit : un consentement plus ancien n’y est plus, ce
+                qui n’est pas la preuve qu’il n’a pas eu lieu.
+              </Typography>
+            ) : (
+              <Stack spacing={0.75}>
+                {auditEvents.map((event, index) => (
+                  <Stack key={index} direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                    <Typography variant="body2">
+                      {event.who} · {event.whenUtc}
+                      {event.ip ? ` · depuis ${event.ip}` : ''}
+                    </Typography>
+                    {event.offHours === true && <Chip size="small" color="error" label="HNO" />}
+                    {event.result && event.result !== 'success' && (
+                      <Chip size="small" color="warning" label={event.result} />
+                    )}
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+          </div>
+
+          <div>
+            <Typography variant="subtitle2" gutterBottom>
+              Permissions uniques ({scopes.granted.length})
             </Typography>
             {scopes.granted.length === 0 ? (
               <Typography variant="body2" color="text.secondary">

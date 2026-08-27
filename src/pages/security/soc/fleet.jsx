@@ -155,6 +155,13 @@ const Page = () => {
             </Alert>
           )}
 
+          {!failed && (metadata?.Warnings ?? []).length > 0 && (
+            <Alert severity="warning">
+              Une des deux sources n’a pas pu être lue — {String(metadata.Warnings[0])}. Les
+              machines gérées par Defender seul peuvent manquer de cette vue.
+            </Alert>
+          )}
+
           {fleetRequest.isFetching && rows.length === 0 && !failed && (
             <Skeleton variant="rounded" height={120} />
           )}
@@ -257,6 +264,8 @@ const Page = () => {
             simpleColumns={[
               'Tenant',
               'DeviceName',
+              'ManagedBy',
+              'RiskScore',
               'ProtectionInDefault',
               'SignatureUpdateOverdue',
               'ManagedDeviceHealthState',

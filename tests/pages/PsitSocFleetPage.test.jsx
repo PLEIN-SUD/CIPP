@@ -192,3 +192,16 @@ describe('fleet health page', () => {
     expect(screen.queryByText('Machines rapportées')).not.toBeInTheDocument()
   })
 })
+
+describe('the Defender side of the fleet', () => {
+  it('names an unreadable Defender source instead of showing a quietly smaller fleet', () => {
+    wire({
+      ...fleet,
+      Metadata: { ...fleet.Metadata, Warnings: ['Defender for Endpoint unreadable: 403 Forbidden'] },
+    })
+    renderWithProviders(<Page />)
+
+    expect(screen.getByText(/Une des deux sources n’a pas pu être lue/)).toBeInTheDocument()
+    expect(screen.getByText(/machines gérées par Defender seul peuvent manquer/)).toBeInTheDocument()
+  })
+})

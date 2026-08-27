@@ -570,6 +570,30 @@ if (!runningAsScript) {
   main()
 }
 
+// The working tree spells the folder Tests/ while the repository and the vitest config expect
+// tests/. Windows hides the difference, git does not, and a test committed under the wrong case
+// runs locally and never in CI. It slipped through four times before this check existed: rules
+// that rely on remembering do not hold, so this one is code.
+function checkIndexCasing() {
+  let indexed
+  try {
+    indexed = execFileSync('git', ['ls-files', '--cached'], { encoding: 'utf8' })
+  } catch {
+    return []
+  }
+  return indexed
+    .split(String.fromCharCode(10))
+    // Tests/Shapes is upstream own layout, shipped capitalised: only what we add under the
+    // capital is ours to catch.
+    .filter((path) => /^Tests\//.test(path) && !/^Tests\/Shapes\//.test(path))
+    .map((path) => ({
+      file: path,
+      line: 0,
+      rule: 'index-casing',
+      why: 'committed under Tests/ (capital T): re-index it under tests/ or it never runs in CI',
+    }))
+}
+
 function main() {
   const args = process.argv.slice(2)
   const skipDivergence = args.includes('--no-divergence')
@@ -582,6 +606,7 @@ function main() {
   const problems = [
     ...checkProse(PROSE_FILES),
     ...checkFixtures(psitFixtureFiles()),
+    ...checkIndexCasing(),
     ...(skipDivergence ? [] : checkDivergence()),
   ]
   report(problems)

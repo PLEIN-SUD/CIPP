@@ -61,7 +61,11 @@ const Page = () => {
         // The emitter's own severity words when the case carries them: that is the vocabulary
         // the analyst reads in the alert mail. Ordering already ran on our P level above.
         Severity: row?.SeverityTag || row?.Severity,
-        TicketAutotask: row?.ExternalRef,
+        // An object when the address travelled with the case, a plain string otherwise: the
+        // formatter shows the number either way, plus the launch icon when there is a door.
+        TicketAutotask: row?.TicketUrl
+          ? { label: row?.ExternalRef, href: row.TicketUrl }
+          : row?.ExternalRef,
         TypeLabel: psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
         Age: psitSocAge(row?.CreatedUtc)?.label ?? '',

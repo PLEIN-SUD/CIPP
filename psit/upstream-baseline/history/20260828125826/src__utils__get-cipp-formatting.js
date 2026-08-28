@@ -15,9 +15,6 @@ import NextLink from 'next/link'
 import { alpha } from '@mui/material/styles'
 import { Box } from '@mui/system'
 import { CippCopyToClipBoard } from '../components/CippComponents/CippCopyToClipboard'
-// PSIT-CUSTOM-BEGIN: icon for the ticket link rendered next to its number.
-import { Launch } from '@mui/icons-material'
-// PSIT-CUSTOM-END
 import { getCippLicenseTranslation } from './get-cipp-license-translation'
 import CippDataTableButton from '../components/CippTable/CippDataTableButton'
 import { LinearProgressWithLabel } from '../components/linearProgressWithLabel'
@@ -122,31 +119,6 @@ export const getCippFormatting = (
     return 'Download Baseline'
   }
 
-  // PSIT-CUSTOM-BEGIN: the ticket number stays the visible text; when the row carries the
-  // ticket's address, a launch icon sits beside it. The generic http branch below would replace
-  // the number with the word "URL", which is the one thing an analyst scans this column for.
-  if (cellName === 'TicketAutotask') {
-    const ticketLabel = data?.label ?? data
-    if (isText) return String(ticketLabel ?? '')
-    return (
-      <>
-        {String(ticketLabel ?? '')}
-        {data?.href ? (
-          <Link
-            href={data.href}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Ouvrir le ticket"
-            style={{ marginLeft: 6, verticalAlign: 'middle' }}
-          >
-            <Launch fontSize="inherit" />
-          </Link>
-        ) : null}
-      </>
-    )
-  }
-  // PSIT-CUSTOM-END
-
   if (cellName === 'Severity' || cellName === 'logsToInclude') {
     if (data == null) {
       return isText ? (
@@ -171,15 +143,6 @@ export const getCippFormatting = (
         debug: 'default',
         medium: 'warning',
         high: 'error',
-        // PSIT-CUSTOM-BEGIN: the external SOC's severity wording, and the internal P levels.
-        'high priority': 'error',
-        'very high priority': 'error',
-        'medium priority': 'warning',
-        p1: 'error',
-        p2: 'warning',
-        p3: 'info',
-        p4: 'default',
-        // PSIT-CUSTOM-END
       }
       const color = severityColor[String(label).toLowerCase()] ?? 'info'
       return (

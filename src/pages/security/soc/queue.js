@@ -210,6 +210,40 @@ const Page = () => {
       relatedQueryKeys: [queryKey],
     },
     {
+      // The other half of the same control: the P level orders the queue, so a case the
+      // emitter left unranked can be ranked by the analyst who read it. The displayed word
+      // stays whatever tag the case carries; an empty field keeps the existing value.
+      label: 'Corriger la sévérité',
+      type: 'POST',
+      icon: <Edit />,
+      url: '/api/PSITExecSocCase',
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      fields: [
+        {
+          type: 'autoComplete',
+          name: 'Severity',
+          label: 'Niveau (P1 = le plus urgent)',
+          multiple: false,
+          creatable: false,
+          options: [
+            { label: 'P1', value: 'P1' },
+            { label: 'P2', value: 'P2' },
+            { label: 'P3', value: 'P3' },
+            { label: 'P4', value: 'P4' },
+          ],
+          validators: { required: 'Le niveau est requis' },
+        },
+        {
+          type: 'textField',
+          name: 'SeverityTag',
+          label: 'Mot affiché (facultatif, ex. High Priority — vide : inchangé)',
+        },
+      ],
+      confirmText:
+        'Corriger la sévérité de ce cas ? Le niveau P ordonne la file ; le mot affiché ne change que si vous en saisissez un.',
+      relatedQueryKeys: [queryKey],
+    },
+    {
       // Server-side the endpoint is SuperAdmin.ReadWrite: anyone else gets a refusal, not a
       // deletion. Closing keeps the journal; this removes it, and is for tests and mistakes.
       label: 'Supprimer le cas (super admin)',

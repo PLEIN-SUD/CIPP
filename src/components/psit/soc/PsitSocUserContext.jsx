@@ -98,7 +98,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
         <CardHeader title="Contexte utilisateur" />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            Ce cas ne cible pas d’utilisateur : renseigner l’UPN sur le cas pour afficher le
+            Ce dossier ne cible pas d’utilisateur : renseigner l’UPN sur le dossier pour afficher le
             contexte identité.
           </Typography>
         </CardContent>
@@ -213,7 +213,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
             </Typography>
             {caseless && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+                Consultation hors dossier : les actions s’exécutent depuis un dossier, pour que chaque
                 geste laisse sa trace au journal.
               </Typography>
             )}

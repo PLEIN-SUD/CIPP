@@ -98,7 +98,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
     <Card variant="outlined">
       <CardHeader
         title="Qualification"
-        subheader="Une décision, écrite sur le cas et répercutée dans Defender quand le cas en vient"
+        subheader="Une décision, écrite sur le dossier et répercutée dans Defender quand le dossier en vient"
       />
       <CardContent>
         <Stack spacing={2}>
@@ -174,7 +174,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
           <CippApiResults apiObject={defenderWrite} />
           {defenderWrite.isError && (
             <Alert severity="warning">
-              La qualification du cas est enregistrée. Seule l’écriture vers Defender a échoué :
+              La qualification du dossier est enregistrée. Seule l’écriture vers Defender a échoué :
               classifier depuis le portail Defender, ou réenregistrer pour réessayer.
             </Alert>
           )}

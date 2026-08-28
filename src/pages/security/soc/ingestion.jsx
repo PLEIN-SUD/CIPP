@@ -96,7 +96,7 @@ const Page = () => {
                 {configured && (
                   <Typography variant="body2" color="text.secondary">
                     Régénérer invalide l’ancien secret immédiatement. L’automatisation qui poste
-                    les cas cesse de fonctionner tant qu’elle n’a pas la nouvelle adresse.
+                    les dossiers cesse de fonctionner tant qu’elle n’a pas la nouvelle adresse.
                   </Typography>
                 )}
 
@@ -141,7 +141,7 @@ const Page = () => {
                   extraits ici. C’est le seul champ nécessaire.
                   <br />
                   <strong>ExternalRef</strong> : le numéro de ticket. C’est la clé de
-                  déduplication : un second envoi portant le même numéro met à jour le cas au lieu
+                  déduplication : un second envoi portant le même numéro met à jour le dossier au lieu
                   d’en ouvrir un autre.
                   <br />
                   <strong>TicketRef</strong> : facultatif, pour une seconde référence quand ce
@@ -156,14 +156,14 @@ const Page = () => {
 
                 <Typography variant="subtitle2">Réponses</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Ingested vrai</strong> : le cas existe, son identifiant est dans la
+                  <strong>Ingested vrai</strong> : le dossier existe, son identifiant est dans la
                   réponse. L’adresse à mettre dans le ticket et dans la notification est{' '}
                   <code>/security/soc/case?caseId=…&amp;tenantFilter=…</code>.
                   <br />
                   <strong>Ingested faux, Reason unknown-tenant</strong> : aucun client Microsoft
-                  géré ne porte ce nom, aucun cas n’est ouvert. C’est la réponse attendue pour un
+                  géré ne porte ce nom, aucun dossier n’est ouvert. C’est la réponse attendue pour un
                   client hébergé ailleurs : ce portail n’a aucun écran capable d’instruire son
-                  alerte, et ouvrir un cas vide à chaque fois apprendrait à l’analyste à ignorer
+                  alerte, et ouvrir un dossier vide à chaque fois apprendrait à l’analyste à ignorer
                   des lignes. Le refus est journalisé avec le nom reçu, pour qu’une faute de frappe
                   sur un client géré se voie au lieu de disparaître.
                   <br />
@@ -172,13 +172,13 @@ const Page = () => {
                 </Typography>
 
                 <Alert severity="info">
-                  Un nom qui correspond à deux clients ne suit pas ce chemin : le cas est bien
+                  Un nom qui correspond à deux clients ne suit pas ce chemin : le dossier est bien
                   créé, sous le tenant <code>unmapped</code>, pour qu’un analyste le réaffecte. Une
                   alerte réelle ne doit pas se perdre parce que le nom était ambigu.
                 </Alert>
 
                 <Alert severity="info">
-                  Un sujet dont le libellé n’est dans aucune table ouvre également un cas, sur le
+                  Un sujet dont le libellé n’est dans aucune table ouvre également un dossier, sur le
                   type « non déterminé ». L’émetteur ajoute des règles sans prévenir : un libellé
                   inconnu est une table à compléter, pas une alerte à jeter.
                 </Alert>

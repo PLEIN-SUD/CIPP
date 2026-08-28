@@ -1164,7 +1164,7 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
               </Typography>
               {missing.length > 0 && (
                 <Typography variant="body2" color="error.main">
-                  Téléchargement bloqué, à compléter dans la fiche de dossier : {missing.join(', ')}
+                  Téléchargement bloqué, à compléter dans la fiche BEC : {missing.join(', ')}
                   . Ces éléments sont ceux que l'article 33.3 du RGPD demande de décrire ; un
                   rapport qui les laisse vides a l'air complet, ce qui est pire que pas de rapport.
                   L'aperçu reste consultable.

@@ -82,8 +82,8 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
         <CardHeader title="Contexte machine" />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            Ce cas ne cible pas de machine : renseigner l’identifiant ou le nom de la machine sur
-            le cas pour afficher le contexte.
+            Ce dossier ne cible pas de machine : renseigner l’identifiant ou le nom de la machine sur
+            le dossier pour afficher le contexte.
           </Typography>
         </CardContent>
       </Card>
@@ -182,7 +182,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
             </Typography>
             {caseless && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+                Consultation hors dossier : les actions s’exécutent depuis un dossier, pour que chaque
                 geste laisse sa trace au journal.
               </Typography>
             )}
@@ -220,7 +220,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                 disabled={caseless || !aadDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Comment: `Cas ${socCase.CaseId}` } },
+                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Comment: `Dossier ${socCase.CaseId}` } },
                     { Action: 'mde-isolate', Detail: `Isolation réseau demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
                   )
                 }
@@ -233,7 +233,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                 disabled={caseless || !aadDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Release: true, Comment: `Cas ${socCase.CaseId}` } },
+                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Release: true, Comment: `Dossier ${socCase.CaseId}` } },
                     { Action: 'mde-unisolate', Detail: `Levée d’isolation demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
                   )
                 }
@@ -244,7 +244,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
             {!device?.azureADDeviceId && device && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 Sans identifiant Entra, la machine ne peut pas être rapprochée de son enregistrement
-                Defender : isoler depuis le portail et consigner l’action sur le cas.
+                Defender : isoler depuis le portail et consigner l’action sur le dossier.
               </Typography>
             )}
             <CippApiResults apiObject={action} />

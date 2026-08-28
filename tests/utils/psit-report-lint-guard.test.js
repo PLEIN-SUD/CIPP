@@ -86,7 +86,7 @@ describe('uncommittedUpstreamFiles', () => {
   })
 
   it('watches every declared upstream file, tests included', () => {
-    expect(PSIT_UPSTREAM_FILES.length).toBe(8)
+    expect(PSIT_UPSTREAM_FILES.length).toBe(9)
     expect(PSIT_UPSTREAM_FILES).toContain('src/components/CippPdf/reportPdfPrimitives.jsx')
     // An upstream TEST double is upstream code too: it went unmarked and undeclared for a while,
     // and the guard could not see it, because it only catches files that carry markers.

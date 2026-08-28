@@ -11,7 +11,7 @@ import { PsitSocAppContext } from '../../../../components/psit/soc/PsitSocAppCon
 const Page = () => (
   <PsitSocInvestigatePage
     title="Investigation application"
-    intro="Choisir l’application à examiner. Les permissions accordées, l’éditeur et la présence au catalogue malveillant s’affichent sans créer de cas."
+    intro="Choisir l’application à examiner. Les permissions accordées, l’éditeur et la présence au catalogue malveillant s’affichent sans créer de dossier."
     hasTarget={(query) => Boolean(query.tenantFilter && query.appId)}
     buildQuery={(q) => {
       if (!q?.tenantFilter || !q?.appId) return null
@@ -38,7 +38,7 @@ const Page = () => (
       ExternalRef: `INV:APP:${query.tenantFilter}:${query.appId}`,
       LogAction: {
         Action: 'investigation-import',
-        Detail: `Cas ouvert depuis l'investigation de l'application ${query.appDisplayName || query.appId}.`,
+        Detail: `Dossier ouvert depuis l'investigation de l'application ${query.appDisplayName || query.appId}.`,
       },
     })}
   />

@@ -99,14 +99,14 @@ describe('PsitBecDecisionPanel', () => {
       />
     )
 
-    expect(screen.getByText('Décision et dossier')).toBeInTheDocument()
+    expect(screen.getByText('Décision et fiche BEC')).toBeInTheDocument()
     // No level while a question is open, and the panel says what that implies.
     expect(screen.getAllByText(/À qualifier/).length).toBeGreaterThan(0)
     expect(screen.getByText(/n'affichent aucun niveau de risque/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Rapport FR/ })).toBeInTheDocument()
     // Both panels are rendered inside it, so the whole decision is in one place.
     expect(screen.getByText('Qualification avant diffusion')).toBeInTheDocument()
-    expect(screen.getByText('Fiche de dossier')).toBeInTheDocument()
+    expect(screen.getByText('Fiche BEC')).toBeInTheDocument()
   })
 
   it('takes the status sentence from the verdict rather than asserting all is well', () => {
@@ -149,7 +149,7 @@ describe('PsitBecDecisionPanel', () => {
     expect(screen.getByText(/Les signaux que la donnée ne peut pas trancher seule/)).toBeVisible()
     expect(screen.getByLabelText('Ticket Autotask')).not.toBeVisible()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Déplier la fiche de dossier' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Déplier la fiche BEC' }))
     expect(screen.getByLabelText('Ticket Autotask')).toBeVisible()
   })
 

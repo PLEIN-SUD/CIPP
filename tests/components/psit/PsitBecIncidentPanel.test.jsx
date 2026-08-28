@@ -68,7 +68,7 @@ describe('PsitBecIncidentPanel', () => {
   it('keeps the business reference editable before any compromise is retained', () => {
     render()
 
-    expect(screen.getByText('Fiche de dossier')).toBeInTheDocument()
+    expect(screen.getByText('Fiche BEC')).toBeInTheDocument()
     expect(screen.getByLabelText('Ticket Autotask')).toBeEnabled()
     // The incident-specific fields stay out of the way until they are warranted, and the panel
     // says so rather than showing empty article 33.3 inputs.
@@ -270,6 +270,8 @@ describe('PsitBecIncidentPanel', () => {
     }))
     render()
 
-    expect(screen.getByText(/does not belong to the set/)).toBeInTheDocument()
+    // The mocked ApiPostCall errors every request at once, so the save panel and the
+    // delete panel both render it: at least one visible occurrence is the contract.
+    expect(screen.getAllByText(/does not belong to the set/).length).toBeGreaterThan(0)
   })
 })

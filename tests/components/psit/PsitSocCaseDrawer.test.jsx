@@ -48,25 +48,25 @@ describe('PsitSocCaseDrawer', () => {
   it('stays closed until the analyst asks for it', () => {
     renderWithProviders(<PsitSocCaseDrawer />)
 
-    expect(screen.getByRole('button', { name: /Nouveau cas/ })).toBeInTheDocument()
-    expect(screen.queryByText('Nouveau cas SOC')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Nouveau dossier/ })).toBeInTheDocument()
+    expect(screen.queryByText('Nouveau dossier SOC')).not.toBeInTheDocument()
   })
 
   it('opens the drawer with the required fields and a disabled submit', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
 
-    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
-    expect(screen.getByText('Nouveau cas SOC')).toBeInTheDocument()
+    expect(screen.getByText('Nouveau dossier SOC')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: /Type d’alerte/ })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: /Titre/ })).toBeInTheDocument()
     // Nothing filled in: creating an empty case must not be possible.
-    expect(screen.getByRole('button', { name: 'Créer le cas' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Créer le dossier' })).toBeDisabled()
   })
 
   it('asks for an application, not an identifier, on a consent case', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     await userEvent.click(await screen.findByText(/Consentement d’application/))
@@ -79,7 +79,7 @@ describe('PsitSocCaseDrawer', () => {
 
   it('asks for a machine on an endpoint case, and for a message id on a mail case', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     await userEvent.click(await screen.findByText(/Infostealer/))
@@ -95,20 +95,20 @@ describe('PsitSocCaseDrawer', () => {
 
   it('asks for no entity at all before a type is chosen', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     expect(screen.queryByRole('combobox', { name: /Application concernée/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /Utilisateur concerné/ })).not.toBeInTheDocument()
   })
 
-  it('proposes the seventeen retained types, never Google Workspace', async () => {
+  it('proposes the nineteen retained types, never Google Workspace', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     const options = await screen.findAllByRole('option')
 
-    expect(options.length).toBe(17)
+    expect(options.length).toBe(19)
     expect(options.some((option) => option.textContent.startsWith('8 - '))).toBe(false)
     expect(options.some((option) => option.textContent.includes('Voyage impossible'))).toBe(true)
   })
@@ -123,7 +123,7 @@ describe('PsitSocCaseDrawer', () => {
     }))
 
     renderWithProviders(<PsitSocCaseDrawer />)
-    await userEvent.click(screen.getByRole('button', { name: /Nouveau cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     // Tenant
     await userEvent.click(screen.getByRole('combobox', { name: /Tenant/ }))
@@ -135,7 +135,7 @@ describe('PsitSocCaseDrawer', () => {
     await userEvent.type(screen.getByRole('textbox', { name: /Titre/ }), 'Voyage impossible p.martin')
     await userEvent.type(screen.getByRole('textbox', { name: /Référence externe/ }), 'EXT-4242')
 
-    const submit = screen.getByRole('button', { name: 'Créer le cas' })
+    const submit = screen.getByRole('button', { name: 'Créer le dossier' })
     await waitFor(() => expect(submit).toBeEnabled())
     await userEvent.click(submit)
 

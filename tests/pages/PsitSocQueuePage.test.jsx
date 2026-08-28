@@ -73,7 +73,7 @@ describe('SOC triage queue', () => {
     wire([{ ...cases[1] }])
     renderWithProviders(<Page />)
 
-    expect(screen.getByText(/Aucun cas en attente de prise en charge/)).toBeInTheDocument()
+    expect(screen.getByText(/Aucun dossier en attente de prise en charge/)).toBeInTheDocument()
   })
 
   it('shows a failed read as a failure, never as a quiet queue', () => {

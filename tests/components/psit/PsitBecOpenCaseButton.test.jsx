@@ -35,7 +35,7 @@ describe('opening a case from a caseless investigation', () => {
     renderWithProviders(
       <PsitBecOpenCaseButton userData={userData} becData={compromised} tenantFilter="contoso.test" triage={[]} />
     )
-    expect(screen.getByRole('button', { name: /Ouvrir un cas/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Ouvrir un dossier/ })).toBeInTheDocument()
     expect(screen.getByText(/n’existe encore dans aucune file/)).toBeInTheDocument()
   })
 
@@ -43,7 +43,7 @@ describe('opening a case from a caseless investigation', () => {
     renderWithProviders(
       <PsitBecOpenCaseButton userData={userData} becData={clean} tenantFilter="contoso.test" triage={[]} />
     )
-    expect(screen.queryByRole('button', { name: /Ouvrir un cas/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ouvrir un dossier/ })).not.toBeInTheDocument()
   })
 
   it('stays away when the investigation already belongs to a case', () => {
@@ -56,7 +56,7 @@ describe('opening a case from a caseless investigation', () => {
         caseId="PSIT-SOC-1"
       />
     )
-    expect(screen.queryByRole('button', { name: /Ouvrir un cas/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ouvrir un dossier/ })).not.toBeInTheDocument()
   })
 
   it('creates the case with the mailbox as entity and an idempotent reference', async () => {
@@ -66,7 +66,7 @@ describe('opening a case from a caseless investigation', () => {
     renderWithProviders(
       <PsitBecOpenCaseButton userData={userData} becData={compromised} tenantFilter="contoso.test" triage={[]} />
     )
-    await userEvent.click(screen.getByRole('button', { name: /Ouvrir un cas/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Ouvrir un dossier/ }))
 
     const payload = mutate.mock.calls[0][0]
     expect(payload.url).toBe('/api/PSITExecSocCase')

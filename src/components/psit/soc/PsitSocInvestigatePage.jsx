@@ -9,6 +9,7 @@ import { CippHead } from '../../CippComponents/CippHead'
 import { CippFormTenantSelector } from '../../CippComponents/CippFormTenantSelector'
 import { useSettings } from '../../../hooks/use-settings'
 import { PsitSocWipBanner } from './PsitSocWipBanner'
+import { PsitSocInvestigateNav } from './PsitSocInvestigateNav'
 
 /**
  * The scaffold the three entity investigations share: pick a tenant and an entity, read the
@@ -66,6 +67,7 @@ export const PsitSocInvestigatePage = ({
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
           <PsitSocWipBanner />
+          <PsitSocInvestigateNav />
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
             <Button
               component={Link}
@@ -114,8 +116,8 @@ export const PsitSocInvestigatePage = ({
           ) : (
             <>
               <Alert severity="info">
-                Consultation hors cas : les preuves s’affichent, les actions attendent un cas.
-                Ouvrir le cas transporte l’entité et rend les gestes traçables.
+                Consultation hors dossier : les preuves s’affichent, les actions attendent un dossier.
+                Ouvrir le dossier transporte l’entité et rend les gestes traçables.
               </Alert>
               {renderPanel(pseudoCase)}
               <div>
@@ -125,7 +127,7 @@ export const PsitSocInvestigatePage = ({
                   disabled={creation.isPending}
                   onClick={openCase}
                 >
-                  Ouvrir un cas depuis cette investigation
+                  Ouvrir un dossier depuis cette investigation
                 </Button>
                 {creation.isError && (
                   <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>

@@ -116,7 +116,7 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
         <CardHeader title="Contexte application" />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            Ce cas ne cible pas d’application : renseigner appId sur le cas pour afficher les
+            Ce dossier ne cible pas d’application : renseigner appId sur le dossier pour afficher les
             consentements.
           </Typography>
         </CardContent>
@@ -277,7 +277,7 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
             </Typography>
             {caseless && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+                Consultation hors dossier : les actions s’exécutent depuis un dossier, pour que chaque
                 geste laisse sa trace au journal.
               </Typography>
             )}

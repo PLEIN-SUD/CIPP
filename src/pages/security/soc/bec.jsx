@@ -17,6 +17,7 @@ import {
 import { ArrowBack, Launch } from '@mui/icons-material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
+import { PsitSocInvestigateNav } from '../../../components/psit/soc/PsitSocInvestigateNav'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
@@ -65,8 +66,8 @@ const PsitBecTargetPicker = () => {
       <CardContent>
         <Stack spacing={2}>
           <Typography variant="body2" color="text.secondary">
-            Choisir la boîte à investiguer. Ouverte depuis un cas SOC, cette page cible
-            directement l’utilisateur du cas.
+            Choisir la boîte à investiguer. Ouverte depuis un dossier SOC, cette page cible
+            directement l’utilisateur du dossier.
           </Typography>
           <CippFormTenantSelector
             formControl={formControl}
@@ -141,6 +142,7 @@ const Page = () => {
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
           <PsitSocWipBanner />
+          <PsitSocInvestigateNav />
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
             <Button
               component={Link}
@@ -151,7 +153,7 @@ const Page = () => {
                 </SvgIcon>
               }
             >
-              {caseId ? 'Retour au cas' : 'File d’attente'}
+              {caseId ? 'Retour au dossier' : 'File d’attente'}
             </Button>
             <Typography variant="h5">
               {userData?.displayName ?? 'Investigation BEC'}

@@ -107,7 +107,7 @@ export const PsitBecIncidentPanel = ({
   const removeRecord = () => {
     if (
       !window.confirm(
-        'Supprimer définitivement ce dossier et ses qualifications ? Un dossier terminé se clôt, il ne se supprime pas : la suppression est pour les tests et les erreurs.'
+        'Supprimer définitivement cette fiche BEC et ses qualifications ? Une investigation terminée se clôt, elle ne se supprime pas : la suppression est pour les tests et les erreurs.'
       )
     ) {
       return
@@ -221,7 +221,7 @@ export const PsitBecIncidentPanel = ({
   return (
     <Card variant="outlined" sx={{ mt: 2, borderColor: isCompromised ? 'error.main' : 'divider' }}>
       <CardHeader
-        title="Fiche de dossier"
+        title="Fiche BEC"
         subheader={
           stored?.Reference
             ? `${stored.Reference}, dernière mise à jour par ${stored.UpdatedBy || 'N/D'} le ${formatUtc(
@@ -234,7 +234,7 @@ export const PsitBecIncidentPanel = ({
         action={
           collapsible ? (
             <IconButton
-              aria-label={expanded ? 'Replier la fiche de dossier' : 'Déplier la fiche de dossier'}
+              aria-label={expanded ? 'Replier la fiche BEC' : 'Déplier la fiche BEC'}
               onClick={() => setExpanded((previous) => !previous)}
             >
               <SvgIcon
@@ -302,7 +302,7 @@ export const PsitBecIncidentPanel = ({
                 label="Marquage de diffusion (TLP)"
                 size="small"
                 fullWidth
-                helperText="Porté par la couverture et par chaque page des deux rapports du dossier."
+                helperText="Porté par la couverture et par chaque page des deux rapports."
                 value={value('Tlp', 'TLP:AMBER+STRICT')}
                 onChange={(event) => set('Tlp', event.target.value)}
               >
@@ -744,16 +744,16 @@ export const PsitBecIncidentPanel = ({
 
             {stored?.Reference && (
               <Stack spacing={1}>
-                <Typography variant="subtitle2">Clôture du dossier</Typography>
+                <Typography variant="subtitle2">Clôture de la fiche BEC</Typography>
                 {closing ? (
                   <>
                     <Alert severity="warning">
                       <AlertTitle>Clore {stored.Reference} ?</AlertTitle>
-                      Le dossier et ses qualifications sont archivés et restent consultables. La
-                      fiche est ensuite vide, et la prochaine sauvegarde ouvre un dossier neuf avec
+                      La fiche et ses qualifications sont archivées et restent consultables. La
+                      fiche est ensuite vide, et la prochaine sauvegarde ouvre une fiche neuve avec
                       une nouvelle référence. Rien n'est hérité, pour qu'une seconde compromission
                       ne reprenne ni la date de détection, ni les tiers, ni l'accusé de réception du
-                      dossier précédent.
+                      fiche précédente.
                     </Alert>
                     <TextField
                       label="Note de clôture (facultative)"
@@ -784,7 +784,7 @@ export const PsitBecIncidentPanel = ({
                       startIcon={<ArchiveOutlined />}
                       onClick={() => setClosing(true)}
                     >
-                      Clore le dossier
+                      Clore la fiche BEC
                     </Button>
                   </Stack>
                 )}
@@ -820,7 +820,7 @@ export const PsitBecIncidentPanel = ({
       </Collapse>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ px: 2, pb: 2 }}>
         <Button size="small" color="error" onClick={removeRecord} disabled={removeRequest.isPending}>
-          Supprimer le dossier (super admin)
+          Supprimer la fiche BEC (super admin)
         </Button>
         <CippApiResults apiObject={removeRequest} />
       </Stack>

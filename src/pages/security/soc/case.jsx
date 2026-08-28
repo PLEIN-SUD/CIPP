@@ -54,6 +54,31 @@ const frDate = (iso) => {
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
 
 /**
+ * The bridge the investigation tab was missing: each panel here is the same component as one of
+ * the free-investigation screens, and this row says so - the full-screen door opens that screen
+ * on this dossier's entity, carrying the dossier id so the way back exists too.
+ */
+const PsitSocPanelHeading = ({ label, href }) => (
+  <Stack direction="row" alignItems="center" justifyContent="space-between">
+    <Typography variant="overline" color="text.secondary">
+      {label}
+    </Typography>
+    <Button
+      size="small"
+      component={Link}
+      href={href}
+      endIcon={
+        <SvgIcon fontSize="small">
+          <Launch />
+        </SvgIcon>
+      }
+    >
+      Plein écran
+    </Button>
+  </Stack>
+)
+
+/**
  * One SOC case: the identity card of the alert, the investigation guide with its FP/TP clues, the
  * context panels, the qualification (written on the case and pushed back to Defender when the
  * case came from there), and the action log.
@@ -104,7 +129,7 @@ const Page = () => {
 
   return (
     <>
-      <CippHead title={`Cas SOC ${caseId ?? ''}`} />
+      <CippHead title={`Dossier SOC ${caseId ?? ''}`} />
       <Container maxWidth={false} sx={{ py: 2 }}>
         <Stack spacing={2}>
           <PsitSocWipBanner />
@@ -120,7 +145,7 @@ const Page = () => {
             >
               File d’attente
             </Button>
-            <Typography variant="h5">{socCase?.Title ?? 'Cas SOC'}</Typography>
+            <Typography variant="h5">{socCase?.Title ?? 'Dossier SOC'}</Typography>
             {socCase?.Severity && (
               <Chip
                 size="small"
@@ -171,7 +196,7 @@ const Page = () => {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="body2">
-                  Aucun cas pour cet identifiant sur ce tenant. Il a pu être créé sur un autre
+                  Aucun dossier pour cet identifiant sur ce tenant. Il a pu être créé sur un autre
                   tenant : vérifier la file d’attente.
                 </Typography>
               </CardContent>
@@ -330,21 +355,54 @@ const Page = () => {
 
 
               {tab === 'investigation' && (
-                <Stack spacing={2}>
-                  <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} evidence={evidence} />
-                  {(socCase.Entities?.upn || socCase.Entities?.userId) && (
-                    <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
-                  )}
-                  {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
-                    <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} />
-                  )}
-                  {socCase.Entities?.networkMessageId && (
-                    <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
-                  )}
-                  {socCase.Entities?.appId && (
-                    <PsitSocAppContext socCase={socCase} queryKey={queryKey} />
-                  )}
-                </Stack>
+                <Grid container spacing={2} alignItems="flex-start">
+                  {/* The guide and what it asks about, side by side: the step and the panel that
+                      proves it used to live a full scroll apart. Sticky on wide screens so the
+                      checklist stays in view while the evidence scrolls. */}
+                  <Grid size={{ xs: 12, lg: 5 }} sx={{ position: { lg: 'sticky' }, top: 16 }}>
+                    <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} evidence={evidence} />
+                  </Grid>
+                  <Grid size={{ xs: 12, lg: 7 }}>
+                    <Stack spacing={2}>
+                      {(socCase.Entities?.upn || socCase.Entities?.userId) && (
+                        <>
+                          <PsitSocPanelHeading
+                            label="Identité"
+                            href={`/security/soc/bec?userId=${socCase.Entities.userId ?? socCase.Entities.upn}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
+                          />
+                          <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
+                        </>
+                      )}
+                      {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
+                        <>
+                          <PsitSocPanelHeading
+                            label="Machine"
+                            href={`/security/soc/investigate/machine?deviceName=${socCase.Entities.deviceName ?? ''}&deviceId=${socCase.Entities.deviceId ?? ''}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
+                          />
+                          <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} />
+                        </>
+                      )}
+                      {socCase.Entities?.networkMessageId && (
+                        <>
+                          <PsitSocPanelHeading
+                            label="Message"
+                            href={`/security/soc/investigate/message?networkMessageId=${socCase.Entities.networkMessageId}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
+                          />
+                          <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
+                        </>
+                      )}
+                      {socCase.Entities?.appId && (
+                        <>
+                          <PsitSocPanelHeading
+                            label="Application"
+                            href={`/security/soc/investigate/app?appId=${socCase.Entities.appId}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
+                          />
+                          <PsitSocAppContext socCase={socCase} queryKey={queryKey} />
+                        </>
+                      )}
+                    </Stack>
+                  </Grid>
+                </Grid>
               )}
 
               {tab === 'decision' && (

@@ -48,22 +48,22 @@ describe('SOC case view', () => {
     wire(socCase({ Status: 'new' }))
     renderWithProviders(<Page />)
 
-    expect(screen.getByText('Prendre le cas en charge')).toBeInTheDocument()
+    expect(screen.getByText('Prendre le dossier en charge')).toBeInTheDocument()
   })
 
   it('follows the case: a decided one is asked to be closed, not investigated', () => {
     wire(socCase({ Qualification: { Verdict: 'false-positive' } }))
     renderWithProviders(<Page />)
 
-    expect(screen.getByText('Clore le cas')).toBeInTheDocument()
-    expect(screen.queryByText('Prendre le cas en charge')).not.toBeInTheDocument()
+    expect(screen.getByText('Clore le dossier')).toBeInTheDocument()
+    expect(screen.queryByText('Prendre le dossier en charge')).not.toBeInTheDocument()
   })
 
   it('says a closed case is closed instead of proposing work', () => {
     wire(socCase({ Status: 'closed', ClosedBy: 'analyste', ClosedUtc: '2026-08-25T10:00:00Z' }))
     renderWithProviders(<Page />)
 
-    expect(screen.getByText('Cas clos')).toBeInTheDocument()
+    expect(screen.getByText('Dossier clos')).toBeInTheDocument()
   })
 })
 
@@ -85,7 +85,7 @@ describe('SOC case view, tabs', () => {
     renderWithProviders(<Page />)
 
     await userEvent.click(screen.getByRole('tab', { name: 'Décision' }))
-    expect(screen.getByText('Prendre le cas en charge')).toBeInTheDocument()
+    expect(screen.getByText('Prendre le dossier en charge')).toBeInTheDocument()
     expect(screen.getByText('Qualification')).toBeInTheDocument()
   })
 

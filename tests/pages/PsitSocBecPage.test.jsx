@@ -102,7 +102,7 @@ describe('SOC BEC investigation page', () => {
     wireApi()
     renderWithProviders(<Page />)
 
-    const back = screen.getByRole('link', { name: /Retour au cas/ })
+    const back = screen.getByRole('link', { name: /Retour au dossier/ })
     expect(back).toHaveAttribute(
       'href',
       '/security/soc/case?caseId=PSIT-SOC-20260824-AAAA&tenantFilter=contoso.test'

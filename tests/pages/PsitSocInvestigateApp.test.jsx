@@ -45,9 +45,9 @@ describe('application investigation', () => {
     renderWithProviders(<Page />)
 
     // The rule, stated where it applies: evidence without a case, gestures within one.
-    expect(screen.getByText(/les actions attendent un cas/)).toBeInTheDocument()
+    expect(screen.getByText(/les actions attendent un dossier/)).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /Ouvrir un cas depuis cette investigation/ })
+      screen.getByRole('button', { name: /Ouvrir un dossier depuis cette investigation/ })
     ).toBeInTheDocument()
     expect(screen.getByText('Contexte application')).toBeInTheDocument()
   })

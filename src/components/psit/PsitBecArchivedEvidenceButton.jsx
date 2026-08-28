@@ -31,7 +31,7 @@ export const PsitBecArchivedEvidenceButton = ({
     // from.
     const collection = result?.data?.Collection
     if (!collection) {
-      setStatus('Aucune collecte archivée pour ce dossier.')
+      setStatus('Aucune collecte archivée pour cette fiche BEC.')
       return
     }
     const blob = new Blob([collection], { type: 'application/json' })
@@ -45,7 +45,7 @@ export const PsitBecArchivedEvidenceButton = ({
 
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <Tooltip title="Preuves JSON : télécharger la collecte archivée à la clôture de ce dossier">
+      <Tooltip title="Preuves JSON : télécharger la collecte archivée à la clôture de la fiche BEC">
         <span>
           <Button
             size="small"

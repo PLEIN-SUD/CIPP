@@ -45,7 +45,7 @@ const defaultValues = {
  * the notification's own P-level wins when the analyst types it, the catalogue's default applies
  * otherwise, and either way the case says which severity it carries.
  */
-export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys = [] }) => {
+export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau dossier', relatedQueryKeys = [] }) => {
   const [drawerVisible, setDrawerVisible] = useState(false)
   const formControl = useForm({ mode: 'onChange', defaultValues })
   const { isValid } = useFormState({ control: formControl.control })
@@ -113,7 +113,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
       </Button>
 
       <CippOffCanvas
-        title="Nouveau cas SOC"
+        title="Nouveau dossier SOC"
         visible={drawerVisible}
         onClose={handleCloseDrawer}
         size="md"
@@ -129,7 +129,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau cas', relatedQueryKeys
                 ? 'Création...'
                 : createCase.isSuccess
                   ? 'Créer un autre'
-                  : 'Créer le cas'}
+                  : 'Créer le dossier'}
             </Button>
             <Button variant="outlined" onClick={handleCloseDrawer}>
               Fermer

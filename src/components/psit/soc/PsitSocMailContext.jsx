@@ -115,7 +115,7 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
         <CardHeader title="Contexte message" />
         <CardContent>
           <Typography variant="body2" color="text.secondary">
-            Ce cas ne porte pas d’identifiant de message : renseigner networkMessageId sur le cas
+            Ce dossier ne porte pas d’identifiant de message : renseigner networkMessageId sur le dossier
             pour pouvoir agir sur le courrier livré.
           </Typography>
         </CardContent>
@@ -142,8 +142,8 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
               Aucun message analysé trouvé entre {evidenceMeta?.WindowStart} et{' '}
               {evidenceMeta?.WindowEnd}.
               {evidenceMeta?.WindowFromReport
-                ? ' La fenêtre encadre l’heure de réception déclarée sur le cas.'
-                : ' Le cas ne porte pas d’heure de réception, la recherche couvre les quinze derniers jours.'}{' '}
+                ? ' La fenêtre encadre l’heure de réception déclarée sur le dossier.'
+                : ' Le dossier ne porte pas d’heure de réception, la recherche couvre les quinze derniers jours.'}{' '}
               Deux causes possibles : le message est hors de cette fenêtre, ou le client n’a pas la
               licence Defender for Office 365 Plan 2 que cette lecture demande.
             </Alert>
@@ -234,7 +234,7 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
 
           {caseless && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Consultation hors cas : les actions s’exécutent depuis un cas, pour que chaque
+            Consultation hors dossier : les actions s’exécutent depuis un dossier, pour que chaque
             geste laisse sa trace au journal.
           </Typography>
           )}
@@ -253,7 +253,7 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
             <Alert severity="warning">
               Suppression indisponible sur ce tenant : elle demande{' '}
               {purgeCapability?.SkuName ?? 'Defender for Office 365 Plan 2'}. Supprimer le message
-              depuis Threat Explorer ou la quarantaine, puis consigner l’action sur le cas.
+              depuis Threat Explorer ou la quarantaine, puis consigner l’action sur le dossier.
             </Alert>
           ) : (
             <>

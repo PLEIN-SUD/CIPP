@@ -35,13 +35,13 @@ export const psitSocNextStep = (socCase) => {
   if (status === 'closed') {
     const who = socCase.ClosedBy ? ` par ${socCase.ClosedBy}` : ''
     const when = socCase.ClosedUtc ? ` le ${socCase.ClosedUtc}` : ''
-    return STEP('closed', 'Cas clos', `Clos${when}${who}. Rouvrir si le fil repart.`, 'done')
+    return STEP('closed', 'Dossier clos', `Clos${when}${who}. Rouvrir si le fil repart.`, 'done')
   }
 
   if (status === 'new') {
     return STEP(
       'take',
-      'Prendre le cas en charge',
+      'Prendre le dossier en charge',
       'Personne n’est encore dessus. Le passer en investigation le signale aux autres.',
       'action'
     )
@@ -60,7 +60,7 @@ export const psitSocNextStep = (socCase) => {
     }
     return STEP(
       'close',
-      'Clore le cas',
+      'Clore le dossier',
       'La menace est arrêtée. Reste ce qui ferme le dossier : rapport, rappel client, mot de passe changé devant l’utilisateur.',
       'action'
     )
@@ -69,7 +69,7 @@ export const psitSocNextStep = (socCase) => {
   if (verdict) {
     return STEP(
       'close',
-      'Clore le cas',
+      'Clore le dossier',
       verdict === 'undetermined'
         ? 'La question reste ouverte et c’est consigné. Clore n’efface pas le verdict.'
         : 'Rien à confiner sur un faux positif.',
@@ -84,7 +84,7 @@ export const psitSocNextStep = (socCase) => {
 
   return STEP(
     'qualify',
-    'Qualifier le cas',
+    'Qualifier le dossier',
     'Faux positif, vrai positif ou indéterminé, avec la justification qui devra tenir dans six mois.',
     'action'
   )

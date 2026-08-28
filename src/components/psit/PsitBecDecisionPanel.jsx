@@ -65,7 +65,7 @@ export const PsitBecDecisionPanel = ({
             sx={{ width: '100%' }}
           >
             <Stack direction="row" spacing={2} alignItems="center">
-              <span>Décision et dossier</span>
+              <span>Décision et fiche BEC</span>
               <Chip
                 size="small"
                 color={STATUS_COLOUR[verdict.status] || 'default'}

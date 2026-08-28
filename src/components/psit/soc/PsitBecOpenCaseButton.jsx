@@ -50,7 +50,7 @@ export const PsitBecOpenCaseButton = ({ userData, becData, tenantFilter, triage,
           ExternalRef: `BEC:${tenantFilter}:${userData.id}`,
           LogAction: {
             Action: 'bec-import',
-            Detail: `Cas ouvert depuis l'investigation BEC de ${userData.userPrincipalName} : ${verdict.label}.`,
+            Detail: `Dossier ouvert depuis l'investigation BEC de ${userData.userPrincipalName} : ${verdict.label}.`,
           },
         },
       },
@@ -73,7 +73,7 @@ export const PsitBecOpenCaseButton = ({ userData, becData, tenantFilter, triage,
     <Alert severity="warning">
       <Stack spacing={1} alignItems="flex-start">
         <Typography variant="body2">
-          Compromission retenue, et cette investigation a été ouverte sans cas : le verdict
+          Compromission retenue, et cette investigation a été ouverte sans dossier : le verdict
           n’existe encore dans aucune file de travail.
         </Typography>
         <Button
@@ -83,7 +83,7 @@ export const PsitBecOpenCaseButton = ({ userData, becData, tenantFilter, triage,
           disabled={creation.isPending}
           onClick={openCase}
         >
-          Ouvrir un cas depuis cette investigation
+          Ouvrir un dossier depuis cette investigation
         </Button>
         {creation.isError && (
           <Typography variant="body2" color="error.main">

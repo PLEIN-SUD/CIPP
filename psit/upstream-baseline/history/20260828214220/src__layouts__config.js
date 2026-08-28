@@ -25,41 +25,6 @@ export const nativeMenuItems = [
     ),
     permissions: ['CIPP.Core.*'],
   },
-  // PSIT-CUSTOM-BEGIN: SOC Plein Sud, the internal security operations centre
-  {
-    title: 'SOC Plein Sud',
-    type: 'header',
-    icon: (
-      <SvgIcon>
-        <ShieldOutlined />
-      </SvgIcon>
-    ),
-    permissions: ['Security.Incident.*'],
-    items: [
-      {
-        title: 'File d’attente',
-        path: '/security/soc/queue',
-        permissions: ['Security.Incident.*'],
-      },
-      {
-        // One entry; the four screens carry their own tabs to switch between each other.
-        title: 'Investigation libre',
-        path: '/security/soc/bec',
-        permissions: ['Security.Incident.*'],
-      },
-      {
-        title: 'Santé du parc',
-        path: '/security/soc/fleet',
-        permissions: ['Endpoint.MEM.*'],
-      },
-      {
-        title: 'Ingestion',
-        path: '/security/soc/ingestion',
-        permissions: ['Security.Incident.ReadWrite'],
-      },
-    ],
-  },
-  // PSIT-CUSTOM-END
   {
     title: 'Identity Management',
     type: 'header',

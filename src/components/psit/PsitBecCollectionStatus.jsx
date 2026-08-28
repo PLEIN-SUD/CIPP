@@ -35,8 +35,8 @@ export const PsitBecCollectionStatus = ({ becData, onRestart }) => {
         <Typography variant="body2">{collection.message}</Typography>
         <Typography variant="body2">
           {isStale
-            ? 'Relancez la collecte si la question porte sur les jours écoulés depuis. Les qualifications déjà enregistrées et la fiche de dossier ne sont pas effacées par une relance.'
-            : "Les résultats affichés ci-dessous ne sont pas exploitables et aucun rapport ne doit être produit à partir d'eux. Un échec reste en cache jusqu'à ce qu'une relance le remplace : rechargez la page autant que vous voulez, c'est le même échec qui s'affichera. Les qualifications déjà enregistrées et la fiche de dossier ne sont pas effacées par une relance."}
+            ? 'Relancez la collecte si la question porte sur les jours écoulés depuis. Les qualifications déjà enregistrées et la fiche BEC ne sont pas effacées par une relance.'
+            : "Les résultats affichés ci-dessous ne sont pas exploitables et aucun rapport ne doit être produit à partir d'eux. Un échec reste en cache jusqu'à ce qu'une relance le remplace : rechargez la page autant que vous voulez, c'est le même échec qui s'affichera. Les qualifications déjà enregistrées et la fiche BEC ne sont pas effacées par une relance."}
         </Typography>
         {onRestart && (
           <Stack direction="row">

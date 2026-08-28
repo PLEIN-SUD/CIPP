@@ -212,6 +212,6 @@ describe('outside a case', () => {
     )
 
     expect(screen.getByRole('button', { name: /réversible/ })).toBeDisabled()
-    expect(screen.getByText(/les actions s’exécutent depuis un cas/)).toBeInTheDocument()
+    expect(screen.getByText(/les actions s’exécutent depuis un dossier/)).toBeInTheDocument()
   })
 })

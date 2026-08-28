@@ -113,7 +113,7 @@ export const PSIT_SOC_TYPES = [
     severity: 'P3',
     label: 'Connexion O365 depuis l’étranger (corrélée au voyage impossible)',
     guide: [
-      { id: 'correlate', label: 'Vérifier si un cas de type 2 est ouvert sur le même compte' },
+      { id: 'correlate', label: 'Vérifier si un dossier de type 2 est ouvert sur le même compte' },
       { id: 'sessions', label: 'Dérouler le guide du type 1 sur les connexions concernées', evidence: 'user.sessions' },
     ],
     fpClues: ['Mêmes indices que le type 1'],
@@ -130,7 +130,7 @@ export const PSIT_SOC_TYPES = [
       { id: 'audit', label: 'Lire l’audit RoleManagement : acteur, IP source, rôle, heure' },
       { id: 'actor', label: 'Qualifier l’acteur : PIM, admin MSP (GDAP), ou compte utilisateur ?' },
       { id: 'target', label: 'Vérifier les rôles actuels du bénéficiaire' },
-      { id: 'crosscase', label: 'Croiser avec les cas ouverts sur l’acteur et le bénéficiaire' },
+      { id: 'crosscase', label: 'Croiser avec les dossiers ouverts sur l’acteur et le bénéficiaire' },
     ],
     fpClues: [
       'Acteur = PIM ou service de provisioning',
@@ -141,7 +141,7 @@ export const PSIT_SOC_TYPES = [
       'Acteur = compte utilisateur standard',
       'HNO ou IP hors zone',
       'Rôle sensible (Global Reader, Privileged Auth Admin, Exchange Admin)',
-      'Acteur lui-même signalé dans un autre cas',
+      'Acteur lui-même signalé dans un autre dossier',
     ],
   },
   {
@@ -311,7 +311,7 @@ export const PSIT_SOC_TYPES = [
       { id: 'eicar', label: 'EICAR = fichier de test : clore benign en un clic' },
       { id: 'status', label: 'Lire remediationStatus sur l’évidence : bloqué = risque résiduel faible', evidence: 'device.defender' },
       { id: 'hash', label: 'Qualifier le hash (détections génériques Wacatac/Malgent) et la prévalence' },
-      { id: 'writeback', label: 'Qualifier dans Defender (classification + détermination) via le cas' },
+      { id: 'writeback', label: 'Qualifier dans Defender (classification + détermination) via le dossier' },
     ],
     fpClues: ['EICAR ou fichier de test', 'Bloqué, hash prévalent et bénin'],
     tpClues: ['Actif ou non remédié', 'Hash inconnu, chemin utilisateur'],
@@ -424,7 +424,7 @@ export const PSIT_SOC_TYPES = [
       { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
       {
         id: 'route',
-        label: 'Si l’action est un consentement, requalifier le cas en type 6 pour son guide dédié',
+        label: 'Si l’action est un consentement, requalifier le dossier en type 6 pour son guide dédié',
       },
     ],
     fpClues: [
@@ -454,7 +454,7 @@ export const PSIT_SOC_TYPES = [
       {
         id: 'assign',
         label:
-          'Corriger le type : action « Corriger le type » sur la ligne du cas, dans la file d’attente. Le guide correspondant remplace celui-ci.',
+          'Corriger le type : action « Corriger le type » sur la ligne du dossier, dans la file d’attente. Le guide correspondant remplace celui-ci.',
       },
       {
         id: 'report',

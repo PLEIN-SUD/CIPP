@@ -50,7 +50,7 @@ const SOURCES = {
       },
     ],
     confirmText:
-      'Adopter cet incident comme cas SOC ? Si un cas existe déjà pour cet incident, il est réutilisé, pas dupliqué.',
+      'Adopter cet incident comme dossier SOC ? Si un dossier existe déjà pour cet incident, il est réutilisé, pas dupliqué.',
     simpleColumns: ['Created', 'Tenant', 'Severity', 'Status', 'DisplayName', 'Id'],
     offCanvasFields: [
       'Created',
@@ -89,7 +89,7 @@ const SOURCES = {
       },
     ],
     confirmText:
-      'Adopter cette alerte MDO comme cas SOC de type 18 ? Si un cas existe déjà pour cette alerte, il est réutilisé, pas dupliqué.',
+      'Adopter cette alerte MDO comme dossier SOC de type 18 ? Si un dossier existe déjà pour cette alerte, il est réutilisé, pas dupliqué.',
     simpleColumns: ['createdDateTime', 'status', 'severity', 'title', 'category', 'id'],
     offCanvasFields: [
       'createdDateTime',

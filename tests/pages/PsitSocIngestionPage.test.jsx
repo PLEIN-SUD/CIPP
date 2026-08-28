@@ -84,8 +84,8 @@ describe('SOC ingestion configuration', () => {
     wire({ Configured: true, Secret: 'c'.repeat(64) })
     renderWithProviders(<Page />)
 
-    expect(screen.getByText(/aucun cas n’est ouvert/)).toBeInTheDocument()
+    expect(screen.getByText(/aucun dossier n’est ouvert/)).toBeInTheDocument()
     // And the case that must not be dropped, told apart from it.
-    expect(screen.getByText(/le cas est bien\s+créé/)).toBeInTheDocument()
+    expect(screen.getByText(/le dossier est bien\s+créé/)).toBeInTheDocument()
   })
 })

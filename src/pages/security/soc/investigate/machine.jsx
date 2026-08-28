@@ -11,7 +11,7 @@ import { PsitSocDeviceContext } from '../../../../components/psit/soc/PsitSocDev
 const Page = () => (
   <PsitSocInvestigatePage
     title="Investigation machine"
-    intro="Choisir la machine à examiner. Son état de protection et sa dernière remontée s’affichent sans créer de cas."
+    intro="Choisir la machine à examiner. Son état de protection et sa dernière remontée s’affichent sans créer de dossier."
     hasTarget={(query) => Boolean(query.tenantFilter && query.deviceName)}
     buildQuery={(q) => {
       if (!q?.tenantFilter || !q?.deviceName) return null
@@ -50,7 +50,7 @@ const Page = () => (
       ExternalRef: `INV:DEV:${query.tenantFilter}:${query.deviceName}`,
       LogAction: {
         Action: 'investigation-import',
-        Detail: `Cas ouvert depuis l'investigation de la machine ${query.deviceName}.`,
+        Detail: `Dossier ouvert depuis l'investigation de la machine ${query.deviceName}.`,
       },
     })}
   />

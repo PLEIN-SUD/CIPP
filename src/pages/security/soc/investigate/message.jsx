@@ -51,7 +51,7 @@ const Page = () => (
       ExternalRef: `INV:MSG:${query.tenantFilter}:${query.networkMessageId}`,
       LogAction: {
         Action: 'investigation-import',
-        Detail: `Cas ouvert depuis l'investigation du message ${query.networkMessageId}.`,
+        Detail: `Dossier ouvert depuis l'investigation du message ${query.networkMessageId}.`,
       },
     })}
   />

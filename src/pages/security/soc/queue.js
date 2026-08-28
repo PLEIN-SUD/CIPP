@@ -136,7 +136,7 @@ const Page = () => {
   const actions = [
     // -- Consult --
     {
-      label: 'Ouvrir le cas',
+      label: 'Ouvrir le dossier',
       type: 'GET',
       icon: <MagnifyingGlassIcon />,
       link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Tenant]',
@@ -155,7 +155,7 @@ const Page = () => {
         // The server assigns the case to the caller. A name sent from here could be anyone's.
         TakeOwnership: '!true',
       },
-      confirmText: 'Prendre ce cas et le passer en investigation ?',
+      confirmText: 'Prendre ce dossier et le passer en investigation ?',
       relatedQueryKeys: [queryKey],
     },
     {
@@ -174,10 +174,10 @@ const Page = () => {
           // door open for an address the list does not know (Graph out, someone new).
           creatable: true,
           options: analystOptions,
-          validators: { required: 'Choisissez un analyste — « Libérer » rend le cas à la file' },
+          validators: { required: 'Choisissez un analyste — « Libérer » rend le dossier à la file' },
         },
       ],
-      confirmText: 'Réattribuer ce cas ?',
+      confirmText: 'Réattribuer ce dossier ?',
       relatedQueryKeys: [queryKey],
     },
     {
@@ -188,7 +188,7 @@ const Page = () => {
       // '!' marks a literal: an empty AssignedTo is the release gesture server-side, where an
       // absent one means "leave it".
       data: { CaseId: 'CaseId', tenantFilter: 'Tenant', AssignedTo: '!' },
-      confirmText: 'Rendre ce cas à la file ? Il redevient à prendre ; son avancement reste.',
+      confirmText: 'Rendre ce dossier à la file ? Il redevient à prendre ; son avancement reste.',
       relatedQueryKeys: [queryKey],
     },
     // -- Lifecycle, in the order a case travels it --
@@ -212,7 +212,7 @@ const Page = () => {
           validators: { required: 'Un faux positif sans justification est une supposition' },
         },
       ],
-      confirmText: 'Qualifier ce cas en faux positif ?',
+      confirmText: 'Qualifier ce dossier en faux positif ?',
       relatedQueryKeys: [queryKey],
     },
     {
@@ -234,7 +234,7 @@ const Page = () => {
           rows: 3,
         },
       ],
-      confirmText: 'Qualifier ce cas en vrai positif ?',
+      confirmText: 'Qualifier ce dossier en vrai positif ?',
       relatedQueryKeys: [queryKey],
     },
     {
@@ -247,11 +247,11 @@ const Page = () => {
         tenantFilter: 'Tenant',
         Status: '!contained',
       },
-      confirmText: 'Marquer ce cas comme confiné ?',
+      confirmText: 'Marquer ce dossier comme confiné ?',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Clore le cas',
+      label: 'Clore le dossier',
       type: 'POST',
       icon: <Done />,
       url: '/api/PSITExecSocCase',
@@ -260,11 +260,11 @@ const Page = () => {
         tenantFilter: 'Tenant',
         Status: '!closed',
       },
-      confirmText: 'Clore ce cas ? La clôture est horodatée à votre nom.',
+      confirmText: 'Clore ce dossier ? La clôture est horodatée à votre nom.',
       relatedQueryKeys: [queryKey],
     },
     {
-      label: 'Rouvrir le cas',
+      label: 'Rouvrir le dossier',
       type: 'POST',
       icon: <LockOpen />,
       url: '/api/PSITExecSocCase',
@@ -274,7 +274,7 @@ const Page = () => {
         Status: '!investigating',
       },
       confirmText:
-        'Rouvrir ce cas ? Les horodatages de clôture sont effacés et la réouverture est journalisée.',
+        'Rouvrir ce dossier ? Les horodatages de clôture sont effacés et la réouverture est journalisée.',
       relatedQueryKeys: [queryKey],
     },
     // -- Fixing the record: the case stays, its file changes --
@@ -299,7 +299,7 @@ const Page = () => {
         },
       ],
       confirmText:
-        'Corriger le type de ce cas ? Le guide d’investigation correspondant remplace l’actuel ; le journal et l’avancement restent.',
+        'Corriger le type de ce dossier ? Le guide d’investigation correspondant remplace l’actuel ; le journal et l’avancement restent.',
       relatedQueryKeys: [queryKey],
     },
     {
@@ -333,20 +333,20 @@ const Page = () => {
         },
       ],
       confirmText:
-        'Corriger la sévérité de ce cas ? Le niveau P ordonne la file ; le mot affiché ne change que si vous en saisissez un.',
+        'Corriger la sévérité de ce dossier ? Le niveau P ordonne la file ; le mot affiché ne change que si vous en saisissez un.',
       relatedQueryKeys: [queryKey],
     },
     // -- Destructive, last --
     {
       // Server-side the endpoint is SuperAdmin.ReadWrite: anyone else gets a refusal, not a
       // deletion. Closing keeps the journal; this removes it, and is for tests and mistakes.
-      label: 'Supprimer le cas (super admin)',
+      label: 'Supprimer le dossier (super admin)',
       type: 'POST',
       icon: <Delete />,
       url: '/api/PSITExecSocCaseRemove',
       data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
       confirmText:
-        'Supprimer définitivement ce cas ? Son journal disparaît avec lui. Un cas terminé se clôt, il ne se supprime pas : la suppression est pour les enregistrements de test et les erreurs.',
+        'Supprimer définitivement ce dossier ? Son journal disparaît avec lui. Un dossier terminé se clôt, il ne se supprime pas : la suppression est pour les enregistrements de test et les erreurs.',
       relatedQueryKeys: [queryKey],
     },
   ]
@@ -415,7 +415,7 @@ const Page = () => {
           {failed && (
             <Alert severity="error">
               La file n’a pas pu être lue. Rien n’est affiché plutôt qu’une liste vide, qui se
-              lirait comme « aucun cas en attente ».
+              lirait comme « aucun dossier en attente ».
             </Alert>
           )}
 
@@ -433,7 +433,7 @@ const Page = () => {
               <Typography variant="body2" color="text.secondary">
                 {summary.oldestUntaken
                   ? `Le plus ancien non pris : ${summary.oldestUntaken.row.CaseId}, il y a ${summary.oldestUntaken.age.label}.`
-                  : 'Aucun cas en attente de prise en charge.'}
+                  : 'Aucun dossier en attente de prise en charge.'}
               </Typography>
             </Stack>
           )}

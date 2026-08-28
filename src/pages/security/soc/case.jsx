@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@mui/material'
 import { Grid } from '@mui/system'
-import { Sync, ArrowBack } from '@mui/icons-material'
+import { Sync, ArrowBack, Launch } from '@mui/icons-material'
 import Link from 'next/link'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
@@ -34,7 +34,22 @@ import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDevice
 import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
 import { PsitSocAppContext } from '../../../components/psit/soc/PsitSocAppContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
+import {
+  PSIT_SOC_STATUS_CHIP_COLORS,
+  psitSocDisplaySeverity,
+  psitSocStatusLabel,
+  psitSocTypeLabel,
+} from '../../../utils/psit-soc-queue'
+import { PsitSocAnalystCell } from '../../../components/psit/PsitSocAnalystCell'
 import { usePsitSocEvidence } from '../../../hooks/use-psit-soc-evidence'
+
+// Timestamps land as UTC ISO strings; the analyst reads them in his own clock. An unreadable or
+// absent date shows nothing rather than 'Invalid Date'.
+const frDate = (iso) => {
+  const parsed = Date.parse(iso)
+  if (!iso || Number.isNaN(parsed)) return null
+  return new Date(parsed).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+}
 
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
 
@@ -60,6 +75,20 @@ const Page = () => {
     waiting: Boolean(caseId && tenantFilter),
   })
   const socCase = Array.isArray(caseRequest.data) ? caseRequest.data[0] : caseRequest.data
+
+  // The same cached request as the queue: the assignee shows as a face and a name here too.
+  const analystsRequest = ApiGetCall({
+    url: '/api/PSITListSocAnalysts',
+    queryKey: 'PSITSocAnalysts',
+    staleTime: 5 * 60 * 1000,
+  })
+  const assignedName = (Array.isArray(analystsRequest.data?.Analysts)
+    ? analystsRequest.data.Analysts
+    : []
+  ).find(
+    (analyst) =>
+      analyst?.userPrincipalName?.toLowerCase() === socCase?.AssignedTo?.toLowerCase()
+  )?.displayName
 
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
   // The same three tabs as the BEC screen, in the same order, so the two investigation views
@@ -96,10 +125,16 @@ const Page = () => {
               <Chip
                 size="small"
                 color={SEVERITY_COLOUR[socCase.Severity] ?? 'default'}
-                label={socCase.Severity}
+                label={psitSocDisplaySeverity(socCase) || socCase.Severity}
               />
             )}
-            {socCase?.Status && <Chip size="small" label={socCase.Status} />}
+            {socCase?.Status && (
+              <Chip
+                size="small"
+                color={PSIT_SOC_STATUS_CHIP_COLORS[psitSocStatusLabel(socCase.Status)] ?? 'default'}
+                label={psitSocStatusLabel(socCase.Status)}
+              />
+            )}
             <Button
               size="small"
               variant="outlined"
@@ -112,6 +147,23 @@ const Page = () => {
             >
               Actualiser
             </Button>
+            {socCase?.TicketUrl && (
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                href={socCase.TicketUrl}
+                target="_blank"
+                rel="noreferrer"
+                startIcon={
+                  <SvgIcon fontSize="small">
+                    <Launch />
+                  </SvgIcon>
+                }
+              >
+                Ouvrir dans Autotask
+              </Button>
+            )}
           </Stack>
 
           {caseRequest.isFetching && !socCase && <Skeleton variant="rounded" height={160} />}
@@ -158,71 +210,124 @@ const Page = () => {
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 7 }}>
                     <Card variant="outlined">
-                      <CardHeader title="Cas" subheader={socCase.CaseId} />
+                      <CardHeader title="Signalement" subheader={socCase.CaseId} />
                       <CardContent>
-                        <PropertyList>
-                          <PropertyListItem label="Tenant" value={socCase.Tenant} />
-                          <PropertyListItem
-                            label="Type"
-                            value={
-                              catalogueEntry
-                                ? `${socCase.TypeId} - ${catalogueEntry.label}`
-                                : String(socCase.TypeId ?? 'inconnu')
-                            }
-                          />
-                          <PropertyListItem
-                            label="Source"
-                            value={PSIT_SOC_SOURCES[socCase.Source] ?? socCase.Source}
-                          />
-                          <PropertyListItem
-                            label="Pris par"
-                            value={socCase.AssignedTo || 'personne'}
-                          />
-                          <PropertyListItem
-                            label="Référence externe"
-                            value={socCase.ExternalRef || 'aucune'}
-                          />
-                          <PropertyListItem
-                            label="Référence ticket"
-                            value={socCase.TicketRef || socCase.ExternalRef || 'aucune'}
-                          />
-                          {socCase.TicketUrl && (
-                            <PropertyListItem
-                              label="Ticket"
-                              value={
-                                <MuiLink href={socCase.TicketUrl} target="_blank" rel="noreferrer">
-                                  Ouvrir dans Autotask
-                                </MuiLink>
-                              }
-                            />
-                          )}
-                          <PropertyListItem
-                            label="Entités"
-                            value={JSON.stringify(socCase.Entities ?? {})}
-                          />
-                          <PropertyListItem
-                            label="Créé"
-                            value={`${socCase.CreatedUtc} par ${socCase.CreatedBy}`}
-                          />
-                          <PropertyListItem
-                            label="Mis à jour"
-                            value={`${socCase.UpdatedUtc} par ${socCase.UpdatedBy}`}
-                          />
-                          {socCase.ClosedUtc && (
-                            <PropertyListItem
-                              label="Clos"
-                              value={`${socCase.ClosedUtc} par ${socCase.ClosedBy}`}
-                            />
-                          )}
-                        </PropertyList>
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <PropertyList>
+                              <PropertyListItem label="Client" value={socCase.Tenant} />
+                              <PropertyListItem
+                                label="Catégorie"
+                                value={
+                                  catalogueEntry
+                                    ? psitSocTypeLabel(socCase.TypeId)
+                                    : `Type ${socCase.TypeId ?? 'inconnu'}`
+                                }
+                              />
+                              <PropertyListItem
+                                label="Source"
+                                value={PSIT_SOC_SOURCES[socCase.Source] ?? socCase.Source}
+                              />
+                            </PropertyList>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 6 }}>
+                            <PropertyList>
+                              <PropertyListItem
+                                label="Sévérité"
+                                value={psitSocDisplaySeverity(socCase) || 'non renseignée'}
+                              />
+                              <PropertyListItem
+                                label="Ticket Autotask"
+                                value={
+                                  socCase.TicketRef || socCase.ExternalRef ? (
+                                    socCase.TicketUrl ? (
+                                      <MuiLink
+                                        href={socCase.TicketUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {socCase.TicketRef || socCase.ExternalRef}
+                                      </MuiLink>
+                                    ) : (
+                                      socCase.TicketRef || socCase.ExternalRef
+                                    )
+                                  ) : (
+                                    'aucun'
+                                  )
+                                }
+                              />
+                              <PropertyListItem
+                                label="Référence externe"
+                                value={socCase.ExternalRef || 'aucune'}
+                              />
+                            </PropertyList>
+                          </Grid>
+                        </Grid>
+                        {/* The entities drive the investigation panels; chips read better than
+                            the JSON the record stores. */}
+                        {Object.keys(socCase.Entities ?? {}).length > 0 && (
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            flexWrap="wrap"
+                            useFlexGap
+                            sx={{ mt: 2 }}
+                          >
+                            {Object.entries(socCase.Entities ?? {}).map(([kind, value]) => (
+                              <Chip
+                                key={kind}
+                                size="small"
+                                variant="outlined"
+                                label={`${kind} : ${value}`}
+                              />
+                            ))}
+                          </Stack>
+                        )}
                       </CardContent>
                     </Card>
                   </Grid>
                   <Grid size={{ xs: 12, md: 5 }}>
-                    <PsitSocActionLog socCase={socCase} queryKey={queryKey} />
+                    <Stack spacing={2}>
+                      <Card variant="outlined">
+                        <CardHeader title="Suivi" />
+                        <CardContent>
+                          <PropertyList>
+                            <PropertyListItem
+                              label="Pris par"
+                              value={
+                                socCase.AssignedTo ? (
+                                  <PsitSocAnalystCell
+                                    upn={socCase.AssignedTo}
+                                    displayName={assignedName}
+                                  />
+                                ) : (
+                                  'personne'
+                                )
+                              }
+                            />
+                            <PropertyListItem
+                              label="Créé"
+                              value={`${frDate(socCase.CreatedUtc) ?? socCase.CreatedUtc} par ${socCase.CreatedBy}`}
+                            />
+                            <PropertyListItem
+                              label="Mis à jour"
+                              value={`${frDate(socCase.UpdatedUtc) ?? socCase.UpdatedUtc} par ${socCase.UpdatedBy}`}
+                            />
+                            {socCase.ClosedUtc && (
+                              <PropertyListItem
+                                label="Clos"
+                                value={`${frDate(socCase.ClosedUtc) ?? socCase.ClosedUtc} par ${socCase.ClosedBy}`}
+                              />
+                            )}
+                          </PropertyList>
+                        </CardContent>
+                      </Card>
+                      <PsitSocActionLog socCase={socCase} queryKey={queryKey} />
+                    </Stack>
                   </Grid>
                 </Grid>
               )}
+
 
               {tab === 'investigation' && (
                 <Stack spacing={2}>

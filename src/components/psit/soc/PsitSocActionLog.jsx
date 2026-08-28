@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
+import CippInfoTooltip from '../../CippComponents/CippInfoTooltip'
 
 /**
  * The case's action log: everything that happened, newest first - system entries (created,
@@ -59,7 +60,15 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
 
   return (
     <Card variant="outlined">
-      <CardHeader title="Journal des actions" subheader="Entrées système et actions déclarées par les analystes" />
+      <CardHeader
+        title={
+          <Stack direction="row" spacing={1} alignItems="center">
+            <span>Journal des actions</span>
+            <CippInfoTooltip title="La trace du signalement : chaque geste (prise en charge, qualification, changement de statut, correction) s'inscrit ici automatiquement, avec l'auteur et l'heure. Les gestes faits hors de CIPP - un appel au client, une action dans une autre console - se consignent avec le formulaire ci-dessous, en précisant quand ils ont réellement eu lieu. C'est ce qui permet d'attester plus tard qui a fait quoi, et quand." />
+          </Stack>
+        }
+        subheader="Entrées système et actions déclarées par les analystes"
+      />
       <CardContent>
         <Stack spacing={1} sx={{ mb: 2 }}>
           <TextField

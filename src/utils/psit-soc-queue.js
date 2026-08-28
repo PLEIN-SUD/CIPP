@@ -29,6 +29,19 @@ export const PSIT_SOC_STATUS_LABELS_FR = {
 
 export const psitSocStatusLabel = (status) => PSIT_SOC_STATUS_LABELS_FR[status] ?? (status || '')
 
+/**
+ * Chip colors keyed by the displayed French word, matching the queue's own summary chips: red
+ * calls for someone, orange is being worked, green turned out benign, grey is done.
+ */
+export const PSIT_SOC_STATUS_CHIP_COLORS = {
+  Nouveau: 'error',
+  'En cours': 'warning',
+  'Vrai positif': 'secondary',
+  'Faux positif': 'success',
+  Confiné: 'info',
+  Clos: 'default',
+}
+
 /** Order the analyst should work in: P1 before P4, and within a level, the oldest first. */
 const SEVERITY_RANK = { P1: 0, P2: 1, P3: 2, P4: 3 }
 

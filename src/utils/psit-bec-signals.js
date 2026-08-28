@@ -827,7 +827,19 @@ export const buildVerdict = (signals = [], triage = []) => {
   const determinations = new Map(
     (Array.isArray(triage) ? triage : []).map((entry) => [String(entry?.SignalId), entry])
   )
-  const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
+  // An established signal states a fact; "compromise" is still an interpretation, and the
+  // analyst knows the client. An anonymous sharing link is exactly that: a fact, and routine in
+  // half the organisations that use one. So established signals can be requalified expected -
+  // but never silently: the overrule takes a written justification, or it does not take.
+  const establishedAll = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
+  const overruled = establishedAll.filter((signal) => {
+    const determination = determinations.get(signal.id)
+    return (
+      determination?.Verdict === 'expected' &&
+      String(determination?.Justification ?? '').trim().length > 0
+    )
+  })
+  const established = establishedAll.filter((signal) => !overruled.includes(signal))
   const toQualify = signals.filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
 
   const qualified = toQualify.map((signal) => ({
@@ -857,9 +869,14 @@ export const buildVerdict = (signals = [], triage = []) => {
       colour: '#742A2A',
       detail: `${cardinal(established.length, 'signal')} que la donnée seule suffit à qualifier : ${established
         .map((signal) => signal.title)
-        .join(' ; ')}.`,
+        .join(' ; ')}.${
+        overruled.length > 0
+          ? ` ${cardinal(overruled.length, 'signal')} établi requalifié attendu par l'analyste, sur justification.`
+          : ''
+      }`,
       openQuestions: unanswered.map((entry) => entry.signal),
       established,
+      overruled,
       unexpected: unexpected.map((entry) => entry.signal),
     }
   }
@@ -873,6 +890,7 @@ export const buildVerdict = (signals = [], triage = []) => {
         .join(' ; ')}.`,
       openQuestions: unanswered.map((entry) => entry.signal),
       established,
+      overruled,
       unexpected: unexpected.map((entry) => entry.signal),
     }
   }
@@ -887,6 +905,7 @@ export const buildVerdict = (signals = [], triage = []) => {
       )} restée sans réponse. Aucun niveau de risque n'est affiché tant qu'elle n'est pas tranchée.`,
       openQuestions: unanswered.map((entry) => entry.signal),
       established,
+      overruled,
       unexpected: [],
     }
   }
@@ -901,6 +920,7 @@ export const buildVerdict = (signals = [], triage = []) => {
       )} n'a pu être tranché : titulaire du compte injoignable ou information indisponible. Le dossier reste ouvert.`,
       openQuestions: [],
       established,
+      overruled,
       unexpected: [],
     }
   }
@@ -912,9 +932,12 @@ export const buildVerdict = (signals = [], triage = []) => {
       ? `${cardinal(toQualify.length, 'signal')} ${agree(toQualify.length, 'signal', 'relevé')} ${
           toQualify.length > 1 ? 'ont été' : 'a été'
         } ${agree(toQualify.length, 'signal', 'qualifié', 'attendu')} par l'analyste.`
-      : 'Aucun signal établi ni à qualifier sur la fenêtre analysée.',
+      : overruled.length > 0
+        ? `${cardinal(overruled.length, 'signal')} établi requalifié attendu par l'analyste, sur justification. Rien d'autre à retenir.`
+        : 'Aucun signal établi ni à qualifier sur la fenêtre analysée.',
     openQuestions: [],
     established: [],
+    overruled,
     unexpected: [],
   }
 }

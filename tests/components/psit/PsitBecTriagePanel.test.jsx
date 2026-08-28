@@ -193,3 +193,28 @@ describe('overruling the rules', () => {
     expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument()
   })
 })
+
+describe('overruling an established signal', () => {
+  // The rule the engine enforces, visible at the screen: an established signal can be requalified
+  // expected, and nothing stands down silently - the save waits for the written justification.
+  it('offers the requalification on an established signal', () => {
+    renderWithProviders(
+      <PsitBecTriagePanel userData={userData} becData={{ ...becData, NewRules: [{ Name: 'exfil', ForwardTo: 'smtp:out@evil.test' }] }} tenantFilter="contoso.test" />
+    )
+
+    expect(screen.getByText(/requalifier en « attendu » exige une justification/)).toBeInTheDocument()
+  })
+
+  it('blocks the save while an expected overrule has no justification', async () => {
+    renderWithProviders(
+      <PsitBecTriagePanel userData={userData} becData={{ ...becData, NewRules: [{ Name: 'exfil', ForwardTo: 'smtp:out@evil.test' }] }} tenantFilter="contoso.test" />
+    )
+
+    // Pick "expected" on the established rule without justifying it.
+    const groups = screen.getAllByRole('button', { name: 'Attendu' })
+    await userEvent.click(groups[0])
+
+    expect(screen.getByText(/rien ne s’écarte en silence/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeDisabled()
+  })
+})

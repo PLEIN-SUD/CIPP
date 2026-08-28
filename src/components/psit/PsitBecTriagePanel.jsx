@@ -109,7 +109,14 @@ export const PsitBecTriagePanel = ({
   const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
   const noise = signals.filter((signal) => signal.class === SIGNAL_CLASS.NOISE)
 
-  const pending = toQualify.concat(noise).filter((signal) => {
+  // An overrule on an established signal only takes with a written justification: the engine
+  // ignores it otherwise, and a save that silently does nothing teaches the analyst the buttons
+  // lie. So the save waits until the justification exists.
+  const blockedOverrules = established.filter(
+    (signal) => shownVerdict(signal.id) === 'expected' && !shownJustification(signal.id).trim()
+  )
+
+  const pending = toQualify.concat(noise).concat(established).filter((signal) => {
     const verdict = shownVerdict(signal.id)
     if (!verdict) return false
     const saved = storedById.get(signal.id)
@@ -169,15 +176,64 @@ export const PsitBecTriagePanel = ({
           {established.length > 0 && (
             <>
               <Typography variant="subtitle2" gutterBottom>
-                Établi par la donnée : aucune qualification requise
+                Établi par la donnée : requalifier en « attendu » exige une justification
               </Typography>
               <Stack spacing={1} sx={{ mb: 2 }}>
-                {established.map((signal) => (
-                  <Alert key={signal.id} severity="error" variant="outlined">
-                    <AlertTitle sx={{ mb: 0 }}>{signal.title}</AlertTitle>
-                    <Typography variant="body2">{signal.detail}</Typography>
-                  </Alert>
-                ))}
+                {established.map((signal) => {
+                  const saved = storedById.get(signal.id)
+                  const overruled =
+                    saved?.Verdict === 'expected' && String(saved?.Justification ?? '').trim()
+                  return (
+                    <Alert
+                      key={signal.id}
+                      severity={overruled ? 'success' : 'error'}
+                      variant="outlined"
+                    >
+                      <AlertTitle sx={{ mb: 0 }}>{signal.title}</AlertTitle>
+                      <Typography variant="body2">{signal.detail}</Typography>
+                      {overruled && (
+                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                          Requalifié attendu par {saved.Analyst || 'l’analyste'} : {saved.Justification}
+                        </Typography>
+                      )}
+                      <ToggleButtonGroup
+                        exclusive
+                        size="small"
+                        sx={{ mt: 1 }}
+                        value={shownVerdict(signal.id)}
+                        onChange={(event, value) => {
+                          if (!value) return
+                          setEdits((previous) => ({
+                            ...previous,
+                            [signal.id]: { ...previous[signal.id], verdict: value },
+                          }))
+                        }}
+                      >
+                        {VERDICT_CHOICES.map((choice) => (
+                          <ToggleButton key={choice.value} value={choice.value}>
+                            {choice.label}
+                          </ToggleButton>
+                        ))}
+                      </ToggleButtonGroup>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        sx={{ mt: 1 }}
+                        label="Justification (obligatoire pour écarter un signal établi)"
+                        value={shownJustification(signal.id)}
+                        onChange={(event) =>
+                          setEdits((previous) => ({
+                            ...previous,
+                            [signal.id]: {
+                              ...previous[signal.id],
+                              justification: event.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </Alert>
+                  )
+                })}
               </Stack>
             </>
           )}
@@ -352,13 +408,18 @@ export const PsitBecTriagePanel = ({
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
-                  disabled={pending.length === 0 || saveRequest.isPending}
+                  disabled={pending.length === 0 || blockedOverrules.length > 0 || saveRequest.isPending}
                   onClick={handleSave}
                 >
                   {saveRequest.isPending
                     ? 'Enregistrement...'
                     : `Enregistrer ${cardinal(pending.length, 'qualification')}`}
                 </Button>
+                {blockedOverrules.length > 0 && (
+                  <Typography variant="body2" color="warning.main">
+                    Écarter un signal établi exige sa justification : rien ne s’écarte en silence.
+                  </Typography>
+                )}
                 {saveRequest.isSuccess && (
                   <Typography variant="body2" color="success.main">
                     Qualification enregistrée.

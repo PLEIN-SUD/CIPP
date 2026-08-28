@@ -591,3 +591,45 @@ describe('an analyst overriding the rules', () => {
     expect(verdict.status).toBe(VERDICT_STATUS.CLEAN)
   })
 })
+
+describe('overruling an established signal', () => {
+  // An established signal states a fact; compromise is still an interpretation, and the analyst
+  // knows the client - an anonymous sharing link is routine in half the organisations using one.
+  // The rule that survives: never silently. The overrule takes a written justification or it does
+  // not take.
+  const establishedSignal = {
+    id: 'sharing-anonymous',
+    title: 'Objet de partage anonyme',
+    class: SIGNAL_CLASS.ESTABLISHED,
+  }
+
+  it('stands down an established signal on a justified expected verdict', () => {
+    const verdict = buildVerdict(
+      [establishedSignal],
+      [{ SignalId: 'sharing-anonymous', Verdict: 'expected', Justification: 'plaquette commerciale partagée volontairement, confirmé par le client' }]
+    )
+    expect(verdict.status).toBe(VERDICT_STATUS.CLEAN)
+    expect(verdict.overruled.map((signal) => signal.id)).toContain('sharing-anonymous')
+    // The verdict says it out loud rather than reading as "nothing was ever found".
+    expect(verdict.detail).toMatch(/requalifié attendu par l'analyste, sur justification/)
+  })
+
+  it('ignores an expected verdict with no justification: nothing stands down silently', () => {
+    const verdict = buildVerdict(
+      [establishedSignal],
+      [{ SignalId: 'sharing-anonymous', Verdict: 'expected', Justification: '   ' }]
+    )
+    expect(verdict.status).toBe(VERDICT_STATUS.COMPROMISED)
+  })
+
+  it('keeps the compromise when only some established signals are overruled', () => {
+    const second = { id: 'rule-exfil:x', title: 'Règle exfiltrante', class: SIGNAL_CLASS.ESTABLISHED }
+    const verdict = buildVerdict(
+      [establishedSignal, second],
+      [{ SignalId: 'sharing-anonymous', Verdict: 'expected', Justification: 'partage volontaire' }]
+    )
+    expect(verdict.status).toBe(VERDICT_STATUS.COMPROMISED)
+    expect(verdict.established.map((signal) => signal.id)).toEqual(['rule-exfil:x'])
+    expect(verdict.overruled).toHaveLength(1)
+  })
+})

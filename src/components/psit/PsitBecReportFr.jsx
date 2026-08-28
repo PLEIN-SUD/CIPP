@@ -142,13 +142,25 @@ export const PsitBecReportFrDocument = ({
   const determinations = new Map(
     psitAsArray(liveTriage).map((entry) => [String(entry?.SignalId), entry])
   )
-  const established = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
+  // The same overrule rule the verdict engine applies: an established signal requalified
+  // expected, with a written justification, moves to the set-aside list instead of the findings.
+  // The report and the verdict must never disagree about which signals stand.
+  const isOverruled = (signal) => {
+    const determination = determinations.get(signal.id)
+    return (
+      determination?.Verdict === 'expected' &&
+      String(determination?.Justification ?? '').trim().length > 0
+    )
+  }
+  const establishedAll = signals.filter((signal) => signal.class === SIGNAL_CLASS.ESTABLISHED)
+  const established = establishedAll.filter((signal) => !isOverruled(signal))
   const qualified = signals.filter((signal) => signal.class === SIGNAL_CLASS.TO_QUALIFY)
   const retained = [
     ...established,
     ...qualified.filter((signal) => determinations.get(signal.id)?.Verdict === 'unexpected'),
   ]
   const setAside = [
+    ...establishedAll.filter(isOverruled),
     ...qualified.filter((signal) => determinations.get(signal.id)?.Verdict === 'expected'),
     ...signals.filter((signal) => signal.class === SIGNAL_CLASS.NOISE),
   ]

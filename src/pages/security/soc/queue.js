@@ -289,6 +289,10 @@ const Page = () => {
               </Stack>
             }
             actions={actions}
+            // The rework feeds the table its rows as a prop, which left the toolbar refresh icon
+            // spinning a query that does not exist. Cases now arrive from outside the page - the
+            // webhook, a colleague - and the cache holds five minutes, so the icon has to work.
+            refreshFunction={() => casesRequest.refetch()}
             offCanvas={offCanvas}
             simpleColumns={simpleColumns}
             filters={filterList}

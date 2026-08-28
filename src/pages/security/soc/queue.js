@@ -8,6 +8,7 @@ import { ApiGetCall } from '../../../api/ApiCall'
 import { useSettings } from '../../../hooks/use-settings'
 import {
   psitSocAge,
+  psitSocDisplaySeverity,
   psitSocGuideProgress,
   psitSocQueueOrder,
   psitSocQueueSummary,
@@ -58,9 +59,9 @@ const Page = () => {
     () =>
       psitSocQueueOrder(cases).map((row) => ({
         ...row,
-        // The emitter's own severity words when the case carries them: that is the vocabulary
-        // the analyst reads in the alert mail. Ordering already ran on our P level above.
-        Severity: row?.SeverityTag || row?.Severity,
+        // The emitter's own severity words when the case carries them, our P level otherwise.
+        // Ordering already ran on our P level above.
+        Severity: psitSocDisplaySeverity(row),
         // An object when the address travelled with the case, a plain string otherwise: the
         // formatter shows the number either way, plus the launch icon when there is a door.
         TicketAutotask: row?.TicketUrl

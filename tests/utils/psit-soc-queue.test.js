@@ -1,4 +1,5 @@
 import {
+  psitSocDisplaySeverity,
   psitSocAge,
   psitSocGuideProgress,
   psitSocQueueSummary,
@@ -127,5 +128,29 @@ describe('the readings baked onto a row', () => {
     expect(psitSocTypeLabel(row.TypeId)).toMatch(/Voyage impossible/)
     expect(psitSocGuideProgress(row).label).toBe('1/5')
     expect(psitSocAge(row.CreatedUtc, NOW).label).toBe('5 h')
+  })
+})
+
+describe('psitSocDisplaySeverity', () => {
+  // The regression this guards: the automation used to send the literal word Unknown when the
+  // alert mail named no priority, and a stored tag shadowed any Severity set by hand in the
+  // table - the analyst edited the base and saw nothing change.
+  it('prefers the words of the emitter when the case carries them', () => {
+    expect(psitSocDisplaySeverity({ SeverityTag: 'High Priority', Severity: 'P1' })).toBe(
+      'High Priority',
+    )
+  })
+
+  it('falls back to the P level when there is no tag', () => {
+    expect(psitSocDisplaySeverity({ Severity: 'P2' })).toBe('P2')
+  })
+
+  it('treats the tag Unknown as an absence, never shadowing a hand-set severity', () => {
+    expect(psitSocDisplaySeverity({ SeverityTag: 'Unknown', Severity: 'P3' })).toBe('P3')
+  })
+
+  it('shows an empty cell rather than inventing a level', () => {
+    expect(psitSocDisplaySeverity({ SeverityTag: 'Unknown' })).toBe('')
+    expect(psitSocDisplaySeverity(undefined)).toBe('')
   })
 })

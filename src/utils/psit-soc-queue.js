@@ -89,6 +89,18 @@ export const psitSocQueueSummary = (cases, now = Date.now()) => {
 }
 
 /**
+ * The word the queue shows for a case's severity: the emitter's own tag when the case carries
+ * one - that is the vocabulary the analyst reads in the alert mail - our P level otherwise.
+ * 'Unknown' is the automation's fallback for "the mail named no priority": an absence, not a
+ * tag, so it never shadows a severity set by hand on the case.
+ */
+export const psitSocDisplaySeverity = (row) => {
+  const tag = row?.SeverityTag
+  if (tag && tag !== 'Unknown') return tag
+  return row?.Severity || ''
+}
+
+/**
  * The order the queue is worth reading in: open cases first, then by severity, then oldest first.
  *
  * Finished cases are not hidden. An analyst looking for what he closed yesterday must find it,

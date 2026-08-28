@@ -13,6 +13,22 @@ import { psitSocTypeById } from './psit-soc-types'
 /** Statuses that still need someone. Closed and qualified cases are finished work. */
 export const PSIT_SOC_OPEN_STATUSES = ['new', 'investigating', 'contained']
 
+/**
+ * The status words the queue displays. The stored codes stay English (they are the API contract
+ * and the values every filter and action manipulates); the column shows the analysts' language.
+ * An unknown code passes through unchanged: showing raw data beats hiding a state.
+ */
+export const PSIT_SOC_STATUS_LABELS_FR = {
+  new: 'Nouveau',
+  investigating: 'En cours',
+  'qualified-fp': 'Faux positif',
+  'qualified-tp': 'Vrai positif',
+  contained: 'Confiné',
+  closed: 'Clos',
+}
+
+export const psitSocStatusLabel = (status) => PSIT_SOC_STATUS_LABELS_FR[status] ?? (status || '')
+
 /** Order the analyst should work in: P1 before P4, and within a level, the oldest first. */
 const SEVERITY_RANK = { P1: 0, P2: 1, P3: 2, P4: 3 }
 

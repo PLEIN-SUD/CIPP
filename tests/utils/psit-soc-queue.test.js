@@ -1,4 +1,5 @@
 import {
+  psitSocStatusLabel,
   psitSocDisplaySeverity,
   psitSocAge,
   psitSocGuideProgress,
@@ -152,5 +153,23 @@ describe('psitSocDisplaySeverity', () => {
   it('shows an empty cell rather than inventing a level', () => {
     expect(psitSocDisplaySeverity({ SeverityTag: 'Unknown' })).toBe('')
     expect(psitSocDisplaySeverity(undefined)).toBe('')
+  })
+})
+
+describe('psitSocStatusLabel', () => {
+  // The stored codes are the API contract and stay English; the column shows the words the
+  // analysts actually say. An unknown code passes through: raw data beats a hidden state.
+  it('translates every lifecycle status', () => {
+    expect(psitSocStatusLabel('new')).toBe('Nouveau')
+    expect(psitSocStatusLabel('investigating')).toBe('En cours')
+    expect(psitSocStatusLabel('qualified-fp')).toBe('Faux positif')
+    expect(psitSocStatusLabel('qualified-tp')).toBe('Vrai positif')
+    expect(psitSocStatusLabel('contained')).toBe('Confiné')
+    expect(psitSocStatusLabel('closed')).toBe('Clos')
+  })
+
+  it('passes an unknown code through and answers absence with an empty string', () => {
+    expect(psitSocStatusLabel('archived')).toBe('archived')
+    expect(psitSocStatusLabel(undefined)).toBe('')
   })
 })

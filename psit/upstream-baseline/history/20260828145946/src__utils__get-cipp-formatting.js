@@ -15,10 +15,6 @@ import NextLink from 'next/link'
 import { alpha } from '@mui/material/styles'
 import { Box } from '@mui/system'
 import { CippCopyToClipBoard } from '../components/CippComponents/CippCopyToClipboard'
-// PSIT-CUSTOM-BEGIN: icon for the ticket link, and the analyst cell of the SOC queue.
-import { Launch } from '@mui/icons-material'
-import { PsitSocAnalystCell } from '../components/psit/PsitSocAnalystCell'
-// PSIT-CUSTOM-END
 import { getCippLicenseTranslation } from './get-cipp-license-translation'
 import CippDataTableButton from '../components/CippTable/CippDataTableButton'
 import { LinearProgressWithLabel } from '../components/linearProgressWithLabel'
@@ -123,70 +119,6 @@ export const getCippFormatting = (
     return 'Download Baseline'
   }
 
-  // PSIT-CUSTOM-BEGIN: the SOC queue's French-headed columns. Its cells bake under French
-  // keys so the headers read in the analysts' language without touching the global translation
-  // table, which upstream pages share.
-  //
-  // 'Sévérité' is the Severity chip under its French name: the branch below already carries the
-  // PSIT color entries, so the alias is the whole change.
-  if (cellName === 'Sévérité') {
-    cellName = 'Severity'
-  }
-  // 'Statut' is the case lifecycle in French words, colored the way the queue's own summary
-  // chips already read: red calls for someone, orange is being worked, green turned out
-  // benign, grey is done.
-  if (cellName === 'Statut') {
-    if (isText) return String(data ?? '')
-    const statutColor = {
-      Nouveau: 'error',
-      'En cours': 'warning',
-      'Vrai positif': 'secondary',
-      'Faux positif': 'success',
-      Confiné: 'info',
-      Clos: 'default',
-    }
-    return (
-      <Chip
-        variant="outlined"
-        label={String(data ?? '')}
-        size="small"
-        color={statutColor[String(data)] ?? 'default'}
-      />
-    )
-  }
-  // 'Assigné à' carries { upn, name }: photo and name instead of a bare address, through the
-  // same endpoint and cache as the top banner's avatar. Export and copy keep the email - it is
-  // the identity the case is actually assigned to.
-  if (cellName === 'Assigné à') {
-    if (isText) return String(data?.upn ?? data ?? '')
-    if (!data) return ''
-    return <PsitSocAnalystCell upn={data?.upn ?? String(data)} displayName={data?.name} />
-  }
-  // The ticket number stays the visible text; when the row carries the ticket's address, a
-  // launch icon sits beside it. The generic http branch below would replace the number with the
-  // word "URL", which is the one thing an analyst scans this column for.
-  if (cellName === 'Ticket Autotask') {
-    const ticketLabel = data?.label ?? data
-    if (isText) return String(ticketLabel ?? '')
-    return (
-      <>
-        {String(ticketLabel ?? '')}
-        {data?.href ? (
-          <Link
-            href={data.href}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Ouvrir le ticket"
-            style={{ marginLeft: 6, verticalAlign: 'middle' }}
-          >
-            <Launch fontSize="inherit" />
-          </Link>
-        ) : null}
-      </>
-    )
-  }
-  // PSIT-CUSTOM-END
-
   if (cellName === 'Severity' || cellName === 'logsToInclude') {
     if (data == null) {
       return isText ? (
@@ -211,15 +143,6 @@ export const getCippFormatting = (
         debug: 'default',
         medium: 'warning',
         high: 'error',
-        // PSIT-CUSTOM-BEGIN: the external SOC's severity wording, and the internal P levels.
-        'high priority': 'error',
-        'very high priority': 'error',
-        'medium priority': 'warning',
-        p1: 'error',
-        p2: 'warning',
-        p3: 'info',
-        p4: 'default',
-        // PSIT-CUSTOM-END
       }
       const color = severityColor[String(label).toLowerCase()] ?? 'info'
       return (

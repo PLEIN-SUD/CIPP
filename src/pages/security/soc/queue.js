@@ -12,10 +12,21 @@ import {
   psitSocGuideProgress,
   psitSocQueueOrder,
   psitSocQueueSummary,
+  psitSocStatusLabel,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
 import { PSIT_SOC_TYPE_OPTIONS } from '../../../utils/psit-soc-types'
-import { PlayArrow, Delete, Done, Block, Edit, GppGood, LockOpen, SwapHoriz } from '@mui/icons-material'
+import {
+  PlayArrow,
+  Delete,
+  Done,
+  Block,
+  Edit,
+  GppGood,
+  LockOpen,
+  PersonRemove,
+  SwapHoriz,
+} from '@mui/icons-material'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
 import { PsitSocImportDrawer } from '../../../components/psit/soc/PsitSocImportDrawer'
@@ -44,6 +55,39 @@ const Page = () => {
     queryKey,
     waiting: Boolean(tenant),
   })
+  // The reassignment picker and the name beside each avatar: the portal's own users, fetched
+  // once for all rows. When Graph is out the endpoint degrades to email-only entries and says
+  // so in Warnings; the queue keeps working either way.
+  const analystsRequest = ApiGetCall({
+    url: '/api/PSITListSocAnalysts',
+    queryKey: 'PSITSocAnalysts',
+    staleTime: 5 * 60 * 1000,
+  })
+  const analysts = useMemo(
+    () => (Array.isArray(analystsRequest.data?.Analysts) ? analystsRequest.data.Analysts : []),
+    [analystsRequest.data]
+  )
+  const analystNames = useMemo(() => {
+    const names = {}
+    for (const analyst of analysts) {
+      if (analyst?.userPrincipalName) {
+        names[analyst.userPrincipalName.toLowerCase()] = analyst.displayName || ''
+      }
+    }
+    return names
+  }, [analysts])
+  const analystOptions = useMemo(
+    () =>
+      analysts.map((analyst) => ({
+        // Name and email both in the label: typing either finds the person.
+        label: analyst.displayName
+          ? analyst.displayName + ' (' + analyst.userPrincipalName + ')'
+          : analyst.userPrincipalName,
+        value: analyst.userPrincipalName,
+      })),
+    [analysts]
+  )
+
   // The endpoint answers with a bare array on success and { Results: '<message>' } on failure.
   // The first version of this read data.Results for both, which emptied the queue while the
   // cases sat untouched in the store: zero counts, no columns, no error - the worst kind of wrong.
@@ -59,23 +103,38 @@ const Page = () => {
     () =>
       psitSocQueueOrder(cases).map((row) => ({
         ...row,
+        // The visible columns bake under French keys, so the headers read in the analysts'
+        // language without touching the global translation table upstream pages share. The raw
+        // fields stay on the row: the actions, the drawer and the API contract keep them.
+        Client: row?.Tenant,
         // The emitter's own severity words when the case carries them, our P level otherwise.
         // Ordering already ran on our P level above.
-        Severity: psitSocDisplaySeverity(row),
+        'Sévérité': psitSocDisplaySeverity(row),
         // An object when the address travelled with the case, a plain string otherwise: the
         // formatter shows the number either way, plus the launch icon when there is a door.
-        TicketAutotask: row?.TicketUrl
+        'Ticket Autotask': row?.TicketUrl
           ? { label: row?.ExternalRef, href: row.TicketUrl }
           : row?.ExternalRef,
-        TypeLabel: psitSocTypeLabel(row?.TypeId),
+        Statut: psitSocStatusLabel(row?.Status),
+        'Âge': psitSocAge(row?.CreatedUtc)?.label ?? '',
+        // Photo and name rather than a bare address; the email is what the record stores, the
+        // name is resolved from the portal's user list above.
+        'Assigné à': row?.AssignedTo
+          ? { upn: row.AssignedTo, name: analystNames[row.AssignedTo.toLowerCase()] || '' }
+          : '',
+        Titre: row?.Title,
+        'Catégorie': psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
-        Age: psitSocAge(row?.CreatedUtc)?.label ?? '',
       })),
-    [cases]
+    [cases, analystNames]
   )
   const summary = useMemo(() => psitSocQueueSummary(cases), [cases])
 
+  // Grouped the way the gestures are reached for: look first, then who holds the case, then
+  // the case's own lifecycle in the order it travels it, then fixing the record, and destruction
+  // last where it cannot be picked by reflex.
   const actions = [
+    // -- Consult --
     {
       label: 'Ouvrir le cas',
       type: 'GET',
@@ -83,6 +142,7 @@ const Page = () => {
       link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Tenant]',
       multiPost: false,
     },
+    // -- Assignment: who holds the case --
     {
       label: 'Prendre en charge',
       type: 'POST',
@@ -106,14 +166,32 @@ const Page = () => {
       data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
       fields: [
         {
-          type: 'textField',
+          type: 'autoComplete',
           name: 'AssignedTo',
-          label: 'Analyste (vide pour rendre le cas à la file)',
+          label: 'Analyste (tapez un nom ou un e-mail)',
+          multiple: false,
+          // The portal's own users; typing filters on name and email alike. creatable keeps a
+          // door open for an address the list does not know (Graph out, someone new).
+          creatable: true,
+          options: analystOptions,
+          validators: { required: 'Choisissez un analyste — « Libérer » rend le cas à la file' },
         },
       ],
       confirmText: 'Réattribuer ce cas ?',
       relatedQueryKeys: [queryKey],
     },
+    {
+      label: 'Libérer (rendre à la file)',
+      type: 'POST',
+      icon: <PersonRemove />,
+      url: '/api/PSITExecSocCase',
+      // '!' marks a literal: an empty AssignedTo is the release gesture server-side, where an
+      // absent one means "leave it".
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant', AssignedTo: '!' },
+      confirmText: 'Rendre ce cas à la file ? Il redevient à prendre ; son avancement reste.',
+      relatedQueryKeys: [queryKey],
+    },
+    // -- Lifecycle, in the order a case travels it --
     {
       label: 'Qualifier faux positif',
       type: 'POST',
@@ -186,6 +264,21 @@ const Page = () => {
       relatedQueryKeys: [queryKey],
     },
     {
+      label: 'Rouvrir le cas',
+      type: 'POST',
+      icon: <LockOpen />,
+      url: '/api/PSITExecSocCase',
+      data: {
+        CaseId: 'CaseId',
+        tenantFilter: 'Tenant',
+        Status: '!investigating',
+      },
+      confirmText:
+        'Rouvrir ce cas ? Les horodatages de clôture sont effacés et la réouverture est journalisée.',
+      relatedQueryKeys: [queryKey],
+    },
+    // -- Fixing the record: the case stays, its file changes --
+    {
       // The catch-all guide tells the analyst to correct the type; this is the control that
       // does it. Correcting swaps the investigation guide, it erases nothing: progress and
       // journal stay on the case.
@@ -243,6 +336,7 @@ const Page = () => {
         'Corriger la sévérité de ce cas ? Le niveau P ordonne la file ; le mot affiché ne change que si vous en saisissez un.',
       relatedQueryKeys: [queryKey],
     },
+    // -- Destructive, last --
     {
       // Server-side the endpoint is SuperAdmin.ReadWrite: anyone else gets a refusal, not a
       // deletion. Closing keeps the journal; this removes it, and is for tests and mistakes.
@@ -255,20 +349,8 @@ const Page = () => {
         'Supprimer définitivement ce cas ? Son journal disparaît avec lui. Un cas terminé se clôt, il ne se supprime pas : la suppression est pour les enregistrements de test et les erreurs.',
       relatedQueryKeys: [queryKey],
     },
-    {
-      label: 'Rouvrir le cas',
-      type: 'POST',
-      icon: <LockOpen />,
-      url: '/api/PSITExecSocCase',
-      data: {
-        CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
-        Status: '!investigating',
-      },
-      confirmText: 'Rouvrir ce cas ? Les horodatages de clôture sont effacés et la réouverture est journalisée.',
-      relatedQueryKeys: [queryKey],
-    },
   ]
+
 
   const offCanvas = {
     extendedInfoFields: [
@@ -295,36 +377,33 @@ const Page = () => {
   }
 
   const simpleColumns = [
-    'Tenant',
-    'Severity',
-    'TicketAutotask',
-    'Status',
-    'Age',
-    'AssignedTo',
-    'Title',
-    'TypeLabel',
+    'Client',
+    'Sévérité',
+    'Ticket Autotask',
+    'Statut',
+    'Âge',
+    'Assigné à',
+    'Titre',
+    'Catégorie',
     'Guide',
   ]
 
+  // The presets filter on the displayed column, so their values are the displayed words.
   const filterList = [
-    { filterName: 'Nouveaux', value: [{ id: 'Status', value: 'new' }], type: 'column' },
-    {
-      filterName: 'En investigation',
-      value: [{ id: 'Status', value: 'investigating' }],
-      type: 'column',
-    },
+    { filterName: 'Nouveaux', value: [{ id: 'Statut', value: 'Nouveau' }], type: 'column' },
+    { filterName: 'En cours', value: [{ id: 'Statut', value: 'En cours' }], type: 'column' },
     {
       filterName: 'Qualifiés vrais positifs',
-      value: [{ id: 'Status', value: 'qualified-tp' }],
+      value: [{ id: 'Statut', value: 'Vrai positif' }],
       type: 'column',
     },
     {
       filterName: 'Qualifiés faux positifs',
-      value: [{ id: 'Status', value: 'qualified-fp' }],
+      value: [{ id: 'Statut', value: 'Faux positif' }],
       type: 'column',
     },
-    { filterName: 'Confinés', value: [{ id: 'Status', value: 'contained' }], type: 'column' },
-    { filterName: 'Clos', value: [{ id: 'Status', value: 'closed' }], type: 'column' },
+    { filterName: 'Confinés', value: [{ id: 'Statut', value: 'Confiné' }], type: 'column' },
+    { filterName: 'Clos', value: [{ id: 'Statut', value: 'Clos' }], type: 'column' },
   ]
 
   return (

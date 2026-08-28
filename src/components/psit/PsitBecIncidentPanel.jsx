@@ -20,6 +20,7 @@ import {
 import { Add, DeleteOutline, ArchiveOutlined } from '@mui/icons-material'
 import ExpandMoreIcon from '@heroicons/react/24/outline/ChevronDownIcon'
 import { ApiGetCall, ApiPostCall } from '../../api/ApiCall'
+import { CippApiResults } from '../CippComponents/CippApiResults'
 import { psitAsArray } from '../../utils/psit-as-array'
 import { cardinal, lexiconWarnings, phrase } from '../../utils/psit-report-prose'
 import { PsitBecArchivedEvidenceButton } from './PsitBecArchivedEvidenceButton'
@@ -98,6 +99,25 @@ export const PsitBecIncidentPanel = ({
     queryKey: `PSITBecIncident-${tenantFilter}-${userId}`,
     waiting: Boolean(tenantFilter && userId),
   })
+  // Deletion is super-admin territory server-side: anyone else gets a refusal, not a deletion.
+  // Closing keeps the record; this removes it, for test dossiers and mistakes.
+  const removeRequest = ApiPostCall({
+    relatedQueryKeys: [`PSITBecIncident-${tenantFilter}-${userId}`],
+  })
+  const removeRecord = () => {
+    if (
+      !window.confirm(
+        'Supprimer définitivement ce dossier et ses qualifications ? Un dossier terminé se clôt, il ne se supprime pas : la suppression est pour les tests et les erreurs.'
+      )
+    ) {
+      return
+    }
+    removeRequest.mutate({
+      url: '/api/PSITExecBecIncidentRemove',
+      data: { tenantFilter, userId },
+    })
+  }
+
   const saveRequest = ApiPostCall({
     relatedQueryKeys: [`PSITBecIncident-${tenantFilter}-${userId}`],
   })
@@ -209,6 +229,8 @@ export const PsitBecIncidentPanel = ({
               )}`
             : "Aucune fiche ouverte : l'enregistrement en créera une avec sa référence"
         }
+        // The delete keeps out of the main action row on purpose: it is not analyst vocabulary.
+        titleTypographyProps={{ variant: 'h6' }}
         action={
           collapsible ? (
             <IconButton
@@ -796,6 +818,12 @@ export const PsitBecIncidentPanel = ({
           </Stack>
         </CardContent>
       </Collapse>
-    </Card>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ px: 2, pb: 2 }}>
+        <Button size="small" color="error" onClick={removeRecord} disabled={removeRequest.isPending}>
+          Supprimer le dossier (super admin)
+        </Button>
+        <CippApiResults apiObject={removeRequest} />
+      </Stack>
+</Card>
   )
 }

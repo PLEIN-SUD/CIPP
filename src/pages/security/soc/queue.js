@@ -13,7 +13,8 @@ import {
   psitSocQueueSummary,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
-import { PlayArrow, Done, Block, GppGood, LockOpen, SwapHoriz } from '@mui/icons-material'
+import { PSIT_SOC_TYPE_OPTIONS } from '../../../utils/psit-soc-types'
+import { PlayArrow, Delete, Done, Block, Edit, GppGood, LockOpen, SwapHoriz } from '@mui/icons-material'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
 import { PsitSocImportDrawer } from '../../../components/psit/soc/PsitSocImportDrawer'
@@ -57,6 +58,10 @@ const Page = () => {
     () =>
       psitSocQueueOrder(cases).map((row) => ({
         ...row,
+        // The emitter's own severity words when the case carries them: that is the vocabulary
+        // the analyst reads in the alert mail. Ordering already ran on our P level above.
+        Severity: row?.SeverityTag || row?.Severity,
+        TicketAutotask: row?.ExternalRef,
         TypeLabel: psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
         Age: psitSocAge(row?.CreatedUtc)?.label ?? '',
@@ -176,6 +181,42 @@ const Page = () => {
       relatedQueryKeys: [queryKey],
     },
     {
+      // The catch-all guide tells the analyst to correct the type; this is the control that
+      // does it. Correcting swaps the investigation guide, it erases nothing: progress and
+      // journal stay on the case.
+      label: 'Corriger le type',
+      type: 'POST',
+      icon: <Edit />,
+      url: '/api/PSITExecSocCase',
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      fields: [
+        {
+          type: 'autoComplete',
+          name: 'TypeId',
+          label: 'Type d’alerte',
+          multiple: false,
+          creatable: false,
+          options: PSIT_SOC_TYPE_OPTIONS,
+          validators: { required: 'Le type d’alerte est requis' },
+        },
+      ],
+      confirmText:
+        'Corriger le type de ce cas ? Le guide d’investigation correspondant remplace l’actuel ; le journal et l’avancement restent.',
+      relatedQueryKeys: [queryKey],
+    },
+    {
+      // Server-side the endpoint is SuperAdmin.ReadWrite: anyone else gets a refusal, not a
+      // deletion. Closing keeps the journal; this removes it, and is for tests and mistakes.
+      label: 'Supprimer le cas (super admin)',
+      type: 'POST',
+      icon: <Delete />,
+      url: '/api/PSITExecSocCaseRemove',
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      confirmText:
+        'Supprimer définitivement ce cas ? Son journal disparaît avec lui. Un cas terminé se clôt, il ne se supprime pas : la suppression est pour les enregistrements de test et les erreurs.',
+      relatedQueryKeys: [queryKey],
+    },
+    {
       label: 'Rouvrir le cas',
       type: 'POST',
       icon: <LockOpen />,
@@ -202,6 +243,8 @@ const Page = () => {
       'Title',
       'ExternalRef',
       'TicketRef',
+      'TicketUrl',
+      'SeverityTag',
       'CreatedUtc',
       'CreatedBy',
       'UpdatedUtc',
@@ -213,15 +256,15 @@ const Page = () => {
   }
 
   const simpleColumns = [
-    'Severity',
-    'Status',
-    'AssignedTo',
     'Tenant',
-    'TypeLabel',
-    'Title',
-    'Guide',
+    'Severity',
+    'TicketAutotask',
+    'Status',
     'Age',
-    'ExternalRef',
+    'AssignedTo',
+    'Title',
+    'TypeLabel',
+    'Guide',
   ]
 
   const filterList = [

@@ -143,15 +143,6 @@ export const getCippFormatting = (
         debug: 'default',
         medium: 'warning',
         high: 'error',
-        // PSIT-CUSTOM-BEGIN: the external SOC's severity wording, and the internal P levels.
-        'high priority': 'error',
-        'very high priority': 'error',
-        'medium priority': 'warning',
-        p1: 'error',
-        p2: 'warning',
-        p3: 'info',
-        p4: 'default',
-        // PSIT-CUSTOM-END
       }
       const color = severityColor[String(label).toLowerCase()] ?? 'info'
       return (

@@ -5,6 +5,7 @@ import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
 import {
   Alert,
   Button,
+  Link as MuiLink,
   Card,
   CardContent,
   CardHeader,
@@ -183,8 +184,18 @@ const Page = () => {
                           />
                           <PropertyListItem
                             label="Référence ticket"
-                            value={socCase.TicketRef || 'aucune'}
+                            value={socCase.TicketRef || socCase.ExternalRef || 'aucune'}
                           />
+                          {socCase.TicketUrl && (
+                            <PropertyListItem
+                              label="Ticket"
+                              value={
+                                <MuiLink href={socCase.TicketUrl} target="_blank" rel="noreferrer">
+                                  Ouvrir dans Autotask
+                                </MuiLink>
+                              }
+                            />
+                          )}
                           <PropertyListItem
                             label="Entités"
                             value={JSON.stringify(socCase.Entities ?? {})}

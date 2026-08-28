@@ -451,7 +451,11 @@ export const PSIT_SOC_TYPES = [
     label: 'Type non déterminé : libellé absent de la table de correspondance',
     guide: [
       { id: 'read', label: 'Lire le sujet et le corps de l’alerte d’origine, dans le ticket' },
-      { id: 'assign', label: 'Corriger le type sur le cas : le guide correspondant apparaît alors' },
+      {
+        id: 'assign',
+        label:
+          'Corriger le type : action « Corriger le type » sur la ligne du cas, dans la file d’attente. Le guide correspondant remplace celui-ci.',
+      },
       {
         id: 'report',
         label: 'Signaler le libellé pour compléter la table, sans quoi la prochaine alerte identique reviendra ici',

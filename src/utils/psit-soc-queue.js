@@ -127,6 +127,32 @@ export const psitSocQueueSummary = (cases, now = Date.now()) => {
 }
 
 /**
+ * The ticket number and the ticket's address in one cell value.
+ *
+ * The table recurses an object cell into dotted sub-columns, which deletes the named column the
+ * page asks for - so the number and its link cannot travel as { label, href }, and putting the
+ * link in a column of its own separated the icon from the number it belongs to. They travel as
+ * one string instead, joined by a unit separator that appears in neither part.
+ *
+ * What the analyst reads, sorts, searches and exports is the number alone: only the renderer
+ * ever sees the second half.
+ */
+export const PSIT_SOC_TICKET_SEPARATOR = String.fromCharCode(31)
+
+export const psitSocTicketCell = (ticket, url) => {
+  const number = String(ticket ?? '').trim()
+  const href = String(url ?? '').trim()
+  if (!number) return ''
+  return href ? `${number}${PSIT_SOC_TICKET_SEPARATOR}${href}` : number
+}
+
+/** The two halves back, for a renderer. An absent address is absent, never an empty link. */
+export const psitSocTicketParts = (value) => {
+  const [label = '', href = ''] = String(value ?? '').split(PSIT_SOC_TICKET_SEPARATOR)
+  return { label, href: href || null }
+}
+
+/**
  * The word the queue shows for a case's severity: the emitter's own tag when the case carries
  * one - that is the vocabulary the analyst reads in the alert mail - our P level otherwise.
  * 'Unknown' is the automation's fallback for "the mail named no priority": an absence, not a

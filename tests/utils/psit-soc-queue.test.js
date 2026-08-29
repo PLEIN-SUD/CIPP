@@ -1,4 +1,6 @@
 import {
+  psitSocTicketCell,
+  psitSocTicketParts,
   psitSocStatusLabel,
   psitSocDisplaySeverity,
   psitSocAge,
@@ -212,5 +214,34 @@ describe('what "à prendre" counts', () => {
       NOW
     )
     expect(summary.oldestUntaken.row.CaseId).toBe('relache')
+  })
+})
+
+describe('the ticket cell', () => {
+  // The number and its door share one cell, and the value stays a plain string: an object cell
+  // is recursed into dotted sub-columns and deletes the named column the page asks for, while a
+  // column of its own put the icon a column away from the number it opens.
+  it('carries the number and the address together', () => {
+    const value = psitSocTicketCell('T20260828.0008', 'https://autotask.test/t/236173')
+    expect(psitSocTicketParts(value)).toEqual({
+      label: 'T20260828.0008',
+      href: 'https://autotask.test/t/236173',
+    })
+  })
+
+  it('stays a plain string, never an object', () => {
+    expect(typeof psitSocTicketCell('T1', 'https://x.test')).toBe('string')
+  })
+
+  it('carries the number alone when no address travelled with the dossier', () => {
+    const value = psitSocTicketCell('T20260828.0008', '')
+    expect(value).toBe('T20260828.0008')
+    expect(psitSocTicketParts(value).href).toBeNull()
+  })
+
+  it('answers empty for a dossier with no ticket at all', () => {
+    expect(psitSocTicketCell('', 'https://x.test')).toBe('')
+    expect(psitSocTicketParts('').label).toBe('')
+    expect(psitSocTicketParts(undefined).href).toBeNull()
   })
 })

@@ -18,7 +18,7 @@ import { CippCopyToClipBoard } from '../components/CippComponents/CippCopyToClip
 // PSIT-CUSTOM-BEGIN: icon for the ticket link, and the analyst cell of the SOC queue.
 import { Launch } from '@mui/icons-material'
 import { PsitSocAnalystCell } from '../components/psit/PsitSocAnalystCell'
-import { PSIT_SOC_STATUS_CHIP_COLORS } from './psit-soc-queue'
+import { PSIT_SOC_STATUS_CHIP_COLORS, psitSocTicketParts } from './psit-soc-queue'
 // PSIT-CUSTOM-END
 import { getCippLicenseTranslation } from './get-cipp-license-translation'
 import CippDataTableButton from '../components/CippTable/CippDataTableButton'
@@ -155,9 +155,31 @@ export const getCippFormatting = (
     if (!data) return ''
     return <PsitSocAnalystCell upn={String(data)} />
   }
-  // The ticket's address, rendered as the door alone. The generic http branch below shows the
-  // word "URL" plus a copy button, which is three times the width for the same click; the number
-  // itself lives in the column beside this one.
+  // The ticket number, and its door beside it. The value arrives as one string carrying both,
+  // because an object cell is recursed into sub-columns and a separate column put the icon a
+  // column away from the number it opens. Export, sort and search see the number alone.
+  if (cellName === 'Ticket Autotask') {
+    const ticket = psitSocTicketParts(data)
+    if (isText) return ticket.label
+    if (!ticket.label) return ''
+    return (
+      <>
+        {ticket.label}
+        {ticket.href ? (
+          <Link
+            href={ticket.href}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Ouvrir le ticket dans Autotask"
+            style={{ marginLeft: 6, verticalAlign: 'middle' }}
+          >
+            <Launch fontSize="inherit" />
+          </Link>
+        ) : null}
+      </>
+    )
+  }
+  // The address on its own, for the drawer, where there is no number beside it.
   if (cellName === 'Lien') {
     if (isText) return String(data ?? '')
     if (!data) return ''

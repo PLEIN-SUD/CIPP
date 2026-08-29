@@ -13,6 +13,7 @@ import {
   psitSocQueueOrder,
   psitSocQueueSummary,
   psitSocStatusLabel,
+  psitSocTicketCell,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
 import { PSIT_SOC_SOURCES, PSIT_SOC_TYPE_OPTIONS } from '../../../utils/psit-soc-types'
@@ -113,9 +114,11 @@ const Page = () => {
         // The emitter's own severity words when the dossier carries them, our P level otherwise.
         // Ordering already ran on our P level above.
         'Sévérité': psitSocDisplaySeverity(row),
-        'Ticket Autotask': row?.TicketRef || row?.ExternalRef || '',
-        // The door alone, in its own narrow column: the number beside it stays readable, and the
-        // value exported is the address itself.
+        // Number and address in one cell: the icon opens the ticket from beside the number it
+        // belongs to, and what is exported is the number.
+        'Ticket Autotask': psitSocTicketCell(row?.TicketRef || row?.ExternalRef, row?.TicketUrl),
+        // The address on its own, hidden by default: the drawer shows it, and the export carries
+        // a real address rather than an icon.
         Lien: row?.TicketUrl ?? '',
         Statut: psitSocStatusLabel(row?.Status),
         'Âge': psitSocAge(row?.CreatedUtc)?.label ?? '',
@@ -393,7 +396,6 @@ const Page = () => {
     'Tenant',
     'Sévérité',
     'Ticket Autotask',
-    'Lien',
     'Statut',
     'Âge',
     'Assigné à',

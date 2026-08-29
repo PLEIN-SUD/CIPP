@@ -147,35 +147,24 @@ export const getCippFormatting = (
       />
     )
   }
-  // 'Assigné à' carries { upn, name }: photo and name instead of a bare address, through the
-  // same endpoint and cache as the top banner's avatar. Export and copy keep the email - it is
-  // the identity the case is actually assigned to.
+  // 'Assigné à' holds the address, and the cell resolves the face and the name from it. The
+  // value stays a plain string on purpose: an object here is recursed into dotted sub-columns,
+  // which deletes the column this page asks for by name.
   if (cellName === 'Assigné à') {
-    if (isText) return String(data?.upn ?? data ?? '')
+    if (isText) return String(data ?? '')
     if (!data) return ''
-    return <PsitSocAnalystCell upn={data?.upn ?? String(data)} displayName={data?.name} />
+    return <PsitSocAnalystCell upn={String(data)} />
   }
-  // The ticket number stays the visible text; when the row carries the ticket's address, a
-  // launch icon sits beside it. The generic http branch below would replace the number with the
-  // word "URL", which is the one thing an analyst scans this column for.
-  if (cellName === 'Ticket Autotask') {
-    const ticketLabel = data?.label ?? data
-    if (isText) return String(ticketLabel ?? '')
+  // The ticket's address, rendered as the door alone. The generic http branch below shows the
+  // word "URL" plus a copy button, which is three times the width for the same click; the number
+  // itself lives in the column beside this one.
+  if (cellName === 'Lien') {
+    if (isText) return String(data ?? '')
+    if (!data) return ''
     return (
-      <>
-        {String(ticketLabel ?? '')}
-        {data?.href ? (
-          <Link
-            href={data.href}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Ouvrir le ticket"
-            style={{ marginLeft: 6, verticalAlign: 'middle' }}
-          >
-            <Launch fontSize="inherit" />
-          </Link>
-        ) : null}
-      </>
+      <Link href={String(data)} target="_blank" rel="noreferrer" aria-label="Ouvrir le ticket">
+        <Launch fontSize="inherit" style={{ verticalAlign: 'middle' }} />
+      </Link>
     )
   }
   // PSIT-CUSTOM-END

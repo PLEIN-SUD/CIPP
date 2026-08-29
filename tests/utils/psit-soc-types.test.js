@@ -20,12 +20,37 @@ describe('PSIT_SOC_TYPES', () => {
     // catch-all a subject lands on when its label matches nothing.
     const ids = PSIT_SOC_TYPES.map((type) => type.id)
 
-    expect(ids).toHaveLength(19)
-    expect(new Set(ids).size).toBe(19)
+    expect(ids).toHaveLength(14)
+    expect(new Set(ids).size).toBe(14)
     expect(ids).not.toContain(8)
     expect(ids).toEqual(
-      expect.arrayContaining([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 99])
+      expect.arrayContaining([1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 15, 18, 19, 99])
     )
+    // Five entries were merged away, and none of them may come back as a live id: 3 was a
+    // pointer to 1's own guide, and the Lighthouse family repeated the endpoint one in English.
+    for (const retired of [3, 13, 14, 16, 17]) {
+      expect(ids).not.toContain(retired)
+    }
+  })
+
+  it('still answers for a dossier filed under a merged id', () => {
+    // Retired ids stay resolvable on purpose: a dossier already stored under one, or an alert the
+    // API has not been remapped for, keeps a category and a guide instead of a bare number.
+    expect(psitSocTypeById(3).id).toBe(1)
+    expect(psitSocTypeById(13).id).toBe(12)
+    expect(psitSocTypeById(14).id).toBe(12)
+    expect(psitSocTypeById(16).id).toBe(11)
+    expect(psitSocTypeById(17).id).toBe(10)
+  })
+
+  it('keeps every label short enough to be read in a column', () => {
+    // The catalogue used to carry a full sentence per entry, which is unreadable in a table cell
+    // and was the reason an analyst could not tell two categories apart at a glance. The sentence
+    // is not lost: it moved to description, which the guide and the reports show.
+    for (const type of PSIT_SOC_TYPES) {
+      expect(type.label.length).toBeLessThanOrEqual(34)
+      expect(type.description.length).toBeGreaterThan(0)
+    }
   })
 
   it('says which entities each type investigates, so the drawer knows what to ask for', () => {
@@ -114,7 +139,7 @@ describe('constants the rest of the dashboard leans on', () => {
   })
 
   it('builds one autocomplete option per type, labelled with its id', () => {
-    expect(PSIT_SOC_TYPE_OPTIONS).toHaveLength(19)
+    expect(PSIT_SOC_TYPE_OPTIONS).toHaveLength(14)
     expect(PSIT_SOC_TYPE_OPTIONS[0].label).toMatch(/^1 - /)
   })
 })

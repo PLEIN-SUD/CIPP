@@ -20,7 +20,8 @@ const xdrCase = {
   CaseId: 'PSIT-SOC-20260824-AAAA',
   Tenant: 'contoso.test',
   Source: 'xdr',
-  TypeId: 13,
+  // Type 12 since the Lighthouse family was merged into the endpoint one.
+  TypeId: 12,
   Status: 'investigating',
   ExternalRef: 'INC-12345',
 }

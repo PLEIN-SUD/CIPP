@@ -15,7 +15,7 @@ import {
   psitSocStatusLabel,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
-import { PSIT_SOC_TYPE_OPTIONS } from '../../../utils/psit-soc-types'
+import { PSIT_SOC_SOURCES, PSIT_SOC_TYPE_OPTIONS } from '../../../utils/psit-soc-types'
 import {
   PlayArrow,
   Delete,
@@ -55,9 +55,9 @@ const Page = () => {
     queryKey,
     waiting: Boolean(tenant),
   })
-  // The reassignment picker and the name beside each avatar: the portal's own users, fetched
-  // once for all rows. When Graph is out the endpoint degrades to email-only entries and says
-  // so in Warnings; the queue keeps working either way.
+  // The reassignment picker: the portal's own users. When Graph is out the endpoint degrades to
+  // email-only entries and says so in Warnings; the queue keeps working either way. The names
+  // shown in the table are resolved by the cell itself, from this same cached request.
   const analystsRequest = ApiGetCall({
     url: '/api/PSITListSocAnalysts',
     queryKey: 'PSITSocAnalysts',
@@ -67,15 +67,6 @@ const Page = () => {
     () => (Array.isArray(analystsRequest.data?.Analysts) ? analystsRequest.data.Analysts : []),
     [analystsRequest.data]
   )
-  const analystNames = useMemo(() => {
-    const names = {}
-    for (const analyst of analysts) {
-      if (analyst?.userPrincipalName) {
-        names[analyst.userPrincipalName.toLowerCase()] = analyst.displayName || ''
-      }
-    }
-    return names
-  }, [analysts])
   const analystOptions = useMemo(
     () =>
       analysts.map((analyst) => ({
@@ -96,37 +87,51 @@ const Page = () => {
     () => (Array.isArray(casesRequest.data) ? casesRequest.data : []),
     [casesRequest.data]
   )
-  // The derived readings are baked onto the rows rather than computed in a column accessor. It
-  // is the pattern the rest of the portal uses, and it costs nothing to gain search, sort and
-  // export on them: an analyst can look for "Voyage impossible" instead of remembering it is 2.
+  // Each row is rebuilt field by field rather than spread from the case, and every value is a
+  // plain string. Two reasons, both learned from a real export: spreading kept the raw English
+  // field beside its French twin, so the column picker and the CSV carried each column twice and
+  // forty-odd GuideProgress.*.State columns besides; and an object value is recursed into dotted
+  // sub-columns, which deletes the named column this page asks for and leaves a column order
+  // pointing at an id that no longer exists.
+  //
+  // The keys are the headers, in French, which is why they are written as they are read. Nothing
+  // upstream is renamed: the shared translation table serves pages that stay in English.
   const rows = useMemo(
     () =>
       psitSocQueueOrder(cases).map((row) => ({
-        ...row,
-        // The visible columns bake under French keys, so the headers read in the analysts'
-        // language without touching the global translation table upstream pages share. The raw
-        // fields stay on the row: the actions, the drawer and the API contract keep them.
-        Client: row?.Tenant,
-        // The emitter's own severity words when the case carries them, our P level otherwise.
+        // Technical, hidden by default: the actions address a dossier by it, and an analyst
+        // reading an export needs to know which dossier a line is.
+        CaseId: row?.CaseId ?? '',
+        Client: row?.Tenant ?? '',
+        // The emitter's own severity words when the dossier carries them, our P level otherwise.
         // Ordering already ran on our P level above.
         'Sévérité': psitSocDisplaySeverity(row),
-        // An object when the address travelled with the case, a plain string otherwise: the
-        // formatter shows the number either way, plus the launch icon when there is a door.
-        'Ticket Autotask': row?.TicketUrl
-          ? { label: row?.ExternalRef, href: row.TicketUrl }
-          : row?.ExternalRef,
+        'Ticket Autotask': row?.TicketRef || row?.ExternalRef || '',
+        // The door alone, in its own narrow column: the number beside it stays readable, and the
+        // value exported is the address itself.
+        Lien: row?.TicketUrl ?? '',
         Statut: psitSocStatusLabel(row?.Status),
         'Âge': psitSocAge(row?.CreatedUtc)?.label ?? '',
-        // Photo and name rather than a bare address; the email is what the record stores, the
-        // name is resolved from the portal's user list above.
-        'Assigné à': row?.AssignedTo
-          ? { upn: row.AssignedTo, name: analystNames[row.AssignedTo.toLowerCase()] || '' }
-          : '',
-        Titre: row?.Title,
+        // The address the dossier is assigned to; the cell resolves the face and the name from it.
+        'Assigné à': row?.AssignedTo ?? '',
+        Titre: row?.Title ?? '',
         'Catégorie': psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
+        // Below: hidden by default, shown in the drawer and carried by the export.
+        Niveau: row?.Severity ?? '',
+        'Mot de l’émetteur': row?.SeverityTag ?? '',
+        Origine: PSIT_SOC_SOURCES[row?.Source] ?? row?.Source ?? '',
+        'Entités': Object.entries(row?.Entities ?? {})
+          .map(([kind, value]) => `${kind} : ${value}`)
+          .join(', '),
+        'Créé le': row?.CreatedUtc ?? '',
+        'Créé par': row?.CreatedBy ?? '',
+        'Mis à jour le': row?.UpdatedUtc ?? '',
+        'Mis à jour par': row?.UpdatedBy ?? '',
+        'Clos le': row?.ClosedUtc ?? '',
+        'Clos par': row?.ClosedBy ?? '',
       })),
-    [cases, analystNames]
+    [cases]
   )
   const summary = useMemo(() => psitSocQueueSummary(cases), [cases])
 
@@ -139,7 +144,7 @@ const Page = () => {
       label: 'Ouvrir le dossier',
       type: 'GET',
       icon: <MagnifyingGlassIcon />,
-      link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Tenant]',
+      link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Client]',
       multiPost: false,
     },
     // -- Assignment: who holds the case --
@@ -150,7 +155,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
+        tenantFilter: 'Client',
         Status: '!investigating',
         // The server assigns the case to the caller. A name sent from here could be anyone's.
         TakeOwnership: '!true',
@@ -163,7 +168,7 @@ const Page = () => {
       type: 'POST',
       icon: <SwapHoriz />,
       url: '/api/PSITExecSocCase',
-      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
       fields: [
         {
           type: 'autoComplete',
@@ -187,7 +192,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       // '!' marks a literal: an empty AssignedTo is the release gesture server-side, where an
       // absent one means "leave it".
-      data: { CaseId: 'CaseId', tenantFilter: 'Tenant', AssignedTo: '!' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Client', AssignedTo: '!' },
       confirmText: 'Rendre ce dossier à la file ? Il redevient à prendre ; son avancement reste.',
       relatedQueryKeys: [queryKey],
     },
@@ -199,7 +204,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
+        tenantFilter: 'Client',
         Verdict: '!false-positive',
       },
       fields: [
@@ -222,7 +227,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
+        tenantFilter: 'Client',
         Verdict: '!true-positive',
       },
       fields: [
@@ -244,7 +249,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
+        tenantFilter: 'Client',
         Status: '!contained',
       },
       confirmText: 'Marquer ce dossier comme confiné ?',
@@ -257,7 +262,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
+        tenantFilter: 'Client',
         Status: '!closed',
       },
       confirmText: 'Clore ce dossier ? La clôture est horodatée à votre nom.',
@@ -270,7 +275,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Tenant',
+        tenantFilter: 'Client',
         Status: '!investigating',
       },
       confirmText:
@@ -286,7 +291,7 @@ const Page = () => {
       type: 'POST',
       icon: <Edit />,
       url: '/api/PSITExecSocCase',
-      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
       fields: [
         {
           type: 'autoComplete',
@@ -310,7 +315,7 @@ const Page = () => {
       type: 'POST',
       icon: <Edit />,
       url: '/api/PSITExecSocCase',
-      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
       fields: [
         {
           type: 'autoComplete',
@@ -344,7 +349,7 @@ const Page = () => {
       type: 'POST',
       icon: <Delete />,
       url: '/api/PSITExecSocCaseRemove',
-      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
       confirmText:
         'Supprimer définitivement ce dossier ? Son journal disparaît avec lui. Un dossier terminé se clôt, il ne se supprime pas : la suppression est pour les enregistrements de test et les erreurs.',
       relatedQueryKeys: [queryKey],
@@ -355,23 +360,24 @@ const Page = () => {
   const offCanvas = {
     extendedInfoFields: [
       'CaseId',
-      'Tenant',
-      'Source',
-      'TypeId',
-      'Severity',
-      'Status',
-      'AssignedTo',
-      'Title',
-      'ExternalRef',
-      'TicketRef',
-      'TicketUrl',
-      'SeverityTag',
-      'CreatedUtc',
-      'CreatedBy',
-      'UpdatedUtc',
-      'UpdatedBy',
-      'ClosedUtc',
-      'ClosedBy',
+      'Client',
+      'Catégorie',
+      'Origine',
+      'Sévérité',
+      'Niveau',
+      'Mot de l’émetteur',
+      'Statut',
+      'Assigné à',
+      'Titre',
+      'Entités',
+      'Ticket Autotask',
+      'Lien',
+      'Créé le',
+      'Créé par',
+      'Mis à jour le',
+      'Mis à jour par',
+      'Clos le',
+      'Clos par',
     ],
     actions: actions,
   }
@@ -380,6 +386,7 @@ const Page = () => {
     'Client',
     'Sévérité',
     'Ticket Autotask',
+    'Lien',
     'Statut',
     'Âge',
     'Assigné à',

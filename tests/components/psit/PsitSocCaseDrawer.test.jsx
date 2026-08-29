@@ -69,7 +69,7 @@ describe('PsitSocCaseDrawer', () => {
     await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
-    await userEvent.click(await screen.findByText(/Consentement d’application/))
+    await userEvent.click(await screen.findByText(/Consentement OAuth/))
 
     // The picker exists so nobody has to go and find an appId first.
     expect(screen.getByRole('combobox', { name: /Application concernée/ })).toBeInTheDocument()
@@ -88,7 +88,7 @@ describe('PsitSocCaseDrawer', () => {
     expect(screen.getByRole('combobox', { name: /Utilisateur concerné/ })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
-    await userEvent.click(await screen.findByText(/ZAP/))
+    await userEvent.click(await screen.findByText(/Phishing livré/))
     expect(screen.getByRole('textbox', { name: /Identifiant de message/ })).toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /Machine concernée/ })).not.toBeInTheDocument()
   })
@@ -101,14 +101,14 @@ describe('PsitSocCaseDrawer', () => {
     expect(screen.queryByRole('combobox', { name: /Utilisateur concerné/ })).not.toBeInTheDocument()
   })
 
-  it('proposes the nineteen retained types, never Google Workspace', async () => {
+  it('proposes the fourteen retained types, never Google Workspace', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
     await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     const options = await screen.findAllByRole('option')
 
-    expect(options.length).toBe(19)
+    expect(options.length).toBe(14)
     expect(options.some((option) => option.textContent.startsWith('8 - '))).toBe(false)
     expect(options.some((option) => option.textContent.includes('Voyage impossible'))).toBe(true)
   })

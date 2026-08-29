@@ -9,9 +9,13 @@ import { ApiGetCall } from '../../api/ApiCall'
  * colleague it is fetched once and kept (staleTime Infinity - a profile photo does not churn).
  * No photo, or no answer, falls back to the initial, exactly like the banner does.
  *
- * The name is resolved by the caller (the queue fetches the analyst list once for all rows);
- * this component only displays what it is given and never invents: no known name shows the
- * email, which is still the identity that assigned the case.
+ * The name is resolved here rather than passed in, because the table's cell renderer only ever
+ * receives the cell's own value: a row whose cell held {upn, name} was recursed into two dotted
+ * columns and the named column vanished. React Query dedupes the analyst list on its key, so
+ * every row on screen shares one request. A caller that already holds the name may still pass it.
+ *
+ * Nothing is invented: an unresolved address is displayed as the address, which is still the
+ * identity the dossier is assigned to.
  */
 export const PsitSocAnalystCell = ({ upn, displayName }) => {
   const photo = ApiGetCall({
@@ -24,8 +28,20 @@ export const PsitSocAnalystCell = ({ upn, displayName }) => {
     convertToDataUrl: true,
   })
 
+  const analysts = ApiGetCall({
+    url: '/api/PSITListSocAnalysts',
+    queryKey: 'PSITSocAnalysts',
+    waiting: Boolean(upn) && !displayName,
+    staleTime: 5 * 60 * 1000,
+  })
+
   if (!upn) return null
-  const shown = displayName || upn
+  const resolved =
+    displayName ||
+    (Array.isArray(analysts.data?.Analysts) ? analysts.data.Analysts : []).find(
+      (analyst) => analyst?.userPrincipalName?.toLowerCase() === String(upn).toLowerCase()
+    )?.displayName
+  const shown = resolved || upn
 
   return (
     <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>

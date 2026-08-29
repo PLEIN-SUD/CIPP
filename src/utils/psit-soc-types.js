@@ -58,8 +58,11 @@ export const PSIT_SOC_TYPES = [
     family: 'signin',
     entities: ['user'],
     severity: 'P4',
-    label: 'Connexion depuis un pays inhabituel ou une IP signalée malveillante',
+    label: 'Connexion suspecte',
+    description:
+      'Connexion depuis un pays inhabituel ou une IP signalée malveillante',
     guide: [
+      { id: 'correlate', label: 'Vérifier si un dossier « voyage impossible » est déjà ouvert sur le même compte' },
       { id: 'sessions', label: 'Regrouper les connexions par adresse IP et repérer les succès', evidence: 'user.sessions' },
       { id: 'mfa', label: 'Vérifier MFA et protocole de chaque succès (client hérité ?)', evidence: 'user.signin-quality' },
       { id: 'device', label: "Vérifier l'appareil : géré, conforme, déjà vu sur ce compte" },
@@ -85,7 +88,9 @@ export const PSIT_SOC_TYPES = [
     family: 'signin',
     entities: ['user'],
     severity: 'P2',
-    label: 'Voyage impossible : activité simultanée depuis plusieurs pays',
+    label: 'Voyage impossible',
+    description:
+      'Activité simultanée depuis plusieurs pays, écart de temps impossible',
     guide: [
       { id: 'sessions', label: 'Construire les sessions par IP et mesurer l’écart de temps entre pays', evidence: 'user.sessions' },
       { id: 'aitm', label: 'Chercher la signature AiTM : même session vue de deux adresses, MFA « satisfaite » rejouée', evidence: 'user.signin-quality' },
@@ -106,26 +111,14 @@ export const PSIT_SOC_TYPES = [
     ],
   },
   {
-    id: 3,
-    source: 'extsoc',
-    family: 'signin',
-    entities: ['user'],
-    severity: 'P3',
-    label: 'Connexion O365 depuis l’étranger (corrélée au voyage impossible)',
-    guide: [
-      { id: 'correlate', label: 'Vérifier si un dossier de type 2 est ouvert sur le même compte' },
-      { id: 'sessions', label: 'Dérouler le guide du type 1 sur les connexions concernées', evidence: 'user.sessions' },
-    ],
-    fpClues: ['Mêmes indices que le type 1'],
-    tpClues: ['Mêmes indices que les types 1 et 2 : reprendre la criticité du type 2 si confirmé'],
-  },
-  {
     id: 4,
     source: 'extsoc',
     family: 'identity-persistence',
     entities: ['user'],
     severity: 'P2',
-    label: 'Élévation de privilèges : ajout de rôle sensible',
+    label: 'Élévation de privilèges',
+    description:
+      'Ajout d’un rôle sensible sur un compte',
     guide: [
       { id: 'audit', label: 'Lire l’audit RoleManagement : acteur, IP source, rôle, heure' },
       { id: 'actor', label: 'Qualifier l’acteur : PIM, admin MSP (GDAP), ou compte utilisateur ?' },
@@ -150,7 +143,9 @@ export const PSIT_SOC_TYPES = [
     family: 'identity-persistence',
     entities: ['user'],
     severity: 'P2',
-    label: 'Création ou modification de règle de boîte, forward externe',
+    label: 'Règle de boîte ou transfert',
+    description:
+      'Création ou modification de règle de boîte, transfert externe',
     guide: [
       { id: 'rules', label: 'Lister les règles de la boîte, règles masquées incluses', evidence: 'user.rules' },
       { id: 'targets', label: 'Qualifier chaque règle : destinataire externe ? suppression ? dossier de dissimulation ?', evidence: 'user.rules' },
@@ -175,7 +170,9 @@ export const PSIT_SOC_TYPES = [
     family: 'identity-persistence',
     entities: ['app', 'user'],
     severity: 'P4',
-    label: 'Consentement d’application OAuth',
+    label: 'Consentement OAuth',
+    description:
+      'Consentement accordé à une application tierce',
     guide: [
       { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
       { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
@@ -199,7 +196,9 @@ export const PSIT_SOC_TYPES = [
     family: 'identity-persistence',
     entities: ['user'],
     severity: 'P3',
-    label: 'Ajout de compte utilisateur ou octroi d’accès à une BAL (HNO)',
+    label: 'Compte ou accès à une boîte',
+    description:
+      'Ajout de compte utilisateur ou octroi d’accès à une boîte partagée, hors heures ouvrées',
     guide: [
       { id: 'audit', label: 'Retrouver la création dans l’audit : acteur, heure' },
       { id: 'actor', label: 'Qualifier l’acteur : provisioning RH, admin MSP, ou compte utilisateur ?' },
@@ -221,7 +220,9 @@ export const PSIT_SOC_TYPES = [
     family: 'endpoint',
     entities: ['device'],
     severity: 'P1',
-    label: 'Menace active non mitigée sur une machine (MDE)',
+    label: 'Menace active (poste)',
+    description:
+      'Menace active non mitigée sur une machine, vue par Defender',
     guide: [
       { id: 'status', label: 'Vérifier le statut de remédiation dans le portail Defender', evidence: 'device.defender' },
       { id: 'hash', label: 'Qualifier le binaire : hash, signature, chemin (%temp% vs Program Files)' },
@@ -240,21 +241,24 @@ export const PSIT_SOC_TYPES = [
     family: 'endpoint',
     entities: ['device'],
     severity: 'P3',
-    label: 'Comportement C2 bloqué (ex. AnyDesk lancé en --service)',
+    label: 'Accès distant ou service suspect',
+    description:
+      'Comportement de commande et contrôle bloqué, ou service suspect lancé sur un poste (ex. AnyDesk en --service)',
     guide: [
-      { id: 'rmm', label: 'L’outil est-il un RMM déployé par PSIT (liste interne) ?' },
+      { id: 'rmm', label: 'L’outil est-il un RMM déployé en interne (liste connue) ?' },
       { id: 'binary', label: 'Vérifier signature et chemin du binaire' },
+      { id: 'service', label: 'Si un service a été créé : nom, compte de lancement, date de création (récent et hors heures = persistance probable)' },
       { id: 'context', label: 'Compte exécutant et heure : technicien en heures ouvrées ?', evidence: 'device.compliance' },
       { id: 'prevalence', label: 'Prévalence sur le parc du client' },
     ],
     fpClues: [
-      'RMM de la liste interne PSIT, signé, chemin standard',
+      'RMM ou agent connu (sauvegarde, antivirus), signé, chemin standard',
       'Compte exécutant = technicien, heures ouvrées',
     ],
     tpClues: [
       'Binaire non signé ou dans %temp%',
-      'Exécution HNO par un compte non technicien',
-      'Outil d’accès distant hors liste PSIT',
+      'Exécution ou création de service hors heures ouvrées par un compte non technicien',
+      'Outil d’accès distant hors liste interne',
     ],
   },
   {
@@ -263,20 +267,24 @@ export const PSIT_SOC_TYPES = [
     family: 'endpoint',
     entities: ['device'],
     severity: 'P3',
-    label: 'Binaire ou script suspect (VBS, runner)',
+    label: 'Binaire ou fichier suspect',
+    description:
+      'Binaire, script ou fichier suspect observé sur un poste (VBS, runner, téléchargement récent)',
     guide: [
       { id: 'parent', label: 'Identifier le processus parent (Office vers wscript = TP probable)', evidence: 'device.compliance' },
-      { id: 'binary', label: 'Qualifier le script : chemin, signature, contenu si disponible' },
+      { id: 'binary', label: 'Qualifier le fichier : hash, signature, chemin, origine (mail, web, USB)' },
       { id: 'prevalence', label: 'Prévalence sur le parc' },
+      { id: 'context', label: 'Autres alertes sur le poste ou sur son titulaire ?' },
       { id: 'identity', label: 'Si exécuté : pivot identité sur le titulaire de la machine' },
     ],
     fpClues: [
       'Script d’administration connu, chemin système',
+      'Fichier signé d’un éditeur connu, origine légitime',
       'Prévalent sur le parc (outillage déployé)',
     ],
     tpClues: [
       'Parent = application Office ou navigateur',
-      'Chemin utilisateur, téléchargé récemment',
+      'Chemin utilisateur, téléchargé récemment, hash inconnu',
     ],
   },
   {
@@ -285,50 +293,29 @@ export const PSIT_SOC_TYPES = [
     family: 'endpoint',
     entities: ['device'],
     severity: 'P4',
-    label: 'Malware détecté et bloqué, scan de ports horizontal',
+    label: 'Détection bloquée (poste)',
+    description:
+      'Malware, logiciel indésirable ou scan de ports détecté et bloqué : risque résiduel faible, à confirmer',
     guide: [
-      { id: 'blocked', label: 'Confirmer le blocage : risque résiduel faible si bloqué', evidence: 'device.defender' },
-      { id: 'operator', label: 'Compte exécutant et plage IP : outillage d’administration des techniciens ?' },
-      { id: 'context', label: 'Précédé d’une autre alerte identité sur le même poste ?' },
+      { id: 'eicar', label: 'EICAR ou fichier de test : clore en faux positif sans aller plus loin' },
+      { id: 'blocked', label: 'Confirmer le blocage sur l’évidence : bloqué = risque résiduel faible', evidence: 'device.defender' },
+      { id: 'hash', label: 'Qualifier le hash (détections génériques type Wacatac, Malgent) et sa prévalence' },
+      { id: 'tolerated', label: 'Logiciel indésirable : est-il toléré chez ce client ?' },
+      { id: 'operator', label: 'Scan de ports : compte exécutant et plage IP, outillage d’administration ?' },
+      { id: 'context', label: 'Précédé d’une autre alerte identité ou EDR sur le même poste ?' },
     ],
     fpClues: [
+      'EICAR ou fichier de test',
+      'Détection bloquée, hash prévalent et bénin, aucun autre signal',
+      'Logiciel toléré ou installé sciemment, détection préventive',
       'Scanner réseau des techniciens : compte connu, plage d’administration, heures ouvrées',
-      'Détection bloquée sans autre signal',
     ],
     tpClues: [
+      'Actif ou non remédié malgré le libellé',
+      'Hash inconnu, chemin utilisateur',
       'Scan depuis un poste utilisateur standard',
       'Précédé d’une alerte identité ou EDR sur le même poste',
     ],
-  },
-  {
-    id: 13,
-    source: 'xdr',
-    family: 'xdr',
-    entities: ['device'],
-    severity: 'P2',
-    label: 'Malware blocked / prevented / active (Wacatac, Malgent, FakeFolder, EICAR)',
-    guide: [
-      { id: 'eicar', label: 'EICAR = fichier de test : clore benign en un clic' },
-      { id: 'status', label: 'Lire remediationStatus sur l’évidence : bloqué = risque résiduel faible', evidence: 'device.defender' },
-      { id: 'hash', label: 'Qualifier le hash (détections génériques Wacatac/Malgent) et la prévalence' },
-      { id: 'writeback', label: 'Qualifier dans Defender (classification + détermination) via le dossier' },
-    ],
-    fpClues: ['EICAR ou fichier de test', 'Bloqué, hash prévalent et bénin'],
-    tpClues: ['Actif ou non remédié', 'Hash inconnu, chemin utilisateur'],
-  },
-  {
-    id: 14,
-    source: 'xdr',
-    family: 'xdr',
-    entities: ['device'],
-    severity: 'P4',
-    label: 'Unwanted software prevented',
-    guide: [
-      { id: 'pua', label: 'PUA bloquée : identifier le logiciel et sa source' },
-      { id: 'tolerated', label: 'Est-il toléré chez ce client ? Qualifier rapidement' },
-    ],
-    fpClues: ['Logiciel toléré ou installé sciemment, détection préventive'],
-    tpClues: ['Accompagné d’autres détections sur le même poste'],
   },
   {
     id: 15,
@@ -336,7 +323,9 @@ export const PSIT_SOC_TYPES = [
     family: 'xdr',
     entities: ['device', 'user'],
     severity: 'P1',
-    label: 'Infostealer activity',
+    label: 'Infostealer',
+    description:
+      'Activité de vol d’identifiants sur un poste',
     guide: [
       { id: 'assume', label: 'TP jusqu’à preuve du contraire : les identifiants du poste sont considérés exposés' },
       { id: 'identity', label: 'Pivot identité immédiat : révoquer les sessions, réinitialiser le mot de passe', evidence: 'user.sessions' },
@@ -347,42 +336,14 @@ export const PSIT_SOC_TYPES = [
     tpClues: ['Par défaut : agir d’abord, qualifier ensuite'],
   },
   {
-    id: 16,
-    source: 'xdr',
-    family: 'xdr',
-    entities: ['device'],
-    severity: 'P3',
-    label: 'Suspicious file observed',
-    guide: [
-      { id: 'hash', label: 'Qualifier le fichier : hash, signature, origine (mail, web, USB)' },
-      { id: 'prevalence', label: 'Prévalence sur le parc' },
-      { id: 'context', label: 'Autres alertes sur le poste ou le titulaire ?', evidence: 'device.compliance' },
-    ],
-    fpClues: ['Fichier signé d’un éditeur connu, origine légitime'],
-    tpClues: ['Origine mail ou web récente, hash inconnu, exécuté'],
-  },
-  {
-    id: 17,
-    source: 'xdr',
-    family: 'xdr',
-    entities: ['device'],
-    severity: 'P3',
-    label: 'Suspicious service launched',
-    guide: [
-      { id: 'service', label: 'Identifier le service : nom, binaire, compte de lancement' },
-      { id: 'persistence', label: 'Créé récemment ? HNO ? chemin non standard ? = persistance probable' },
-      { id: 'rmm', label: 'Confronter à la liste RMM PSIT (un agent RMM crée des services)', evidence: 'device.compliance' },
-    ],
-    fpClues: ['Service d’un agent connu (RMM, antivirus, sauvegarde)'],
-    tpClues: ['Service créé HNO, binaire non signé, chemin utilisateur'],
-  },
-  {
     id: 18,
     source: 'mdo',
     family: 'mail',
     entities: ['mail'],
     severity: 'P2',
-    label: 'Phishing non bloqué, entités non purgées après livraison (ZAP incomplet)',
+    label: 'Phishing livré',
+    description:
+      'Phishing non bloqué, entités non purgées après livraison (ZAP incomplet)',
     guide: [
       { id: 'evidence', label: 'Lire l’évidence : networkMessageId, destinataires, objet, URLs, verdict' },
       { id: 'trace', label: 'Message trace : à qui le message a réellement été livré' },
@@ -411,7 +372,9 @@ export const PSIT_SOC_TYPES = [
     family: 'identity-persistence',
     entities: ['app', 'user'],
     severity: 'P4',
-    label: 'Activité applicative : ajout, modification ou consentement',
+    label: 'Activité applicative',
+    description:
+      'Ajout, modification ou consentement applicatif, action non précisée par la source',
     guide: [
       {
         id: 'action',
@@ -448,7 +411,9 @@ export const PSIT_SOC_TYPES = [
     family: 'unknown',
     entities: [],
     severity: 'P3',
-    label: 'Type non déterminé : libellé absent de la table de correspondance',
+    label: 'À déterminer',
+    description:
+      'Libellé absent de la table de correspondance : le type reste à corriger',
     guide: [
       { id: 'read', label: 'Lire le sujet et le corps de l’alerte d’origine, dans le ticket' },
       {
@@ -466,11 +431,23 @@ export const PSIT_SOC_TYPES = [
   },
 ]
 
+/**
+ * Types that were merged into another, and where they went.
+ *
+ * The catalogue was nineteen entries whose labels ran to a full sentence, several of them saying
+ * the same thing twice: type 3's own guide read "run type 1's guide", and the Lighthouse family
+ * repeated the endpoint one in English. Merging them is only safe because of this map: a dossier
+ * already filed under a retired id keeps a category and a guide instead of falling back to a bare
+ * number, and so does an alert the API resolver has not been remapped for yet.
+ */
+export const PSIT_SOC_RETIRED_TYPES = { 3: 1, 13: 12, 14: 12, 16: 11, 17: 10 }
+
 /** The catalogue entry for a type id, or null: an unknown id renders as unknown, never throws. */
 export const psitSocTypeById = (id) => {
   const numeric = Number(id)
   if (!Number.isFinite(numeric)) return null
-  return PSIT_SOC_TYPES.find((type) => type.id === numeric) ?? null
+  const resolved = PSIT_SOC_RETIRED_TYPES[numeric] ?? numeric
+  return PSIT_SOC_TYPES.find((type) => type.id === resolved) ?? null
 }
 
 /**

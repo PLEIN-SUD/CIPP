@@ -102,19 +102,6 @@ const Page = () => {
   })
   const socCase = Array.isArray(caseRequest.data) ? caseRequest.data[0] : caseRequest.data
 
-  // The same cached request as the queue: the assignee shows as a face and a name here too.
-  const analystsRequest = ApiGetCall({
-    url: '/api/PSITListSocAnalysts',
-    queryKey: 'PSITSocAnalysts',
-    staleTime: 5 * 60 * 1000,
-  })
-  const assignedName = (Array.isArray(analystsRequest.data?.Analysts)
-    ? analystsRequest.data.Analysts
-    : []
-  ).find(
-    (analyst) =>
-      analyst?.userPrincipalName?.toLowerCase() === socCase?.AssignedTo?.toLowerCase()
-  )?.displayName
 
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
   // The same three tabs as the BEC screen, in the same order, so the two investigation views
@@ -326,10 +313,7 @@ const Page = () => {
                               label="Pris par"
                               value={
                                 socCase.AssignedTo ? (
-                                  <PsitSocAnalystCell
-                                    upn={socCase.AssignedTo}
-                                    displayName={assignedName}
-                                  />
+                                  <PsitSocAnalystCell upn={socCase.AssignedTo} />
                                 ) : (
                                   'personne'
                                 )

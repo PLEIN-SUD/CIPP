@@ -281,7 +281,7 @@ export const PsitBecIncidentPanel = ({
                   autotaskTicket && !TICKET_PATTERN.test(autotaskTicket)
                     ? 'Forme inhabituelle (attendu T20260820.0042). Vérifiez la saisie ; ce contrôle ne bloque pas.'
                     : ticketIsSuggested
-                      ? 'Repris du dossier SOC — modifiable. Référence client, reprise sur les deux rapports.'
+                      ? 'Repris du dossier SOC, modifiable. Référence client, reprise sur les deux rapports.'
                       : 'Référence client, reprise sur les deux rapports et sur le nom du fichier PDF.'
                 }
                 value={autotaskTicket}

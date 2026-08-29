@@ -67,6 +67,13 @@ const Page = () => {
     () => (Array.isArray(analystsRequest.data?.Analysts) ? analystsRequest.data.Analysts : []),
     [analystsRequest.data]
   )
+  // The endpoint reports why a name is missing rather than returning an empty list; the
+  // queue shows that reason instead of leaving an analyst to wonder why he reads an address.
+  const analystWarnings = useMemo(
+    () => (Array.isArray(analystsRequest.data?.Warnings) ? analystsRequest.data.Warnings : []),
+    [analystsRequest.data]
+  )
+
   const analystOptions = useMemo(
     () =>
       analysts.map((analyst) => ({
@@ -102,7 +109,7 @@ const Page = () => {
         // Technical, hidden by default: the actions address a dossier by it, and an analyst
         // reading an export needs to know which dossier a line is.
         CaseId: row?.CaseId ?? '',
-        Client: row?.Tenant ?? '',
+        Tenant: row?.Tenant ?? '',
         // The emitter's own severity words when the dossier carries them, our P level otherwise.
         // Ordering already ran on our P level above.
         'Sévérité': psitSocDisplaySeverity(row),
@@ -144,7 +151,7 @@ const Page = () => {
       label: 'Ouvrir le dossier',
       type: 'GET',
       icon: <MagnifyingGlassIcon />,
-      link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Client]',
+      link: '/security/soc/case?caseId=[CaseId]&tenantFilter=[Tenant]',
       multiPost: false,
     },
     // -- Assignment: who holds the case --
@@ -155,7 +162,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Client',
+        tenantFilter: 'Tenant',
         Status: '!investigating',
         // The server assigns the case to the caller. A name sent from here could be anyone's.
         TakeOwnership: '!true',
@@ -168,7 +175,7 @@ const Page = () => {
       type: 'POST',
       icon: <SwapHoriz />,
       url: '/api/PSITExecSocCase',
-      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
       fields: [
         {
           type: 'autoComplete',
@@ -192,7 +199,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       // '!' marks a literal: an empty AssignedTo is the release gesture server-side, where an
       // absent one means "leave it".
-      data: { CaseId: 'CaseId', tenantFilter: 'Client', AssignedTo: '!' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant', AssignedTo: '!' },
       confirmText: 'Rendre ce dossier à la file ? Il redevient à prendre ; son avancement reste.',
       relatedQueryKeys: [queryKey],
     },
@@ -204,7 +211,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Client',
+        tenantFilter: 'Tenant',
         Verdict: '!false-positive',
       },
       fields: [
@@ -227,7 +234,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Client',
+        tenantFilter: 'Tenant',
         Verdict: '!true-positive',
       },
       fields: [
@@ -249,7 +256,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Client',
+        tenantFilter: 'Tenant',
         Status: '!contained',
       },
       confirmText: 'Marquer ce dossier comme confiné ?',
@@ -262,7 +269,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Client',
+        tenantFilter: 'Tenant',
         Status: '!closed',
       },
       confirmText: 'Clore ce dossier ? La clôture est horodatée à votre nom.',
@@ -275,7 +282,7 @@ const Page = () => {
       url: '/api/PSITExecSocCase',
       data: {
         CaseId: 'CaseId',
-        tenantFilter: 'Client',
+        tenantFilter: 'Tenant',
         Status: '!investigating',
       },
       confirmText:
@@ -291,7 +298,7 @@ const Page = () => {
       type: 'POST',
       icon: <Edit />,
       url: '/api/PSITExecSocCase',
-      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
       fields: [
         {
           type: 'autoComplete',
@@ -315,7 +322,7 @@ const Page = () => {
       type: 'POST',
       icon: <Edit />,
       url: '/api/PSITExecSocCase',
-      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
       fields: [
         {
           type: 'autoComplete',
@@ -349,7 +356,7 @@ const Page = () => {
       type: 'POST',
       icon: <Delete />,
       url: '/api/PSITExecSocCaseRemove',
-      data: { CaseId: 'CaseId', tenantFilter: 'Client' },
+      data: { CaseId: 'CaseId', tenantFilter: 'Tenant' },
       confirmText:
         'Supprimer définitivement ce dossier ? Son journal disparaît avec lui. Un dossier terminé se clôt, il ne se supprime pas : la suppression est pour les enregistrements de test et les erreurs.',
       relatedQueryKeys: [queryKey],
@@ -360,7 +367,7 @@ const Page = () => {
   const offCanvas = {
     extendedInfoFields: [
       'CaseId',
-      'Client',
+      'Tenant',
       'Catégorie',
       'Origine',
       'Sévérité',
@@ -383,7 +390,7 @@ const Page = () => {
   }
 
   const simpleColumns = [
-    'Client',
+    'Tenant',
     'Sévérité',
     'Ticket Autotask',
     'Lien',
@@ -425,6 +432,22 @@ const Page = () => {
               lirait comme « aucun dossier en attente ».
             </Alert>
           )}
+
+          {/* Names degrade to addresses on purpose, but never silently: an analyst who sees an
+              email where a name should be must be able to tell "not deployed" from "Graph said
+              no" without opening a console. */}
+          {analystsRequest.isError && (
+            <Alert severity="info">
+              La liste des analystes n’a pas répondu : les dossiers affichent les adresses e-mail
+              au lieu des noms, et la réattribution attend une adresse saisie à la main. Si le
+              portail vient d’être mis à jour, l’API ne l’est peut-être pas encore.
+            </Alert>
+          )}
+          {analystWarnings.map((warning) => (
+            <Alert severity="info" key={warning}>
+              {`Noms des analystes indisponibles : ${warning}`}
+            </Alert>
+          ))}
 
           {!failed && (
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>

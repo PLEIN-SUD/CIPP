@@ -445,9 +445,12 @@ const Page = () => {
               portail vient d’être mis à jour, l’API ne l’est peut-être pas encore.
             </Alert>
           )}
+          {/* Warnings only: which list the analysts came from is settings information, shown
+              on the ingestion screen where a group can be named, not above a triage queue every
+              time it opens. */}
           {analystWarnings.map((warning) => (
-            <Alert severity="info" key={warning}>
-              {`Noms des analystes indisponibles : ${warning}`}
+            <Alert severity="warning" key={warning}>
+              {warning}
             </Alert>
           ))}
 

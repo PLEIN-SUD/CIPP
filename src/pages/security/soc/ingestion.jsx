@@ -17,6 +17,7 @@ import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippCopyToClipBoard } from '../../../components/CippComponents/CippCopyToClipboard'
 import { CippApiResults } from '../../../components/CippComponents/CippApiResults'
+import { PsitSocAnalystGroupCard } from '../../../components/psit/soc/PsitSocAnalystGroupCard'
 
 /**
  * Configuration of the ingestion webhook: the point where an external notification becomes a case
@@ -54,6 +55,8 @@ const Page = () => {
         <Stack spacing={2}>
           <PsitSocWipBanner />
           <Typography variant="h5">Ingestion des alertes</Typography>
+
+          <PsitSocAnalystGroupCard />
 
           <Card variant="outlined">
             <CardHeader

@@ -145,7 +145,9 @@ export const PsitSocAppReportFrDocument = ({
               when: formatUtc(entry?.OccurredUtc || entry?.Utc),
               action: String(entry?.Action ?? ''),
               detail: String(entry?.Detail ?? ''),
-              by: String(entry?.By ?? ''),
+              // Analyst, not By: the journal names its author that way, and reading a field
+              // nobody writes prints an empty column that looks like an unattributed action.
+              by: String(entry?.Analyst ?? ''),
             }))}
             emptyText="Aucune action journalisée sur ce dossier."
           />
@@ -302,7 +304,7 @@ export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEven
   // a free consultation does not have.
   if (!socCase?.CaseId) return null
 
-  if (!socCase?.Verdict) {
+  if (!socCase?.Qualification?.Verdict) {
     return (
       <Tooltip title="Rapport application indisponible : qualifiez le dossier en vrai ou faux positif avant de produire un document">
         <span>

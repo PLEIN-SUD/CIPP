@@ -37,7 +37,10 @@ export const buildAppReportModel = ({
   auditEvents = [],
   scopes,
 } = {}) => {
-  const verdict = socCase?.Verdict
+  // Qualification.Verdict, not socCase.Verdict: the endpoint takes a flat Verdict parameter
+  // when writing, and returns it nested when reading. This read the writer's shape and was
+  // therefore never true, which kept the report button disabled on every dossier.
+  const verdict = socCase?.Qualification?.Verdict
   // accountEnabled === false is the one state that proves a revocation; an absent principal or
   // an absent field proves nothing and must not be reported as one.
   const revoked = principal?.accountEnabled === false
@@ -53,8 +56,10 @@ export const buildAppReportModel = ({
   const adminConsents = consents.filter((consent) => consent?.kind === 'admin')
   const userConsents = consents.filter((consent) => consent?.kind === 'user')
 
+  // Sorted on the same stamp the report displays: an action declared as having happened
+  // earlier belongs earlier in the story, not where its write landed.
   const journal = [...(socCase?.ActionLog ?? [])].sort((a, b) =>
-    String(a?.Utc ?? '').localeCompare(String(b?.Utc ?? ''))
+    String(a?.OccurredUtc || a?.Utc || '').localeCompare(String(b?.OccurredUtc || b?.Utc || ''))
   )
 
   return {
@@ -62,7 +67,7 @@ export const buildAppReportModel = ({
     conclusion: CONCLUSIONS[kind](revoked),
     revoked,
     verdict: verdict ?? null,
-    justification: String(socCase?.Justification ?? ''),
+    justification: String(socCase?.Qualification?.Justification ?? ''),
     adminConsents,
     userConsents,
     riskyScopes: scopes?.risky ?? [],

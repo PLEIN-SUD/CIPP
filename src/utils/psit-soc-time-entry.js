@@ -86,9 +86,11 @@ export const psitSocTimeEntry = (socCase) => {
   }
 
   const outcome = []
-  if (socCase.Verdict && VERDICT_SENTENCE[socCase.Verdict]) {
-    outcome.push('', VERDICT_SENTENCE[socCase.Verdict])
-    const justification = String(socCase.Justification ?? '').trim()
+  // Qualification.Verdict is the reader's shape; the flat Verdict is the writer's parameter.
+  const verdict = socCase.Qualification?.Verdict
+  if (verdict && VERDICT_SENTENCE[verdict]) {
+    outcome.push('', VERDICT_SENTENCE[verdict])
+    const justification = String(socCase.Qualification?.Justification ?? '').trim()
     if (justification) outcome.push(justification)
   } else if (STATUS_SENTENCE[socCase.Status]) {
     outcome.push('', STATUS_SENTENCE[socCase.Status])

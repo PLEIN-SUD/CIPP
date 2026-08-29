@@ -73,12 +73,20 @@ const socCase = {
   CaseId: 'PSIT-SOC-20260828-985D',
   Tenant: 'client.test',
   ExternalRef: 'T20260828.0009',
-  Verdict: 'false-positive',
-  Justification: 'Déploiement assumé par le dirigeant, révocation demandée par le client',
+  // The reader's shape, not the writer's: PSITListSocCases returns the verdict nested.
+  Qualification: {
+    Verdict: 'false-positive',
+    Justification: 'Déploiement assumé par le dirigeant, révocation demandée par le client',
+  },
   Entities: { appId: 'app-guid' },
   ActionLog: [
-    { Utc: '2026-08-28T09:00:00Z', Action: 'ingested', Detail: 'Alerte reçue', By: 'webhook' },
-    { Utc: '2026-08-28T14:00:00Z', Action: 'revoked', Detail: 'Consentement révoqué', By: 'analyste' },
+    { Utc: '2026-08-28T09:00:00Z', Action: 'ingested', Detail: 'Alerte reçue', Analyst: 'webhook' },
+    {
+      Utc: '2026-08-28T14:00:00Z',
+      Action: 'revoked',
+      Detail: 'Consentement révoqué',
+      Analyst: 'analyste@partner.test',
+    },
   ],
 }
 
@@ -128,16 +136,19 @@ describe('PsitSocAppReportFrDocument', () => {
     expect(screen.getByText(/l'état attendu/)).toBeInTheDocument()
   })
 
-  it('carries the journal of what was actually done', () => {
+  it('carries the journal of what was actually done, and who did it', () => {
     render()
     expect(screen.getByText(/Consentement révoqué/)).toBeInTheDocument()
+    // The author column reads Analyst, the field the journal actually writes. Reading 'By' -
+    // which nothing writes - printed an empty column that looked like an unattributed action.
+    expect(screen.getByText('analyste@partner.test')).toBeInTheDocument()
   })
 })
 
 describe('PsitSocAppReportButton', () => {
   it('refuses to produce a client document while the dossier concludes nothing', () => {
     renderWithProviders(
-      <PsitSocAppReportButton socCase={{ ...socCase, Verdict: undefined }} principal={principal} />
+      <PsitSocAppReportButton socCase={{ ...socCase, Qualification: null }} principal={principal} />
     )
     expect(screen.getByRole('button', { name: /Rapport application/ })).toBeDisabled()
   })

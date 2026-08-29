@@ -11,9 +11,15 @@ const socCase = {
   Source: 'extsoc',
   ExternalRef: 'T20260828.0009',
   Entities: { upn: 'p.martin@client.test' },
+  // The reader's shape: the journal names its author Analyst, and the verdict is nested.
   ActionLog: [
-    { Utc: '2026-08-28T14:30:00Z', Action: 'revoked', Detail: 'Consentement révoqué', By: 'analyste' },
-    { Utc: '2026-08-28T09:00:00Z', Action: 'ingested', Detail: 'Alerte reçue', By: 'webhook' },
+    {
+      Utc: '2026-08-28T14:30:00Z',
+      Action: 'revoked',
+      Detail: 'Consentement révoqué',
+      Analyst: 'analyste@partner.test',
+    },
+    { Utc: '2026-08-28T09:00:00Z', Action: 'ingested', Detail: 'Alerte reçue', Analyst: 'webhook' },
   ],
 }
 
@@ -38,8 +44,10 @@ describe('psitSocTimeEntry', () => {
   it('states the qualification and its justification when the dossier carries one', () => {
     const text = psitSocTimeEntry({
       ...socCase,
-      Verdict: 'false-positive',
-      Justification: 'Déploiement assumé par le dirigeant',
+      Qualification: {
+        Verdict: 'false-positive',
+        Justification: 'Déploiement assumé par le dirigeant',
+      },
     })
     expect(text).toMatch(/faux positif/)
     expect(text).toMatch(/Déploiement assumé par le dirigeant/)

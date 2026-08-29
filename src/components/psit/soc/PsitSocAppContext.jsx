@@ -15,6 +15,7 @@ import { PropertyList } from '../../property-list'
 import { PropertyListItem } from '../../property-list-item'
 import { readAppScopes } from '../../../utils/psit-soc-app-scopes'
 import { readConsentAudit, readConsentGrants } from '../../../utils/psit-soc-consent'
+import { PsitSocAppReportButton } from '../PsitSocAppReportFr'
 
 /**
  * The application side of a case: what an OAuth consent actually granted, and the gesture that
@@ -273,7 +274,7 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              Action
+              Action et rapport
             </Typography>
             {caseless && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -281,15 +282,27 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
                 geste laisse sa trace au journal.
               </Typography>
             )}
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              disabled={caseless || action.isPending}
-              onClick={revoke}
-            >
-              Révoquer le consentement
-            </Button>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                disabled={caseless || action.isPending}
+                onClick={revoke}
+              >
+                Révoquer le consentement
+              </Button>
+              {/* The report reads the evidence this panel already gathered, so generating it
+                  costs no extra call. It waits for a qualification: a client document that
+                  concludes nothing is a document nobody should send. */}
+              <PsitSocAppReportButton
+                socCase={socCase}
+                principal={principal}
+                consents={consents}
+                auditEvents={auditEvents}
+                scopes={scopes}
+              />
+            </Stack>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               Désactive l’application et supprime ses consentements. L’application n’est pas
               supprimée : les dates et permissions restent disponibles pour l’investigation, et la

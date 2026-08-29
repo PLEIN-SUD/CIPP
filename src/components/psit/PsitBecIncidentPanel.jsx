@@ -91,6 +91,9 @@ export const PsitBecIncidentPanel = ({
   triage = [],
   collapsible = false,
   defaultExpanded = true,
+  // The Autotask ticket the SOC dossier already knows, offered when the record has none of its
+  // own. A suggestion, never an override: an edit or a stored value always wins.
+  suggestedTicket = '',
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const userId = userData?.id
@@ -145,6 +148,10 @@ export const PsitBecIncidentPanel = ({
   const [closing, setClosing] = useState(false)
   const [closureNote, setClosureNote] = useState('')
   const value = (field, fallback = '') => edits[field] ?? stored?.[field] ?? fallback
+  // Read once, used everywhere the field appears (display, validation, save): what the analyst
+  // sees prefilled is exactly what a save records.
+  const autotaskTicket = value('AutotaskTicket', suggestedTicket)
+  const ticketIsSuggested = Boolean(suggestedTicket) && !edits.AutotaskTicket && !stored?.AutotaskTicket
   // psitAsArray, not `?? []`: the worker serialises a one-row list as a bare object, and this
   // is what `list(field).map(...)` blew up on.
   const list = (field) => psitAsArray(edits[field] ?? stored?.[field])
@@ -157,7 +164,7 @@ export const PsitBecIncidentPanel = ({
         tenantFilter,
         userId,
         userPrincipalName: userData?.userPrincipalName,
-        autotaskTicket: value('AutotaskTicket'),
+        autotaskTicket,
         detectedUtc: value('DetectedUtc'),
         containedUtc: value('ContainedUtc'),
         status: value('Status', 'ongoing'),
@@ -269,15 +276,15 @@ export const PsitBecIncidentPanel = ({
                 size="small"
                 fullWidth
                 placeholder="ex. T20260820.0042"
-                error={
-                  Boolean(value('AutotaskTicket')) && !TICKET_PATTERN.test(value('AutotaskTicket'))
-                }
+                error={Boolean(autotaskTicket) && !TICKET_PATTERN.test(autotaskTicket)}
                 helperText={
-                  value('AutotaskTicket') && !TICKET_PATTERN.test(value('AutotaskTicket'))
+                  autotaskTicket && !TICKET_PATTERN.test(autotaskTicket)
                     ? 'Forme inhabituelle (attendu T20260820.0042). Vérifiez la saisie ; ce contrôle ne bloque pas.'
-                    : 'Référence client, reprise sur les deux rapports et sur le nom du fichier PDF.'
+                    : ticketIsSuggested
+                      ? 'Repris du dossier SOC — modifiable. Référence client, reprise sur les deux rapports.'
+                      : 'Référence client, reprise sur les deux rapports et sur le nom du fichier PDF.'
                 }
-                value={value('AutotaskTicket')}
+                value={autotaskTicket}
                 onChange={(event) => set('AutotaskTicket', event.target.value)}
               />
               <TextField

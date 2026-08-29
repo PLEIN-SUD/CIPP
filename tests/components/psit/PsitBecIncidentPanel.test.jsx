@@ -275,3 +275,25 @@ describe('PsitBecIncidentPanel', () => {
     expect(screen.getAllByText(/does not belong to the set/).length).toBeGreaterThan(0)
   })
 })
+
+describe('the ticket the dossier already knows', () => {
+  // Opened from a SOC dossier, the Autotask number travelled with the alert; retyping it was
+  // the kind of errand this portal exists to remove. A suggestion, never an override.
+  it('prefills the Autotask field when the record has none of its own', () => {
+    render({ suggestedTicket: 'T20260828.0009' })
+    expect(screen.getByDisplayValue('T20260828.0009')).toBeInTheDocument()
+    expect(screen.getByText(/Repris du dossier SOC/)).toBeInTheDocument()
+  })
+
+  it('never overrides a ticket the record already stores', () => {
+    ApiGetCall.mockImplementation(() => ({
+      data: { Incident: { Reference: 'BEC-2026-001', AutotaskTicket: 'T20260101.0001' } },
+      isFetching: false,
+      isSuccess: true,
+      isError: false,
+    }))
+    render({ suggestedTicket: 'T20260828.0009' })
+    expect(screen.getByDisplayValue('T20260101.0001')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('T20260828.0009')).not.toBeInTheDocument()
+  })
+})

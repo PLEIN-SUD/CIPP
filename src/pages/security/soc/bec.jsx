@@ -120,6 +120,18 @@ const Page = () => {
   })
   const userData = userRequest.data?.[0]
 
+  // Opened from a dossier, the ticket number it carries is offered to the BEC record below -
+  // same request and cache key as the dossier view, so this usually costs nothing.
+  const linkedCaseRequest = ApiGetCall({
+    url: `/api/PSITListSocCases?tenantFilter=${tenantFilter}&CaseId=${caseId}`,
+    queryKey: `PSITSocCase-${tenantFilter}-${caseId}`,
+    waiting: Boolean(caseId && tenantFilter),
+  })
+  const linkedCase = Array.isArray(linkedCaseRequest.data)
+    ? linkedCaseRequest.data[0]
+    : linkedCaseRequest.data
+  const suggestedTicket = linkedCase?.TicketRef || linkedCase?.ExternalRef || ''
+
   const { becData, isFetching, restartCollection } = usePsitBecCollection({
     userId,
     tenantFilter,
@@ -227,6 +239,7 @@ const Page = () => {
                   triage={triage}
                   onRestart={restartCollection}
                   showTriage={false}
+                  suggestedTicket={suggestedTicket}
                   />
                 </>
               )}

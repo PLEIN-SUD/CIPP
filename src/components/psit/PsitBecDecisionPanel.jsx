@@ -38,6 +38,7 @@ export const PsitBecDecisionPanel = ({
   // view puts it in the tab that holds the evidence, since that is where the judgement is made,
   // and would otherwise show the same panel twice.
   showTriage = true,
+  suggestedTicket = '',
 }) => {
   if (!userData || !becData || becData.Waiting) return null
 
@@ -127,6 +128,7 @@ export const PsitBecDecisionPanel = ({
         triage={triage}
         collapsible
         defaultExpanded={!qualifying}
+        suggestedTicket={suggestedTicket}
       />
     </Stack>
   )

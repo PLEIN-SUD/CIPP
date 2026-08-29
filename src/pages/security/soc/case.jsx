@@ -41,6 +41,7 @@ import {
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
 import { PsitSocAnalystCell } from '../../../components/psit/PsitSocAnalystCell'
+import { PsitSocTimeEntry } from '../../../components/psit/soc/PsitSocTimeEntry'
 import { usePsitSocEvidence } from '../../../hooks/use-psit-soc-evidence'
 
 // Timestamps land as UTC ISO strings; the analyst reads them in his own clock. An unreadable or
@@ -172,6 +173,10 @@ const Page = () => {
             >
               Actualiser
             </Button>
+            {/* Whatever the investigation was, it ends the same way: an entry in the
+                ticket. The text is written from the journal, here rather than in a tab,
+                because it is reached for at the end of any of them. */}
+            <PsitSocTimeEntry socCase={socCase} />
             {socCase?.TicketUrl && (
               <Button
                 size="small"

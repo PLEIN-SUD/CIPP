@@ -14,6 +14,7 @@ export const APP_CONCLUSION = {
   MALICIOUS: 'malicious',
   LEGIT_REVOKED: 'legit-revoked',
   LEGIT_KEPT: 'legit-kept',
+  UNDETERMINED: 'undetermined',
   UNQUALIFIED: 'unqualified',
 }
 
@@ -26,6 +27,10 @@ const CONCLUSIONS = {
     "L'investigation conclut à une application légitime : le consentement a été accordé volontairement par une personne habilitée, qui l'a confirmé. À la demande du client, l'accès a néanmoins été révoqué, par mesure d'hygiène et dans l'attente d'une solution de remplacement.",
   [APP_CONCLUSION.LEGIT_KEPT]: () =>
     "L'investigation conclut à une application légitime : le consentement a été accordé volontairement par une personne habilitée. L'accès est maintenu ; les recommandations ci-dessous encadrent son maintien.",
+  [APP_CONCLUSION.UNDETERMINED]: (revoked) =>
+    revoked
+      ? "L'investigation n'a pas permis de trancher : les éléments réunis n'établissent ni la légitimité de cette application ni son caractère illégitime. Le consentement a été révoqué, ce qui ferme l'accès sans répondre à la question."
+      : "L'investigation n'a pas permis de trancher : les éléments réunis n'établissent ni la légitimité de cette application ni son caractère illégitime. L'accès est maintenu en l'état.",
   [APP_CONCLUSION.UNQUALIFIED]: () =>
     "Le dossier n'est pas qualifié : ce document décrit les faits collectés et ne conclut pas.",
 }
@@ -45,13 +50,18 @@ export const buildAppReportModel = ({
   // an absent field proves nothing and must not be reported as one.
   const revoked = principal?.accountEnabled === false
 
+  // Three verdicts exist, not two. Reading 'anything that is not true-positive' as a false
+  // positive made an undetermined dossier produce a client document asserting the application
+  // was legitimate - the one conclusion the analyst had explicitly refused to draw.
   const kind = !verdict
     ? APP_CONCLUSION.UNQUALIFIED
     : verdict === 'true-positive'
       ? APP_CONCLUSION.MALICIOUS
-      : revoked
-        ? APP_CONCLUSION.LEGIT_REVOKED
-        : APP_CONCLUSION.LEGIT_KEPT
+      : verdict === 'undetermined'
+        ? APP_CONCLUSION.UNDETERMINED
+        : revoked
+          ? APP_CONCLUSION.LEGIT_REVOKED
+          : APP_CONCLUSION.LEGIT_KEPT
 
   const adminConsents = consents.filter((consent) => consent?.kind === 'admin')
   const userConsents = consents.filter((consent) => consent?.kind === 'user')

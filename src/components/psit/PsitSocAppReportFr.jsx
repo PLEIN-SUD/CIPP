@@ -41,6 +41,14 @@ import { APP_CONCLUSION, buildAppReportModel } from '../../utils/psit-soc-app-re
  * a document that concludes nothing is a document nobody should send to a client.
  */
 
+// Three verdicts, named as the analyst named them. A binary reading turned 'indéterminé' into
+// 'faux positif' on a document meant for the client.
+const VERDICT_WORDS = {
+  'true-positive': 'vrai positif',
+  'false-positive': 'faux positif',
+  undetermined: 'indéterminé',
+}
+
 const formatUtc = (value) => {
   if (!value) return 'N/D'
   try {
@@ -82,7 +90,8 @@ export const PsitSocAppReportFrDocument = ({
   const conclusionBox =
     model.kind === APP_CONCLUSION.MALICIOUS ? (
       <AlertBox title="Conclusion">{model.conclusion}</AlertBox>
-    ) : model.kind === APP_CONCLUSION.UNQUALIFIED ? (
+    ) : model.kind === APP_CONCLUSION.UNDETERMINED ||
+      model.kind === APP_CONCLUSION.UNQUALIFIED ? (
       <AlertBox title="Document non conclusif">{model.conclusion}</AlertBox>
     ) : (
       <ClearBox title="Conclusion">{model.conclusion}</ClearBox>
@@ -118,9 +127,9 @@ export const PsitSocAppReportFrDocument = ({
         {model.verdict && (
           <Section title="Qualification">
             <Paragraph>
-              {`Le dossier est qualifié ${
-                model.verdict === 'true-positive' ? 'vrai positif' : 'faux positif'
-              }${model.justification ? ` : ${model.justification}` : '.'}`}
+              {`Le dossier est qualifié ${VERDICT_WORDS[model.verdict] ?? model.verdict}${
+                model.justification ? ` : ${model.justification}` : '.'
+              }`}
             </Paragraph>
             {model.kind === APP_CONCLUSION.LEGIT_REVOKED && (
               <Paragraph>

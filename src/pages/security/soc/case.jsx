@@ -134,11 +134,14 @@ const Page = () => {
               File d’attente
             </Button>
             <Typography variant="h5">{socCase?.Title ?? 'Dossier SOC'}</Typography>
-            {socCase?.Severity && (
+            {/* Gated on what it displays, not on the P level: a dossier ingested with the
+                emitter's wording and no P level of its own showed no severity at all, which is
+                every dossier the emitter-tag feature was built for. */}
+            {psitSocDisplaySeverity(socCase) && (
               <Chip
                 size="small"
                 color={SEVERITY_COLOUR[socCase.Severity] ?? 'default'}
-                label={psitSocDisplaySeverity(socCase) || socCase.Severity}
+                label={psitSocDisplaySeverity(socCase)}
               />
             )}
             {socCase?.Status && (

@@ -36,6 +36,10 @@ export const PsitSocInvestigatePage = ({
   const formControl = useForm({ mode: 'onChange' })
   const picked = useWatch({ control: formControl.control })
   const query = router.query
+  // Opened from a dossier's panel, the link carries its id so the way back exists. Without
+  // reading it, the three entity screens offered to open a SECOND dossier on an entity that
+  // already had one, and the promised return was a link to the queue.
+  const caseId = query.caseId
 
   const target = hasTarget(query)
   const pseudoCase = useMemo(
@@ -71,14 +75,18 @@ export const PsitSocInvestigatePage = ({
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
             <Button
               component={Link}
-              href="/security/soc/queue"
+              href={
+                caseId
+                  ? `/security/soc/case?caseId=${caseId}&tenantFilter=${query.tenantFilter}`
+                  : '/security/soc/queue'
+              }
               startIcon={
                 <SvgIcon fontSize="small">
                   <ArrowBack />
                 </SvgIcon>
               }
             >
-              File d’attente
+              {caseId ? 'Retour au dossier' : 'File d’attente'}
             </Button>
             <Typography variant="h5">{title}</Typography>
           </Stack>
@@ -116,25 +124,32 @@ export const PsitSocInvestigatePage = ({
           ) : (
             <>
               <Alert severity="info">
-                Consultation hors dossier : les preuves s’affichent, les actions attendent un dossier.
-                Ouvrir le dossier transporte l’entité et rend les gestes traçables.
+                {caseId
+                  ? 'Vue plein écran, ouverte depuis un dossier : les preuves s’affichent ici, les actions restent sur le dossier, où chaque geste laisse sa trace au journal.'
+                  : 'Consultation hors dossier : les preuves s’affichent, les actions attendent un dossier. Ouvrir le dossier transporte l’entité et rend les gestes traçables.'}
               </Alert>
               {renderPanel(pseudoCase)}
-              <div>
-                <Button
-                  variant="contained"
-                  startIcon={<PlaylistAdd />}
-                  disabled={creation.isPending}
-                  onClick={openCase}
-                >
-                  Ouvrir un dossier depuis cette investigation
-                </Button>
-                {creation.isError && (
-                  <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>
-                    {creation.error?.response?.data?.Results ?? creation.error?.message ?? 'Échec.'}
-                  </Typography>
-                )}
-              </div>
+              {/* Opened from a dossier, this entity already has one: offering to open a second
+                  would split one investigation across two records. */}
+              {!caseId && (
+                <div>
+                  <Button
+                    variant="contained"
+                    startIcon={<PlaylistAdd />}
+                    disabled={creation.isPending}
+                    onClick={openCase}
+                  >
+                    Ouvrir un dossier depuis cette investigation
+                  </Button>
+                  {creation.isError && (
+                    <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>
+                      {creation.error?.response?.data?.Results ??
+                        creation.error?.message ??
+                        'Échec.'}
+                    </Typography>
+                  )}
+                </div>
+              )}
             </>
           )}
         </Stack>

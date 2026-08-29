@@ -105,7 +105,12 @@ export const PsitBecIncidentPanel = ({
   // Deletion is super-admin territory server-side: anyone else gets a refusal, not a deletion.
   // Closing keeps the record; this removes it, for test dossiers and mistakes.
   const removeRequest = ApiPostCall({
-    relatedQueryKeys: [`PSITBecIncident-${tenantFilter}-${userId}`],
+    // The endpoint empties both tables, so both caches have to go: leaving the triage key behind
+    // kept qualifications on screen that no longer existed anywhere.
+    relatedQueryKeys: [
+      `PSITBecIncident-${tenantFilter}-${userId}`,
+      `PSITBecTriage-${tenantFilter}-${userId}`,
+    ],
   })
   const removeRecord = () => {
     if (

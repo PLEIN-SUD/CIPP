@@ -102,3 +102,16 @@ describe('psitSocElapsedHours', () => {
     ).toBeNull()
   })
 })
+
+describe('an undetermined qualification', () => {
+  // 'Indéterminé' is an answer, not an absence of one, and a time entry that omits it reads as
+  // an investigation that stopped without deciding anything.
+  it('is stated in the ticket text', () => {
+    const text = psitSocTimeEntry({
+      ...socCase,
+      Qualification: { Verdict: 'undetermined', Justification: 'Client injoignable' },
+    })
+    expect(text).toMatch(/indéterminé/)
+    expect(text).toMatch(/Client injoignable/)
+  })
+})

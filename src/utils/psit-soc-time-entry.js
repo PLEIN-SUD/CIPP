@@ -14,6 +14,8 @@ import { PSIT_SOC_SOURCES } from './psit-soc-types'
 const VERDICT_SENTENCE = {
   'false-positive': "Qualification : faux positif (l'alerte ne correspond pas à une compromission).",
   'true-positive': 'Qualification : vrai positif (compromission retenue).',
+  undetermined:
+    "Qualification : indéterminé (les éléments réunis ne permettent pas de trancher). C'est une réponse, pas une absence de réponse.",
 }
 
 const STATUS_SENTENCE = {

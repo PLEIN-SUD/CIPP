@@ -37,6 +37,8 @@ const cases = [
     TypeId: 5,
     Severity: 'P3',
     Status: 'investigating',
+    // Held by someone: 'à prendre' counts open dossiers nobody holds, whatever their status.
+    AssignedTo: 'analyste@partner.test',
     Title: 'Règle de redirection',
     CreatedUtc: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     ExternalRef: '99601',

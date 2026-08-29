@@ -75,7 +75,12 @@ describe('queue summary', () => {
       [
         caseOf({ CaseId: 'recent', CreatedUtc: '2026-08-25T11:50:00Z' }),
         caseOf({ CaseId: 'ancien', CreatedUtc: '2026-08-25T07:00:00Z' }),
-        caseOf({ CaseId: 'pris', Status: 'investigating', CreatedUtc: '2026-08-25T06:00:00Z' }),
+        caseOf({
+          CaseId: 'pris',
+          Status: 'investigating',
+          AssignedTo: 'analyste@partner.test',
+          CreatedUtc: '2026-08-25T06:00:00Z',
+        }),
       ],
       NOW
     )
@@ -171,5 +176,41 @@ describe('psitSocStatusLabel', () => {
   it('passes an unknown code through and answers absence with an empty string', () => {
     expect(psitSocStatusLabel('archived')).toBe('archived')
     expect(psitSocStatusLabel(undefined)).toBe('')
+  })
+})
+
+describe('what "à prendre" counts', () => {
+  // Releasing a dossier leaves it 'investigating' with nobody on it. Counting only 'new' hid
+  // exactly the dossier the release gesture was meant to put back in front of someone.
+  it('counts every open dossier nobody holds, not only the new ones', () => {
+    const summary = psitSocQueueSummary(
+      [
+        caseOf({ CaseId: 'neuf', Status: 'new' }),
+        caseOf({ CaseId: 'relache', Status: 'investigating', AssignedTo: '' }),
+        caseOf({ CaseId: 'tenu', Status: 'investigating', AssignedTo: 'analyste@partner.test' }),
+        caseOf({ CaseId: 'clos', Status: 'closed', AssignedTo: '' }),
+      ],
+      NOW
+    )
+
+    expect(summary.unclaimed).toBe(2)
+    // A finished dossier nobody holds is not waiting for anyone.
+    expect(summary.oldestUntaken.row.CaseId).not.toBe('clos')
+  })
+
+  it('names a released dossier as the one waiting longest', () => {
+    const summary = psitSocQueueSummary(
+      [
+        caseOf({ CaseId: 'recent', Status: 'new', CreatedUtc: '2026-08-25T11:50:00Z' }),
+        caseOf({
+          CaseId: 'relache',
+          Status: 'investigating',
+          AssignedTo: '',
+          CreatedUtc: '2026-08-25T07:00:00Z',
+        }),
+      ],
+      NOW
+    )
+    expect(summary.oldestUntaken.row.CaseId).toBe('relache')
   })
 })

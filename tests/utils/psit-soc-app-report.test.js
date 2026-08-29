@@ -91,3 +91,28 @@ describe('buildAppReportModel', () => {
     expect(model.grantedScopes).toContain('offline_access')
   })
 })
+
+describe('the third verdict', () => {
+  // An adversarial review caught this: reading "anything that is not true-positive" as a false
+  // positive made an undetermined dossier produce a client document asserting the application was
+  // legitimate, which is the one conclusion the analyst had explicitly refused to draw.
+  it('concludes nothing when the analyst could not conclude', () => {
+    const model = buildAppReportModel({
+      socCase: { Qualification: { Verdict: 'undetermined' } },
+      principal: principalActive,
+    })
+    expect(model.kind).toBe(APP_CONCLUSION.UNDETERMINED)
+    expect(model.conclusion).toMatch(/n'a pas permis de trancher/)
+    // The sentence the bug produced, word for word, must not come back.
+    expect(model.conclusion).not.toMatch(/conclut à une application légitime/)
+  })
+
+  it('says the access was cut without pretending that settled the question', () => {
+    const model = buildAppReportModel({
+      socCase: { Qualification: { Verdict: 'undetermined' } },
+      principal: principalRevoked,
+    })
+    expect(model.kind).toBe(APP_CONCLUSION.UNDETERMINED)
+    expect(model.conclusion).toMatch(/sans répondre à la question/)
+  })
+})

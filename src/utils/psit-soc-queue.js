@@ -103,8 +103,16 @@ export const psitSocQueueSummary = (cases, now = Date.now()) => {
     counts[status] = (counts[status] ?? 0) + 1
   }
 
-  const untaken = rows
-    .filter((row) => row?.Status === 'new')
+  // Unclaimed is about who holds a dossier, not about its status: releasing one leaves it
+  // 'investigating' with nobody on it, and counting only 'new' hid exactly the dossier the
+  // release gesture was meant to put back in front of someone.
+  const unclaimed = rows.filter(
+    (row) =>
+      PSIT_SOC_OPEN_STATUSES.includes(row?.Status) &&
+      !String(row?.AssignedTo ?? '').trim()
+  )
+
+  const untaken = unclaimed
     .map((row) => ({ row, age: psitSocAge(row?.CreatedUtc, now) }))
     .filter((entry) => entry.age)
     .sort((a, b) => b.age.minutes - a.age.minutes)
@@ -113,6 +121,7 @@ export const psitSocQueueSummary = (cases, now = Date.now()) => {
     total: rows.length,
     open: rows.filter((row) => PSIT_SOC_OPEN_STATUSES.includes(row?.Status)).length,
     counts,
+    unclaimed: unclaimed.length,
     oldestUntaken: untaken.length > 0 ? untaken[0] : null,
   }
 }

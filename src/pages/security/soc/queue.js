@@ -452,8 +452,8 @@ const Page = () => {
           {!failed && (
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Chip
-                color={summary.counts.new > 0 ? 'error' : 'default'}
-                label={`${summary.counts.new ?? 0} à prendre`}
+                color={summary.unclaimed > 0 ? 'error' : 'default'}
+                label={`${summary.unclaimed ?? 0} à prendre`}
               />
               <Chip
                 color={summary.counts.investigating > 0 ? 'warning' : 'default'}

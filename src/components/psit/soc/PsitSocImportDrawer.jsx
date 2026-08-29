@@ -72,7 +72,9 @@ const SOURCES = {
     apiUrl: '/api/ExecMdoAlertsList',
     // Type 18 is what an MDO alert is here (incomplete ZAP): fixed, not asked.
     data: (tenant) => ({
-      tenantFilter: tenant === 'AllTenants' ? 'tenant' : `!${tenant}`,
+      // 'Tenant' is the column the alert row carries, not a literal: an unresolved name
+      // falls back to itself, and 'tenant' filed dossiers under a client of that name.
+      tenantFilter: tenant === 'AllTenants' ? 'Tenant' : `!${tenant}`,
       ExternalRef: 'id',
       Title: 'title',
       Source: '!mdo',

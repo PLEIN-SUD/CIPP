@@ -91,6 +91,9 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
           tenantFilter: tenant,
           AppId: appId,
           ServicePrincipalId: principal?.id,
+          // Named so the server can file the grants it is about to delete onto this dossier: they
+          // are the evidence that justified the revocation, and nothing else keeps them.
+          CaseId: socCase?.CaseId,
         },
       },
       {

@@ -29,6 +29,11 @@ import {
   Section,
 } from '../CippPdf'
 import { APP_CONCLUSION, buildAppReportModel } from '../../utils/psit-soc-app-report'
+import {
+  PsitReportContributors,
+  PsitReportPhotoLoaders,
+} from './soc/PsitReportContributors'
+import { usePsitReportContributors } from '../../hooks/use-psit-report-contributors'
 
 /**
  * Investigation report for a third-party application, French edition, built on the BEC report's
@@ -74,6 +79,9 @@ export const PsitSocAppReportFrDocument = ({
   scopes,
   brandingSettings,
   variables,
+  contributors = [],
+  contributorNames = {},
+  contributorPhotos = {},
 }) => {
   const model = buildAppReportModel({ socCase, principal, consents, auditEvents, scopes })
   const appName = principal?.displayName || socCase?.Entities?.appDisplayName || 'Application'
@@ -161,6 +169,12 @@ export const PsitSocAppReportFrDocument = ({
             emptyText="Aucune action journalisée sur ce dossier."
           />
         </Section>
+
+        <PsitReportContributors
+          contributors={contributors}
+          names={contributorNames}
+          photos={contributorPhotos}
+        />
       </ContentPage>
 
       {/* 2. LES FAITS - l'application, qui l'a laissée entrer, ce qu'elle pouvait faire. */}
@@ -206,6 +220,13 @@ export const PsitSocAppReportFrDocument = ({
             }))}
             emptyText="Aucun consentement actif au moment de la lecture."
           />
+          {model.fromSnapshot && (
+            <Note>
+              Les consentements et les permissions décrits ci-dessus sont ceux relevés pendant
+              l'investigation, conservés au dossier au moment de la révocation. Le tenant ne les
+              porte plus : les lire aujourd'hui ne montrerait que l'effet de la remédiation.
+            </Note>
+          )}
           {model.revoked && (
             <Note>
               Après une révocation, l&apos;absence de consentement actif est l&apos;état attendu.
@@ -308,6 +329,12 @@ export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEven
   const [dialogOpen, setDialogOpen] = useState(false)
   const brandingSettings = useBrandingSettings()
   const variables = useReportVariables()
+  // Gathered here, not in the document: react-pdf builds outside the React tree, where nothing
+  // can fetch, so the faces have to be in hand before the pages are drawn.
+  const { contributors, names, photos, onPhoto } = usePsitReportContributors({
+    actionLog: socCase?.ActionLog,
+    socCase,
+  })
 
   // No dossier, no report: the document cites the dossier's qualification and its journal, which
   // a free consultation does not have.
@@ -334,12 +361,18 @@ export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEven
       scopes={scopes}
       brandingSettings={brandingSettings}
       variables={variables}
+      contributors={contributors}
+      contributorNames={names}
+      contributorPhotos={photos}
     />
   )
   const appName = principal?.displayName || socCase?.Entities?.appDisplayName || 'application'
 
   return (
     <>
+      {/* Renders nothing: it loads each contributor's photo into state before the document is
+          built, through the same call and cache key the queue's avatars use. */}
+      <PsitReportPhotoLoaders contributors={contributors} onLoaded={onPhoto} />
       {/* The tooltip title becomes the button's accessible name, so it starts with the visible
           label: an accessible name that does not contain the visible text breaks WCAG 2.5.3. */}
       <Tooltip title="Rapport application : générer le rapport d'investigation en français">

@@ -116,3 +116,62 @@ describe('the third verdict', () => {
     expect(model.conclusion).toMatch(/sans répondre à la question/)
   })
 })
+
+describe('a revocation that deletes its own evidence', () => {
+  // Reported from a real report: once the consent is revoked, the grants are gone from the
+  // tenant, so a report read live shows an application with no consent and no permission - the
+  // state the remediation created, not the one that was investigated. The revocation now files
+  // what it removes on the dossier, and that copy is what the report describes.
+  const revokedCase = {
+    Qualification: { Verdict: 'false-positive' },
+    Evidence: {
+      app: {
+        revokedUtc: '2026-08-29T09:34:25Z',
+        removedGrants: [
+          { consentType: 'AllPrincipals', scope: 'Tasks.ReadWrite offline_access' },
+          { consentType: 'Principal', principalId: 'user-guid', scope: 'User.Read' },
+        ],
+      },
+    },
+  }
+
+  it('describes the access as it was, when the tenant no longer has it', () => {
+    const model = buildAppReportModel({
+      socCase: revokedCase,
+      principal: principalRevoked,
+      consents: [],
+      scopes: { granted: [], risky: [] },
+    })
+
+    expect(model.adminConsents).toHaveLength(1)
+    expect(model.userConsents).toHaveLength(1)
+    expect(model.grantedScopes).toEqual(
+      expect.arrayContaining(['Tasks.ReadWrite', 'offline_access', 'User.Read'])
+    )
+    expect(model.fromSnapshot).toBe(true)
+    expect(model.revokedUtc).toBe('2026-08-29T09:34:25Z')
+  })
+
+  it('prefers what the tenant says while the tenant still says something', () => {
+    // Before a revocation the live read is the truth; the snapshot only answers once it is not.
+    const model = buildAppReportModel({
+      socCase: revokedCase,
+      principal: principalActive,
+      consents: [{ kind: 'admin', who: "Toute l'organisation" }],
+      scopes: { granted: ['Mail.Read'], risky: [] },
+    })
+
+    expect(model.grantedScopes).toEqual(['Mail.Read'])
+    expect(model.fromSnapshot).toBe(false)
+  })
+
+  it('claims no snapshot when none was kept', () => {
+    const model = buildAppReportModel({
+      socCase: { Qualification: { Verdict: 'false-positive' } },
+      principal: principalRevoked,
+      consents: [],
+    })
+    expect(model.fromSnapshot).toBe(false)
+    expect(model.adminConsents).toHaveLength(0)
+  })
+})

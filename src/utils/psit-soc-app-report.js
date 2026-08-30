@@ -35,6 +35,34 @@ const CONCLUSIONS = {
     "Le dossier n'est pas qualifié : ce document décrit les faits collectés et ne conclut pas.",
 }
 
+/**
+ * Consents and permissions as they were, when the dossier kept a copy.
+ *
+ * Revoking a consent deletes the grants that justified it, so a report written afterwards read a
+ * tenant where the application has no consent and no permission - the state the remediation
+ * created, not the one that was investigated. The revocation now files what it removes on the
+ * dossier, and that copy wins here: a report describes the investigation, not its aftermath.
+ */
+const fromSnapshot = (snapshot) => {
+  const grants = Array.isArray(snapshot?.removedGrants) ? snapshot.removedGrants : []
+  const consents = grants.map((grant) => ({
+    kind: grant?.consentType === 'AllPrincipals' ? 'admin' : 'user',
+    who:
+      grant?.consentType === 'AllPrincipals'
+        ? "Toute l'organisation (consentement administrateur)"
+        : String(grant?.principalId ?? 'principal inconnu'),
+  }))
+  const granted = [
+    ...new Set(
+      grants
+        .flatMap((grant) => String(grant?.scope ?? '').split(/[,\s]+/))
+        .map((scope) => scope.trim())
+        .filter(Boolean)
+    ),
+  ]
+  return { consents, granted }
+}
+
 export const buildAppReportModel = ({
   socCase,
   principal,
@@ -63,8 +91,17 @@ export const buildAppReportModel = ({
           ? APP_CONCLUSION.LEGIT_REVOKED
           : APP_CONCLUSION.LEGIT_KEPT
 
-  const adminConsents = consents.filter((consent) => consent?.kind === 'admin')
-  const userConsents = consents.filter((consent) => consent?.kind === 'user')
+  // The live read is right until a revocation empties it; from then on the dossier's copy is
+  // the only description of what the application actually had.
+  const snapshot = socCase?.Evidence?.app
+  const snapshotted = fromSnapshot(snapshot)
+  const useSnapshot = snapshotted.consents.length > 0 && consents.length === 0
+  const effectiveConsents = useSnapshot ? snapshotted.consents : consents
+  const grantedScopes =
+    useSnapshot && (scopes?.granted ?? []).length === 0 ? snapshotted.granted : (scopes?.granted ?? [])
+
+  const adminConsents = effectiveConsents.filter((consent) => consent?.kind === 'admin')
+  const userConsents = effectiveConsents.filter((consent) => consent?.kind === 'user')
 
   // Sorted on the same stamp the report displays: an action declared as having happened
   // earlier belongs earlier in the story, not where its write landed.
@@ -81,7 +118,11 @@ export const buildAppReportModel = ({
     adminConsents,
     userConsents,
     riskyScopes: scopes?.risky ?? [],
-    grantedScopes: scopes?.granted ?? [],
+    grantedScopes,
+    // The report says where its picture of the access comes from: read now, or kept from before
+    // the revocation. A reader must never have to guess which.
+    fromSnapshot: useSnapshot,
+    revokedUtc: useSnapshot ? String(snapshot?.revokedUtc ?? '') : '',
     auditEvents,
     journal,
   }

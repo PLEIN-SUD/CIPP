@@ -18,6 +18,11 @@ import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
 import { PsitBecAssessmentSection } from './PsitBecAssessmentSection'
 import {
+  PsitReportContributors,
+  PsitReportPhotoLoaders,
+} from './soc/PsitReportContributors'
+import { usePsitReportContributors } from '../../hooks/use-psit-report-contributors'
+import {
   SIGNAL_CLASS,
   VERDICT_STATUS,
   buildSignals,
@@ -98,6 +103,9 @@ export const PsitBecReportFrDocument = ({
   variables,
   triage = [],
   incident = {},
+  contributors = [],
+  contributorNames = {},
+  contributorPhotos = {},
 }) => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -574,6 +582,14 @@ export const PsitBecReportFrDocument = ({
             </InfoBox>
           </Section>
         )}
+
+        {/* Who did the work closes the decision page: the reader has just read what was decided,
+            and who decided it belongs there rather than after the raw material. */}
+        <PsitReportContributors
+          contributors={contributors}
+          names={contributorNames}
+          photos={contributorPhotos}
+        />
       </ContentPage>
 
       {/* 3. FAITS ET SIGNAUX */}
@@ -1271,6 +1287,12 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
   })
   const resolvedTriage = psitAsArray(triage ?? triageRequest.data?.Determinations)
   const incident = caseRequest.data?.Incident || {}
+  // Gathered here, not in the document: react-pdf builds outside the React tree, where nothing
+  // can fetch, so the faces have to be in hand before the pages are drawn.
+  const { contributors, names, photos, onPhoto } = usePsitReportContributors({
+    triage: resolvedTriage,
+    incident,
+  })
 
   if (!hasData) {
     return null
@@ -1303,11 +1325,17 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
       variables={variables}
       triage={resolvedTriage}
       incident={incident}
+      contributors={contributors}
+      contributorNames={names}
+      contributorPhotos={photos}
     />
   )
 
   return (
     <>
+      {/* Renders nothing: it loads each contributor's photo into state before the document is
+          built, through the same call and cache key the portal's avatars use. */}
+      <PsitReportPhotoLoaders contributors={contributors} onLoaded={onPhoto} />
       {/* The tooltip title becomes the button's accessible name, so it has to start with the
           visible label: an accessible name that does not contain the visible text breaks
           WCAG 2.5.3 (Label in Name) and voice control. */}

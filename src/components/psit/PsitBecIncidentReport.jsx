@@ -41,6 +41,11 @@ import {
   truncationNote,
 } from '../../utils/psit-report-prose'
 import { PsitTimelineStrip, psitTimelineStripNote } from './PsitTimelineStrip'
+import {
+  PsitReportContributors,
+  PsitReportPhotoLoaders,
+} from './soc/PsitReportContributors'
+import { usePsitReportContributors } from '../../hooks/use-psit-report-contributors'
 import { PsitTlpBand, tlpLabel } from './PsitTlpBand'
 import {
   AlertBox,
@@ -116,6 +121,9 @@ export const PsitBecIncidentReportDocument = ({
   incident = {},
   remediation = {},
   pseudonymise = false,
+  contributors = [],
+  contributorNames = {},
+  contributorPhotos = {},
 }) => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -900,6 +908,12 @@ export const PsitBecIncidentReportDocument = ({
             </Bullet>
           </BulletList>
         </Section>
+
+        <PsitReportContributors
+          contributors={contributors}
+          names={contributorNames}
+          photos={contributorPhotos}
+        />
       </ContentPage>
 
       {/* 9. ANNEXE : TIERS DESTINATAIRES */}
@@ -1082,6 +1096,14 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
     waiting: Boolean(hasData && tenantName && userData?.id),
   })
 
+  // Gathered here, not in the document: react-pdf builds outside the React tree, where nothing
+  // can fetch, so the faces have to be in hand before the pages are drawn. Declared before the
+  // early returns below, because a hook cannot be called conditionally.
+  const { contributors, names, photos, onPhoto } = usePsitReportContributors({
+    triage,
+    incident: incidentRequest.data?.Incident,
+  })
+
   if (!hasData) return null
 
   // A cached failure reaches the page looking like a collection that found nothing, so the guard
@@ -1133,11 +1155,17 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
       incident={incident}
       remediation={remediation}
       pseudonymise={pseudonymise}
+      contributors={contributors}
+      contributorNames={names}
+      contributorPhotos={photos}
     />
   )
 
   return (
     <>
+      {/* Renders nothing: it loads each contributor's photo into state before the document is
+          built, through the same call and cache key the portal's avatars use. */}
+      <PsitReportPhotoLoaders contributors={contributors} onLoaded={onPhoto} />
       <Tooltip title="Rapport d'incident : document destiné au client et à son délégué à la protection des données">
         <Button
           variant="contained"

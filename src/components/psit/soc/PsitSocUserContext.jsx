@@ -20,6 +20,7 @@ import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
 import { adaptGraphSignIns, readSignInGroup } from '../../../utils/psit-soc-signin-adapter'
+import { PsitSocLoading } from './PsitSocLoading'
 
 /**
  * The identity-side context of a case that names a user: how the account signed in (grouped by
@@ -68,6 +69,8 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
     [signInsRequest.data, usageLocation]
   )
 
+  const loading = [userLookup, signInsRequest].some((request) => request.isFetching && !request.isFetched)
+
   // No case, no journal to receive a gesture: the panel then shows and never acts.
   const caseless = !socCase?.CaseId
 
@@ -113,7 +116,11 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
         subheader={upn || effectiveUserId}
       />
       <CardContent>
-        <Stack spacing={2}>
+        {/* Before this, the panel printed "Aucune connexion récupérée" from its first render: for
+            a second or three it told the analyst the account was clean, which is the one thing a
+            panel must never say while it is still reading. */}
+        {loading && <PsitSocLoading label="Lecture des connexions et des règles de boîte" />}
+        <Stack spacing={2} sx={loading ? { display: 'none' } : undefined}>
           {!effectiveUserId && userLookup.isFetched && (
             <Alert severity="warning">
               Utilisateur introuvable sur ce tenant : le contexte ne peut pas être chargé.

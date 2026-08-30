@@ -14,6 +14,7 @@ import { psitSocAge } from '../../../utils/psit-soc-queue'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { PropertyList } from '../../property-list'
 import { PropertyListItem } from '../../property-list-item'
+import { PsitSocLoading } from './PsitSocLoading'
 
 /**
  * The machine-side context of a case: what Intune knows about the device and what Defender
@@ -53,6 +54,8 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
   const syncStale = Boolean(syncAge && syncAge.minutes > 7 * 24 * 60)
 
   // No case, no journal to receive a gesture: the panel then shows and never acts.
+  const loading = [deviceRequest, defenderRequest].some((request) => request.isFetching && !request.isFetched)
+
   const caseless = !socCase?.CaseId
 
   // The Entra id can come from Intune, or from the merged device list via the case's entities.
@@ -98,7 +101,8 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
     <Card variant="outlined">
       <CardHeader title="Contexte machine" subheader={device?.deviceName || deviceName || deviceId} />
       <CardContent>
-        <Stack spacing={2}>
+        {loading && <PsitSocLoading label="Lecture Intune et Defender" />}
+        <Stack spacing={2} sx={loading ? { display: 'none' } : undefined}>
           {!device && deviceRequest.isFetched && (
             <Alert severity={mdeOnly ? 'info' : 'warning'}>
               {mdeOnly

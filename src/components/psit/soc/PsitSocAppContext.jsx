@@ -16,6 +16,7 @@ import { PropertyListItem } from '../../property-list-item'
 import { readAppScopes } from '../../../utils/psit-soc-app-scopes'
 import { readConsentAudit, readConsentGrants } from '../../../utils/psit-soc-consent'
 import { PsitSocAppReportButton } from '../PsitSocAppReportFr'
+import { PsitSocLoading } from './PsitSocLoading'
 
 /**
  * The application side of a case: what an OAuth consent actually granted, and the gesture that
@@ -78,6 +79,8 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
   // Every grant read together: an application is as dangerous as the union of what its consents
   // allow, not as the last one an analyst happened to look at.
   const scopes = readAppScopes(grantRows.map((row) => row?.scope).join(' '))
+
+  const loading = [principalRequest, grantsRequest].some((request) => request.isFetching && !request.isFetched)
 
   // No case, no journal to receive a gesture: the panel then shows and never acts.
   const caseless = !socCase?.CaseId
@@ -148,7 +151,11 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
         }
       />
       <CardContent>
-        <Stack spacing={2}>
+        {/* "Aucun consentement" is the answer this panel gives when it has finished looking. It
+            used to give it while it was still looking, which reads as an application with no
+            access - the opposite of what the analyst is about to be shown. */}
+        {loading && <PsitSocLoading label="Lecture de l’application et de ses consentements" />}
+        <Stack spacing={2} sx={loading ? { display: 'none' } : undefined}>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {principal?.verifiedPublisher?.displayName ? (
               <Chip size="small" color="success" label={`éditeur vérifié : ${principal.verifiedPublisher.displayName}`} />

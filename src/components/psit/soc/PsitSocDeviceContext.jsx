@@ -220,7 +220,13 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
                 disabled={caseless || !aadDeviceId || action.isPending}
                 onClick={() =>
                   runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Comment: `Dossier ${socCase.CaseId}` } },
+                    { url: '/api/PSITExecMdeIsolation', data: {
+                        AzureADDeviceId: aadDeviceId,
+                        Comment: `Dossier ${socCase.CaseId}`,
+                        // Named so the server files the machine as Defender described it
+                        // before the cut: isolating changes what a later read returns.
+                        CaseId: socCase.CaseId,
+                      } },
                     { Action: 'mde-isolate', Detail: `Isolation réseau demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
                   )
                 }

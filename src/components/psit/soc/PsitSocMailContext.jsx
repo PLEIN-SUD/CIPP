@@ -87,6 +87,9 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
           NetworkMessageId: networkMessageId,
           Recipients: list,
           ReceivedUtc: socCase?.Entities?.receivedUtc,
+          // Named so the server files who received the message, and which copies were still
+          // delivered, before the purge makes that unreadable.
+          CaseId: socCase?.CaseId,
         },
       },
       {

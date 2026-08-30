@@ -101,14 +101,14 @@ describe('PsitSocCaseDrawer', () => {
     expect(screen.queryByRole('combobox', { name: /Utilisateur concerné/ })).not.toBeInTheDocument()
   })
 
-  it('proposes the fourteen retained types, never Google Workspace', async () => {
+  it('proposes the fifteen retained types, never Google Workspace', async () => {
     renderWithProviders(<PsitSocCaseDrawer />)
     await userEvent.click(screen.getByRole('button', { name: /Nouveau dossier/ }))
 
     await userEvent.click(screen.getByRole('combobox', { name: /Type d’alerte/ }))
     const options = await screen.findAllByRole('option')
 
-    expect(options.length).toBe(14)
+    expect(options.length).toBe(15)
     expect(options.some((option) => option.textContent.startsWith('8 - '))).toBe(false)
     expect(options.some((option) => option.textContent.includes('Voyage impossible'))).toBe(true)
   })

@@ -403,6 +403,34 @@ export const PSIT_SOC_TYPES = [
     ],
   },
   {
+    id: 20,
+    source: 'extsoc',
+    family: 'data',
+    entities: ['user'],
+    severity: 'P3',
+    label: 'Téléchargement massif',
+    description:
+      'Volume inhabituel de fichiers téléchargés depuis SharePoint ou OneDrive par un compte',
+    guide: [
+      { id: 'files', label: 'Lire la liste des fichiers téléchargés jointe à l’alerte : quoi, et depuis quels sites' },
+      { id: 'baseline', label: 'Situer le volume : habituel pour ce compte et pour son service, ou hors norme ?' },
+      { id: 'context', label: 'D’où : appareil géré, adresse habituelle, heures ouvrées ?', evidence: 'user.sessions' },
+      { id: 'client', label: 'Demander au titulaire ou à son responsable : migration, départ, sauvegarde personnelle ?' },
+      { id: 'exfil', label: 'Si retenu : chercher un partage externe consécutif, et cadrer la révocation des accès' },
+    ],
+    fpClues: [
+      'Migration ou réorganisation annoncée',
+      'Appareil géré et conforme, heures ouvrées',
+      'Fichiers du périmètre habituel du titulaire',
+    ],
+    tpClues: [
+      'Départ récent ou annoncé du titulaire',
+      'Appareil personnel, hors heures ouvrées, adresse inhabituelle',
+      'Partage externe ou envoi sortant dans la foulée',
+      'Fichiers hors du périmètre du titulaire',
+    ],
+  },
+  {
     // Reached when a subject matches no pattern. The emitter adds rules without telling anyone,
     // and an unrecognised label is a table to complete, never an alert to drop: the case opens
     // here so an analyst sees it and gives it its real type.

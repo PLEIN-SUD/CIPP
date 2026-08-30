@@ -20,11 +20,11 @@ describe('PSIT_SOC_TYPES', () => {
     // catch-all a subject lands on when its label matches nothing.
     const ids = PSIT_SOC_TYPES.map((type) => type.id)
 
-    expect(ids).toHaveLength(14)
-    expect(new Set(ids).size).toBe(14)
+    expect(ids).toHaveLength(15)
+    expect(new Set(ids).size).toBe(15)
     expect(ids).not.toContain(8)
     expect(ids).toEqual(
-      expect.arrayContaining([1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 15, 18, 19, 99])
+      expect.arrayContaining([1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 15, 18, 19, 20, 99])
     )
     // Five entries were merged away, and none of them may come back as a live id: 3 was a
     // pointer to 1's own guide, and the Lighthouse family repeated the endpoint one in English.
@@ -139,7 +139,7 @@ describe('constants the rest of the dashboard leans on', () => {
   })
 
   it('builds one autocomplete option per type, labelled with its id', () => {
-    expect(PSIT_SOC_TYPE_OPTIONS).toHaveLength(14)
+    expect(PSIT_SOC_TYPE_OPTIONS).toHaveLength(15)
     expect(PSIT_SOC_TYPE_OPTIONS[0].label).toMatch(/^1 - /)
   })
 })

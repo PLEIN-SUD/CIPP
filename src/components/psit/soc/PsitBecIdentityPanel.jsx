@@ -1,6 +1,7 @@
 import { Alert, Stack, Typography } from '@mui/material'
 import { Grid } from '@mui/system'
 import { CippUserInfoCard } from '../../CippCards/CippUserInfoCard'
+import { PsitAdminBadge } from './PsitAdminBadge'
 import { CippBannerListCard } from '../../CippCards/CippBannerListCard'
 import { psitAsArray } from '../../../utils/psit-as-array'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
@@ -92,7 +93,16 @@ export const PsitBecIdentityPanel = ({ userData, becData, tenant }) => {
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, lg: 4 }}>
-        <CippUserInfoCard user={userData} tenant={tenant} isFetching={!userData} />
+        <Stack spacing={1}>
+          {/* Above the card rather than inside it: the card is upstream's, and this is the fact
+              that changes how everything below it reads. */}
+          {userData?.id ? (
+            <div>
+              <PsitAdminBadge tenant={tenant} userId={userData.id} />
+            </div>
+          ) : null}
+          <CippUserInfoCard user={userData} tenant={tenant} isFetching={!userData} />
+        </Stack>
       </Grid>
       <Grid size={{ xs: 12, lg: 8 }}>
         <Stack spacing={3}>

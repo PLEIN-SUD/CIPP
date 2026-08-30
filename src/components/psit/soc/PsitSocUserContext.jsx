@@ -21,6 +21,7 @@ import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
 import { adaptGraphSignIns, readSignInGroup } from '../../../utils/psit-soc-signin-adapter'
 import { PsitSocLoading } from './PsitSocLoading'
+import { PsitAdminBadge } from './PsitAdminBadge'
 
 /**
  * The identity-side context of a case that names a user: how the account signed in (grouped by
@@ -114,6 +115,15 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
       <CardHeader
         title="Contexte utilisateur"
         subheader={upn || effectiveUserId}
+        action={
+          effectiveUserId ? (
+            <PsitAdminBadge
+              tenant={tenant}
+              userId={effectiveUserId}
+              caseId={socCase?.CaseId}
+            />
+          ) : null
+        }
       />
       <CardContent>
         {/* Before this, the panel printed "Aucune connexion récupérée" from its first render: for

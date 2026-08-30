@@ -46,6 +46,7 @@ import {
   PsitReportPhotoLoaders,
 } from './soc/PsitReportContributors'
 import { usePsitReportContributors } from '../../hooks/use-psit-report-contributors'
+import { psitAdminSentence } from '../../utils/psit-admin-status'
 import { PsitTlpBand, tlpLabel } from './PsitTlpBand'
 import {
   AlertBox,
@@ -124,6 +125,7 @@ export const PsitBecIncidentReportDocument = ({
   contributors = [],
   contributorNames = {},
   contributorPhotos = {},
+  adminStatus = null,
 }) => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -1103,6 +1105,13 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
     triage,
     incident: incidentRequest.data?.Incident,
   })
+  const adminRequest = ApiGetCall({
+    url: '/api/PSITListUserAdminStatus',
+    data: { tenantFilter: tenantName, UserId: userData?.id },
+    queryKey: `PSITAdminStatus-${tenantName}-${userData?.id}`,
+    waiting: Boolean(tenantName && userData?.id),
+    staleTime: 5 * 60 * 1000,
+  })
 
   if (!hasData) return null
 
@@ -1158,6 +1167,7 @@ export const PsitBecIncidentReportButton = ({ userData, becData, tenantName, tri
       contributors={contributors}
       contributorNames={names}
       contributorPhotos={photos}
+      adminStatus={adminRequest.data}
     />
   )
 

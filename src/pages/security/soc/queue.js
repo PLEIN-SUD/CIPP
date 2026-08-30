@@ -124,6 +124,14 @@ const Page = () => {
         'Âge': psitSocAge(row?.CreatedUtc)?.label ?? '',
         // The address the dossier is assigned to; the cell resolves the face and the name from it.
         'Assigné à': row?.AssignedTo ?? '',
+        // From what the dossier recorded, never a read per row: a queue that asks Entra once
+        // per line is a queue nobody waits for. It appears once the identity has been looked
+        // at, which is also when the fact was worth keeping.
+        Admin: row?.Evidence?.identity?.isAdmin
+          ? 'Admin'
+          : row?.Evidence?.identity?.isEligible
+            ? 'Admin éligible'
+            : '',
         Titre: row?.Title ?? '',
         'Catégorie': psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
@@ -399,6 +407,7 @@ const Page = () => {
     'Statut',
     'Âge',
     'Assigné à',
+    'Admin',
     'Titre',
     'Catégorie',
     'Guide',

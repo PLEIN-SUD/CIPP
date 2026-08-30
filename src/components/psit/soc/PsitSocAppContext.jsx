@@ -17,6 +17,7 @@ import { readAppScopes } from '../../../utils/psit-soc-app-scopes'
 import { readConsentAudit, readConsentGrants } from '../../../utils/psit-soc-consent'
 import { PsitSocAppReportButton } from '../PsitSocAppReportFr'
 import { PsitSocLoading } from './PsitSocLoading'
+import { PsitAdminBadge } from './PsitAdminBadge'
 
 /**
  * The application side of a case: what an OAuth consent actually granted, and the gesture that
@@ -197,6 +198,11 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {consent.who}
                       </Typography>
+                      {/* Who consented is the whole question here: a consent granted by an
+                          administrator binds the tenant rather than one mailbox. */}
+                      {consent.kind === 'user' && consent.who?.includes('@') ? (
+                        <PsitAdminBadge tenant={tenant} userId={consent.who} />
+                      ) : null}
                       {consent.kind === 'admin' && (
                         <Chip size="small" color="warning" label="admin" />
                       )}

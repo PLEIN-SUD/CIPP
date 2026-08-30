@@ -17,6 +17,7 @@ import { useReportVariables } from '../CippPdf/useReportVariables'
 import { useBrandingSettings } from '../CippPdf/useBrandingSettings'
 import { ApiGetCall } from '../../api/ApiCall'
 import { PsitBecAssessmentSection } from './PsitBecAssessmentSection'
+import { psitAdminSentence } from '../../utils/psit-admin-status'
 import {
   PsitReportContributors,
   PsitReportPhotoLoaders,
@@ -106,6 +107,7 @@ export const PsitBecReportFrDocument = ({
   contributors = [],
   contributorNames = {},
   contributorPhotos = {},
+  adminStatus = null,
 }) => {
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     year: 'numeric',
@@ -398,6 +400,10 @@ export const PsitBecReportFrDocument = ({
               : 'aucun à ce stade'}
             {'\n'}
             Compte analysé : {userData?.userPrincipalName}
+            {/* Said here, beside the account, because it changes how every finding below reads:
+                a compromise on an administrator is not a compromise on a mailbox. */}
+            {psitAdminSentence(adminStatus) ? '\n' : ''}
+            {psitAdminSentence(adminStatus)}
             {'\n'}
             Organisation : {tenantName}
             {'\n'}
@@ -1293,6 +1299,15 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
     triage: resolvedTriage,
     incident,
   })
+  // Fetched in the button, like everything else the document draws: react-pdf renders outside
+  // the React tree, where nothing can fetch.
+  const adminRequest = ApiGetCall({
+    url: '/api/PSITListUserAdminStatus',
+    data: { tenantFilter: tenantName, UserId: userData?.id },
+    queryKey: `PSITAdminStatus-${tenantName}-${userData?.id}`,
+    waiting: Boolean(hasData && tenantName && userData?.id),
+    staleTime: 5 * 60 * 1000,
+  })
 
   if (!hasData) {
     return null
@@ -1328,6 +1343,7 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
       contributors={contributors}
       contributorNames={names}
       contributorPhotos={photos}
+      adminStatus={adminRequest.data}
     />
   )
 

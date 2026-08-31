@@ -492,27 +492,31 @@ export const PsitBecIncidentPanel = ({
                   <Typography variant="subtitle2">
                     Confinement attesté par le journal CIPP
                   </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {containment.map((action) => (
-                      <Chip
-                        key={action.key}
-                        size="small"
-                        color={
-                          action.done ? (action.hasFailure ? 'warning' : 'success') : 'default'
-                        }
-                        variant={action.done ? 'filled' : 'outlined'}
-                        label={
-                          action.done
-                            ? `${action.label} : ${action.firstUtc || 'date inconnue'}`
-                            : `${action.label} : non attestée`
-                        }
-                      />
-                    ))}
-                  </Stack>
-                  {remediation?.Unavailable && (
-                    <Typography variant="body2" color="text.secondary">
-                      {remediation.Unavailable}
-                    </Typography>
+                  {/* 'non attestée' is an affirmative finding: the log was read and says nothing
+                      happened. While the log has NOT been read (the trail is only scanned once a
+                      fiche exists), a row of 'non attestée' chips states the opposite of what is
+                      known - an analyst who had just remediated read it as a regression. So the
+                      chips only render once the log answered; before that, the explanation alone. */}
+                  {remediation?.Unavailable ? (
+                    <Alert severity="info">{remediation.Unavailable}</Alert>
+                  ) : (
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {containment.map((action) => (
+                        <Chip
+                          key={action.key}
+                          size="small"
+                          color={
+                            action.done ? (action.hasFailure ? 'warning' : 'success') : 'default'
+                          }
+                          variant={action.done ? 'filled' : 'outlined'}
+                          label={
+                            action.done
+                              ? `${action.label} : ${action.firstUtc || 'date inconnue'}`
+                              : `${action.label} : non attestée`
+                          }
+                        />
+                      ))}
+                    </Stack>
                   )}
                 </Stack>
 

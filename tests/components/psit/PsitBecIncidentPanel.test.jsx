@@ -87,6 +87,39 @@ describe('PsitBecIncidentPanel', () => {
     expect(screen.getAllByText(/non attestée/).length).toBeGreaterThan(0)
   })
 
+  it('says the log was not read instead of attesting that nothing was done', () => {
+    // The trail is only scanned once a fiche exists (perf gating). Before this, the panel showed
+    // a row of 'non attestée' chips for a mailbox whose log was never read: an analyst who had
+    // just remediated read it as a regression. Unread and 'read, nothing found' must not share
+    // a rendering.
+    ApiGetCall.mockImplementation((opts) => {
+      if (String(opts?.url ?? '').includes('PSITListBecIncident')) {
+        return {
+          data: {
+            Incident: { Exists: false },
+            Remediation: {
+              Entries: [],
+              ActionsPerformed: [],
+              Unavailable:
+                "Le journal de remédiation CIPP n'a pas encore été lu : il est attaché à la fiche BEC, et aucune fiche n'est enregistrée pour cette boîte. Enregistrer la fiche déclenche la lecture, y compris pour des gestes déjà faits.",
+            },
+          },
+          isFetching: false,
+          isFetched: true,
+          isSuccess: true,
+          isError: false,
+        }
+      }
+      return { data: undefined, isFetching: false, isSuccess: false, isError: false }
+    })
+
+    render({ becData: compromisedBecData })
+
+    expect(screen.queryByText(/non attestée/)).not.toBeInTheDocument()
+    expect(screen.getByText(/n'a pas encore été lu/)).toBeInTheDocument()
+    expect(screen.getByText(/y compris pour des gestes déjà faits/)).toBeInTheDocument()
+  })
+
   it('posts the Autotask ticket, which is what both reports quote', async () => {
     const mutate = vi.fn()
     ApiPostCall.mockImplementation(() => ({

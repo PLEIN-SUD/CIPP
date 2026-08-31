@@ -126,8 +126,9 @@ const Page = () => {
         'Assigné à': row?.AssignedTo ?? '',
         // From what the dossier recorded, never a read per row: a queue that asks Entra once
         // per line is a queue nobody waits for. It appears once the identity has been looked
-        // at, which is also when the fact was worth keeping.
-        Admin: row?.Evidence?.identity?.isAdmin
+        // at, which is also when the fact was worth keeping. The header names the question
+        // rather than the answer: 'Admin' alone left a reader guessing whose privilege it was.
+        'Compte à privilèges': row?.Evidence?.identity?.isAdmin
           ? 'Admin'
           : row?.Evidence?.identity?.isEligible
             ? 'Admin éligible'
@@ -407,7 +408,7 @@ const Page = () => {
     'Statut',
     'Âge',
     'Assigné à',
-    'Admin',
+    'Compte à privilèges',
     'Titre',
     'Catégorie',
     'Guide',
@@ -500,6 +501,10 @@ const Page = () => {
             refreshFunction={() => casesRequest.refetch()}
             offCanvas={offCanvas}
             simpleColumns={simpleColumns}
+            // Newest ticket first. The rows arrive ordered by what is worth working (open,
+            // most severe, oldest) and the summary chips still name the dossier that has
+            // waited longest, so that reading is not lost - it moves above the table.
+            defaultSorting={[{ id: 'Ticket Autotask', desc: true }]}
             filters={filterList}
             simple={false}
           />

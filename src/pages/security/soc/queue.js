@@ -25,6 +25,7 @@ import {
   Block,
   Edit,
   GppGood,
+  VerifiedUser,
   LockOpen,
   PersonRemove,
   SwapHoriz,
@@ -261,6 +262,32 @@ const Page = () => {
       relatedQueryKeys: [queryKey],
     },
     {
+      // The detection was right, the behaviour is real, there is no compromise. Forcing this
+      // into FP taught the external SOC to stop flagging the pattern.
+      label: 'Qualifier VP bénin',
+      type: 'POST',
+      icon: <VerifiedUser />,
+      url: '/api/PSITExecSocCase',
+      data: {
+        CaseId: 'CaseId',
+        tenantFilter: 'Tenant',
+        Verdict: '!benign-true-positive',
+      },
+      fields: [
+        {
+          type: 'textField',
+          name: 'Justification',
+          label: 'Justification (comportement réel constaté, et comment il a été traité)',
+          multiline: true,
+          rows: 3,
+          validators: { required: 'Un VP bénin sans justification est illisible dans six mois' },
+        },
+      ],
+      confirmText:
+        'Vrai positif bénin : le signalement était fondé, le comportement est réel, sans compromission. Dire ce qui a été constaté et traité.',
+      relatedQueryKeys: [queryKey],
+    },
+    {
       label: 'Marquer confiné',
       type: 'POST',
       icon: <Done />,
@@ -420,6 +447,11 @@ const Page = () => {
     {
       filterName: 'Qualifiés vrais positifs',
       value: [{ id: 'Statut', value: 'Vrai positif' }],
+      type: 'column',
+    },
+    {
+      filterName: 'Qualifiés VP bénins',
+      value: [{ id: 'Statut', value: 'VP bénin' }],
       type: 'column',
     },
     {

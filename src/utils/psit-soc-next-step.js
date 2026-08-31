@@ -66,12 +66,23 @@ export const psitSocNextStep = (socCase) => {
     )
   }
 
+  // Unclear is a holding state, not a shrug: the banner pushes toward what resolves it, and the
+  // server will demand a justification if the case closes anyway.
+  if (verdict === 'undetermined') {
+    return STEP(
+      'resolve',
+      'Chercher la donnée manquante, ou escalader',
+      'Élargir la fenêtre d’audit, rappeler le titulaire, ou escalader le dossier. La clôture sur indéterminé exigera une justification.',
+      'action'
+    )
+  }
+
   if (verdict) {
     return STEP(
       'close',
       'Clore le dossier',
-      verdict === 'undetermined'
-        ? 'La question reste ouverte et c’est consigné. Clore n’efface pas le verdict.'
+      verdict === 'benign-true-positive'
+        ? 'Signalement fondé, comportement traité : reste la réponse au SOC externe (garder la détection) et les restaurations éventuelles.'
         : 'Rien à confiner sur un faux positif.',
       'action'
     )
@@ -85,7 +96,7 @@ export const psitSocNextStep = (socCase) => {
   return STEP(
     'qualify',
     'Qualifier le dossier',
-    'Faux positif, vrai positif ou indéterminé, avec la justification qui devra tenir dans six mois.',
+    'Vrai positif, VP bénin, faux positif ou indéterminé, avec la justification qui devra tenir dans six mois.',
     'action'
   )
 }

@@ -17,6 +17,7 @@ import { psitDownloadClientKind, psitDownloadOperationLabel } from './psit-soc-d
  */
 export const DOWNLOAD_CONCLUSION = {
   EXFILTRATION: 'exfiltration',
+  BENIGN: 'benign',
   LEGITIMATE: 'legitimate',
   UNDETERMINED: 'undetermined',
   UNQUALIFIED: 'unqualified',
@@ -25,6 +26,8 @@ export const DOWNLOAD_CONCLUSION = {
 const CONCLUSIONS = {
   [DOWNLOAD_CONCLUSION.EXFILTRATION]:
     "Les téléchargements signalés ont été qualifiés vrai positif : ils ne correspondent pas à une activité normale du titulaire du compte, et sont traités comme une sortie de données. Les actions menées et les faits relevés figurent dans ce document.",
+  [DOWNLOAD_CONCLUSION.BENIGN]:
+    "Le signalement était fondé et l'investigation écarte la sortie de données : les téléchargements sont réels et sont le fait du titulaire du compte, mais le comportement constaté ne correspondait pas aux usages attendus. Il a été traité, comme décrit dans ce document. Le signalement de ce motif reste pertinent.",
   [DOWNLOAD_CONCLUSION.LEGITIMATE]:
     "L'investigation conclut à une activité légitime : les téléchargements signalés correspondent à un usage assumé du titulaire du compte, confirmé pendant l'investigation. Aucune sortie de données n'est retenue.",
   [DOWNLOAD_CONCLUSION.UNDETERMINED]:
@@ -109,7 +112,9 @@ export const buildDownloadReportModel = ({ socCase, read } = {}) => {
       ? DOWNLOAD_CONCLUSION.EXFILTRATION
       : verdict === 'undetermined'
         ? DOWNLOAD_CONCLUSION.UNDETERMINED
-        : DOWNLOAD_CONCLUSION.LEGITIMATE
+        : verdict === 'benign-true-positive'
+          ? DOWNLOAD_CONCLUSION.BENIGN
+          : DOWNLOAD_CONCLUSION.LEGITIMATE
 
   const filed = socCase?.Evidence?.download ?? null
 

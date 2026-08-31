@@ -12,6 +12,8 @@
  */
 export const APP_CONCLUSION = {
   MALICIOUS: 'malicious',
+  BENIGN_REVOKED: 'benign-revoked',
+  BENIGN_KEPT: 'benign-kept',
   LEGIT_REVOKED: 'legit-revoked',
   LEGIT_KEPT: 'legit-kept',
   UNDETERMINED: 'undetermined',
@@ -23,6 +25,10 @@ const CONCLUSIONS = {
     revoked
       ? "L'accès de cette application a été qualifié illégitime (vrai positif). Le consentement a été révoqué et le principal de service désactivé."
       : "L'accès de cette application a été qualifié illégitime (vrai positif). La révocation du consentement n'est pas encore constatée dans le tenant : elle reste à exécuter ou à vérifier.",
+  [APP_CONCLUSION.BENIGN_REVOKED]: () =>
+    "Le signalement était fondé et l'investigation écarte la compromission : cette application a été mise en place sciemment par une personne habilitée, en dehors du circuit prévu. Le comportement a été traité et l'accès révoqué. Le signalement de ce motif reste pertinent.",
+  [APP_CONCLUSION.BENIGN_KEPT]: () =>
+    "Le signalement était fondé et l'investigation écarte la compromission : cette application a été mise en place sciemment par une personne habilitée, en dehors du circuit prévu. L'accès est maintenu, encadré par les recommandations ci-dessous. Le signalement de ce motif reste pertinent.",
   [APP_CONCLUSION.LEGIT_REVOKED]: () =>
     "L'investigation conclut à une application légitime : le consentement a été accordé volontairement par une personne habilitée, qui l'a confirmé. À la demande du client, l'accès a néanmoins été révoqué, par mesure d'hygiène et dans l'attente d'une solution de remplacement.",
   [APP_CONCLUSION.LEGIT_KEPT]: () =>
@@ -87,9 +93,13 @@ export const buildAppReportModel = ({
       ? APP_CONCLUSION.MALICIOUS
       : verdict === 'undetermined'
         ? APP_CONCLUSION.UNDETERMINED
-        : revoked
-          ? APP_CONCLUSION.LEGIT_REVOKED
-          : APP_CONCLUSION.LEGIT_KEPT
+        : verdict === 'benign-true-positive'
+          ? revoked
+            ? APP_CONCLUSION.BENIGN_REVOKED
+            : APP_CONCLUSION.BENIGN_KEPT
+          : revoked
+            ? APP_CONCLUSION.LEGIT_REVOKED
+            : APP_CONCLUSION.LEGIT_KEPT
 
   // The live read is right until a revocation empties it; from then on the dossier's copy is
   // the only description of what the application actually had.

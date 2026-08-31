@@ -50,6 +50,7 @@ import { usePsitReportContributors } from '../../hooks/use-psit-report-contribut
 // 'faux positif' on a document meant for the client.
 const VERDICT_WORDS = {
   'true-positive': 'vrai positif',
+  'benign-true-positive': 'vrai positif bénin',
   'false-positive': 'faux positif',
   undetermined: 'indéterminé',
 }
@@ -309,6 +310,15 @@ export const PsitSocAppReportFrDocument = ({
                 Le besoin métier couvert par cette application demeure : cadrer la solution de
                 remplacement avant que l&apos;usage ne revienne par un autre consentement
                 individuel.
+              </Bullet>
+            )}
+            {(model.kind === APP_CONCLUSION.BENIGN_REVOKED ||
+              model.kind === APP_CONCLUSION.BENIGN_KEPT) && (
+              <Bullet>
+                Garder cette détection active chez le prestataire de surveillance, car le
+                signalement était fondé (la même détection attrapera la prochaine application
+                entrée hors circuit), et donner un circuit officiel au besoin qui a fait entrer
+                celle-ci.
               </Bullet>
             )}
             {model.kind === APP_CONCLUSION.MALICIOUS && (

@@ -49,6 +49,7 @@ import { usePsitReportContributors } from '../../hooks/use-psit-report-contribut
 
 const VERDICT_WORDS = {
   'true-positive': 'vrai positif',
+  'benign-true-positive': 'vrai positif bénin',
   'false-positive': 'faux positif',
   undetermined: 'indéterminé',
 }
@@ -289,6 +290,13 @@ export const PsitSocDownloadReportFrDocument = ({
                 Considérer les fichiers listés comme sortis du contrôle de l&apos;entreprise, et
                 évaluer avec vos référents ce que leur contenu impose (information des personnes
                 concernées, obligations contractuelles ou réglementaires).
+              </Bullet>
+            )}
+            {model.kind === DOWNLOAD_CONCLUSION.BENIGN && (
+              <Bullet>
+                Traiter la cause du comportement (outil non conforme retiré, canal de sauvegarde
+                fourni) et garder la détection active chez le prestataire de surveillance, car le
+                signalement était fondé.
               </Bullet>
             )}
             {model.kind === DOWNLOAD_CONCLUSION.LEGITIMATE && (

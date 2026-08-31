@@ -175,3 +175,33 @@ describe('a revocation that deletes its own evidence', () => {
     expect(model.adminConsents).toHaveLength(0)
   })
 })
+
+describe('the benign true positive outcomes', () => {
+  const benignCase = {
+    CaseId: 'PSIT-SOC-1',
+    Qualification: { Verdict: 'benign-true-positive', Justification: 'déploiement assumé, hors circuit' },
+    ActionLog: [],
+  }
+
+  it('a revoked benign app says the detection was right AND that there was no compromise', () => {
+    const model = buildAppReportModel({
+      socCase: benignCase,
+      principal: { accountEnabled: false },
+    })
+
+    expect(model.kind).toBe(APP_CONCLUSION.BENIGN_REVOKED)
+    expect(model.conclusion).toMatch(/signalement était fondé/)
+    expect(model.conclusion).toMatch(/écarte la compromission/)
+    expect(model.conclusion).toMatch(/reste pertinent/)
+  })
+
+  it('a kept benign app lands on its own conclusion, not on the plain legitimate one', () => {
+    const model = buildAppReportModel({
+      socCase: benignCase,
+      principal: { accountEnabled: true },
+    })
+
+    expect(model.kind).toBe(APP_CONCLUSION.BENIGN_KEPT)
+    expect(model.conclusion).toMatch(/maintenu/)
+  })
+})

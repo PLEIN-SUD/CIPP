@@ -60,10 +60,18 @@ describe('next step on a case', () => {
     expect(psitSocNextStep({ ...qualified, Status: 'contained' }).id).toBe('close')
   })
 
-  it('treats an undetermined verdict as a decision, not as unfinished work', () => {
+  it('treats an undetermined verdict as a holding state that pushes toward resolution', () => {
+    // The taxonomy's own action column: escalate or hold for additional data - never a shrug.
     const next = psitSocNextStep(caseOf({ Qualification: { Verdict: 'undetermined' } }))
+    expect(next.id).toBe('resolve')
+    expect(next.detail).toMatch(/escalader/i)
+    expect(next.detail).toMatch(/justification/)
+  })
+
+  it('sends a benign true positive toward the response and the restorations', () => {
+    const next = psitSocNextStep(caseOf({ Qualification: { Verdict: 'benign-true-positive' } }))
     expect(next.id).toBe('close')
-    expect(next.detail).toMatch(/reste ouverte/)
+    expect(next.detail).toMatch(/garder la détection/)
   })
 
   it('says a closed case is closed instead of proposing work', () => {

@@ -28,6 +28,8 @@ import { PropertyListItem } from '../../../components/property-list-item'
 import { psitSocNextStep } from '../../../utils/psit-soc-next-step'
 import { PsitSocGuidePanel } from '../../../components/psit/soc/PsitSocGuidePanel'
 import { PsitSocQualificationPanel } from '../../../components/psit/soc/PsitSocQualificationPanel'
+import { PsitSocResponseBlock } from '../../../components/psit/soc/PsitSocResponseBlock'
+import { PsitSocRestoreChecklist } from '../../../components/psit/soc/PsitSocRestoreChecklist'
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PsitSocDownloadContext } from '../../../components/psit/soc/PsitSocDownloadContext'
@@ -403,7 +405,13 @@ const Page = () => {
               )}
 
               {tab === 'decision' && (
-                <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
+                <Stack spacing={2}>
+                  <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
+                  <PsitSocRestoreChecklist socCase={socCase} queryKey={queryKey} />
+                  <div>
+                    <PsitSocResponseBlock socCase={socCase} />
+                  </div>
+                </Stack>
               )}
             </>
           )}

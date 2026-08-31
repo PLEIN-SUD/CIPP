@@ -45,6 +45,7 @@ export const PSIT_SOC_STATUSES = [
   'investigating',
   'qualified-fp',
   'qualified-tp',
+  'qualified-btp',
   'contained',
   'closed',
 ]
@@ -54,6 +55,8 @@ export const PSIT_SOC_SEVERITIES = ['P1', 'P2', 'P3', 'P4']
 export const PSIT_SOC_TYPES = [
   {
     id: 1,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1078'],
     source: 'extsoc',
     family: 'signin',
     entities: ['user'],
@@ -84,6 +87,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 2,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1078', 'T1557'],
     source: 'extsoc',
     family: 'signin',
     entities: ['user'],
@@ -112,6 +117,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 4,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1098'],
     source: 'extsoc',
     family: 'identity-persistence',
     entities: ['user'],
@@ -139,6 +146,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 5,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1114.003', 'T1564.008'],
     source: 'extsoc',
     family: 'identity-persistence',
     entities: ['user'],
@@ -166,6 +175,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 6,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1528'],
     source: 'extsoc',
     family: 'identity-persistence',
     entities: ['app', 'user'],
@@ -192,6 +203,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 7,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1098.002'],
     source: 'extsoc',
     family: 'identity-persistence',
     entities: ['user'],
@@ -216,6 +229,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 9,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1204'],
     source: 'xdr',
     family: 'endpoint',
     entities: ['device'],
@@ -237,6 +252,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 10,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1219'],
     source: 'xdr',
     family: 'endpoint',
     entities: ['device'],
@@ -263,6 +280,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 11,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1204.002'],
     source: 'xdr',
     family: 'endpoint',
     entities: ['device'],
@@ -289,6 +308,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 12,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1204.002'],
     source: 'xdr',
     family: 'endpoint',
     entities: ['device'],
@@ -319,6 +340,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 15,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1555', 'T1539'],
     source: 'xdr',
     family: 'xdr',
     entities: ['device', 'user'],
@@ -337,6 +360,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 18,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1566'],
     source: 'mdo',
     family: 'mail',
     entities: ['mail'],
@@ -368,6 +393,8 @@ export const PSIT_SOC_TYPES = [
     // never says which one fired. Routing them to the consent type would invent a fact the
     // source does not carry, so this type exists to find that fact first.
     id: 19,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1528'],
     source: 'extsoc',
     family: 'identity-persistence',
     entities: ['app', 'user'],
@@ -404,6 +431,8 @@ export const PSIT_SOC_TYPES = [
   },
   {
     id: 20,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: ['T1530'],
     source: 'extsoc',
     family: 'data',
     entities: ['user'],
@@ -441,6 +470,8 @@ export const PSIT_SOC_TYPES = [
     // and an unrecognised label is a table to complete, never an alert to drop: the case opens
     // here so an analyst sees it and gives it its real type.
     id: 99,
+    // MITRE ATT&CK defaults for this alert family (attack.mitre.org), correctable per case.
+    attack: [],
     source: 'extsoc',
     family: 'unknown',
     entities: [],

@@ -15,10 +15,30 @@ import {
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 
+// The four-outcome taxonomy. Each help line is the definition the analyst chooses by, because
+// the wrong verdict here teaches the external SOC the wrong lesson: an FP on a founded detection
+// trains it to stop flagging the pattern.
 const VERDICT_CHOICES = [
-  { value: 'false-positive', label: 'Faux positif' },
-  { value: 'true-positive', label: 'Vrai positif' },
-  { value: 'undetermined', label: 'Indéterminé' },
+  {
+    value: 'true-positive',
+    label: 'Vrai positif',
+    help: 'Activité malveillante ou compromission avérée. Suite : confinement, rapport.',
+  },
+  {
+    value: 'benign-true-positive',
+    label: 'Vrai positif bénin',
+    help: 'Le signalement était fondé, le comportement est réel, mais sans compromission (usage assumé, shadow IT traité). La détection reste bonne.',
+  },
+  {
+    value: 'false-positive',
+    label: 'Faux positif',
+    help: 'La détection s’est trompée : l’activité signalée était normale ou mal corrélée. À dire au SOC externe pour régler la détection.',
+  },
+  {
+    value: 'undetermined',
+    label: 'Indéterminé',
+    help: 'Les éléments ne permettent pas de trancher. État d’attente : escalader ou chercher la donnée manquante ; la clôture exigera une justification.',
+  },
 ]
 
 /**
@@ -45,7 +65,11 @@ const defenderWriteBack = (socCase, verdict) => {
   const mapping =
     verdict === 'false-positive'
       ? { Status: 'resolved', Classification: 'falsePositive', Determination: 'notMalicious' }
-      : { Classification: 'truePositive', Determination: 'other' }
+      : verdict === 'benign-true-positive'
+        ? // Defender's own word for it: the detection was right and the activity is expected or
+          // accounted for. Forcing FP here would tune the detection out.
+          { Status: 'resolved', Classification: 'informationalExpectedActivity', Determination: 'confirmedActivity' }
+        : { Classification: 'truePositive', Determination: 'other' }
 
   return {
     url: target,
@@ -105,7 +129,13 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
           {qualification?.Verdict && (
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Chip
-                color={qualification.Verdict === 'true-positive' ? 'error' : 'default'}
+                color={
+                  qualification.Verdict === 'true-positive'
+                    ? 'error'
+                    : qualification.Verdict === 'benign-true-positive'
+                      ? 'primary'
+                      : 'default'
+                }
                 label={`${
                   VERDICT_CHOICES.find((choice) => choice.value === qualification.Verdict)?.label ??
                   qualification.Verdict
@@ -132,6 +162,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
 
           <ToggleButtonGroup
             exclusive
+            orientation="vertical"
             size="small"
             value={verdict}
             onChange={(event, value) => {
@@ -139,8 +170,19 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
             }}
           >
             {VERDICT_CHOICES.map((choice) => (
-              <ToggleButton key={choice.value} value={choice.value}>
-                {choice.label}
+              <ToggleButton
+                key={choice.value}
+                value={choice.value}
+                sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
+              >
+                <Stack spacing={0} alignItems="flex-start">
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {choice.label}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {choice.help}
+                  </Typography>
+                </Stack>
               </ToggleButton>
             ))}
           </ToggleButtonGroup>

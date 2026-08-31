@@ -1,4 +1,5 @@
 import {
+  PSIT_SOC_STATUS_CHIP_COLORS,
   psitSocAdminCell,
   psitSocTicketCell,
   psitSocTicketParts,
@@ -244,6 +245,13 @@ describe('the ticket cell', () => {
     expect(psitSocTicketCell('', 'https://x.test')).toBe('')
     expect(psitSocTicketParts('').label).toBe('')
     expect(psitSocTicketParts(undefined).href).toBeNull()
+  })
+})
+
+describe('the fourth status', () => {
+  it('labels qualified-btp in the analysts vocabulary with its own colour', () => {
+    expect(psitSocStatusLabel('qualified-btp')).toBe('VP bénin')
+    expect(PSIT_SOC_STATUS_CHIP_COLORS['VP bénin']).toBe('primary')
   })
 })
 

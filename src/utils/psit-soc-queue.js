@@ -23,6 +23,8 @@ export const PSIT_SOC_STATUS_LABELS_FR = {
   investigating: 'En cours',
   'qualified-fp': 'Faux positif',
   'qualified-tp': 'Vrai positif',
+  // Detection right, behaviour real, no compromise: the fourth honest outcome.
+  'qualified-btp': 'VP bénin',
   contained: 'Confiné',
   closed: 'Clos',
 }
@@ -37,6 +39,7 @@ export const PSIT_SOC_STATUS_CHIP_COLORS = {
   Nouveau: 'error',
   'En cours': 'warning',
   'Vrai positif': 'secondary',
+  'VP bénin': 'primary',
   'Faux positif': 'success',
   Confiné: 'info',
   Clos: 'default',

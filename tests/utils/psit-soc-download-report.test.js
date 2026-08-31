@@ -98,6 +98,19 @@ describe('buildDownloadReportModel: the four outcomes', () => {
     expect(model.conclusion).not.toMatch(/légitime/)
   })
 
+  it('states a founded, treated behaviour for a benign true positive', () => {
+    // cedric.rey: the downloads are real and the titulaire's own, through a dubious VPN. Neither
+    // an all-clear nor a data-exit: the fourth outcome.
+    const model = buildDownloadReportModel({
+      socCase: { ...baseCase, Qualification: { Verdict: 'benign-true-positive', Justification: 'VPN douteux traité' } },
+      read: liveRead,
+    })
+    expect(model.kind).toBe(DOWNLOAD_CONCLUSION.BENIGN)
+    expect(model.conclusion).toMatch(/signalement était fondé/)
+    expect(model.conclusion).toMatch(/écarte la sortie de données/)
+    expect(model.conclusion).toMatch(/reste pertinent/)
+  })
+
   it('reads the nested Qualification, not a flat Verdict', () => {
     const model = buildDownloadReportModel({
       socCase: { ...baseCase, Qualification: null, Verdict: 'true-positive' },

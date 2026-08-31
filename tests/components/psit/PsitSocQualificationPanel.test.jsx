@@ -44,7 +44,7 @@ describe('PsitSocQualificationPanel', () => {
     const mutate = armMutate()
     renderWithProviders(<PsitSocQualificationPanel socCase={xdrCase} queryKey="k" />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Faux positif' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Faux positif/ }))
     await userEvent.type(
       screen.getByRole('textbox', { name: /Justification/ }),
       'Scanner des techniciens'
@@ -68,13 +68,30 @@ describe('PsitSocQualificationPanel', () => {
     expect(writeBack.data.Determination).toBe('notMalicious')
   })
 
+  it('pushes a benign true positive as informational into Defender, never as FP', async () => {
+    // Defender's own word for it: forcing falsePositive here would tune the detection out.
+    const mutate = vi.fn((payload, options) => options?.onSuccess?.())
+    ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
+
+    renderWithProviders(<PsitSocQualificationPanel socCase={xdrCase} queryKey="k" />)
+    await userEvent.click(screen.getByRole('button', { name: /^Vrai positif bénin/ }))
+    await userEvent.type(screen.getByLabelText(/Justification/), 'VPN du titulaire, traité')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
+
+    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
+    const writeBack = mutate.mock.calls[1][0]
+    expect(writeBack.url).toBe('/api/ExecSetSecurityIncident')
+    expect(writeBack.data.Classification).toBe('informationalExpectedActivity')
+    expect(writeBack.data.Classification).not.toBe('falsePositive')
+  })
+
   it('routes the write-back to the MDO endpoint when the case came from an MDO alert', async () => {
     const mutate = armMutate()
     renderWithProviders(
       <PsitSocQualificationPanel socCase={{ ...xdrCase, Source: 'mdo' }} queryKey="k" />
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Vrai positif' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Vrai positif(?! bénin)/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
@@ -89,7 +106,7 @@ describe('PsitSocQualificationPanel', () => {
     const mutate = armMutate()
     renderWithProviders(<PsitSocQualificationPanel socCase={xdrCase} queryKey="k" />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Indéterminé' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Indéterminé/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
@@ -105,7 +122,7 @@ describe('PsitSocQualificationPanel', () => {
       />
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Faux positif' }))
+    await userEvent.click(screen.getByRole('button', { name: /^Faux positif/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer la qualification' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))

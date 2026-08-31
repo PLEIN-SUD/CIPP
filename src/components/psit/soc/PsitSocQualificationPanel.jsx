@@ -170,7 +170,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
             )}
           </Stack>
 
-          <CippApiResults apiObject={caseWrite} />
+          <CippApiResults apiObject={caseWrite} errorsOnly />
           <CippApiResults apiObject={defenderWrite} />
           {defenderWrite.isError && (
             <Alert severity="warning">

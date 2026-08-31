@@ -112,7 +112,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
             )
           })}
         </List>
-        <CippApiResults apiObject={progressWrite} />
+        <CippApiResults apiObject={progressWrite} errorsOnly />
 
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>

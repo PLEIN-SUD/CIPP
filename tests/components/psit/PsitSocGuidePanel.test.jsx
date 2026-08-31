@@ -137,6 +137,22 @@ describe('PsitSocGuidePanel', () => {
     expect(screen.queryByText(/pending, a/)).not.toBeInTheDocument()
   })
 
+  it('does not repeat a successful tick as a green banner', () => {
+    // The tick itself is the feedback. Before errorsOnly, every checked step stacked a
+    // 'SOC case saved by' banner under the guide - the flood the analysts reported.
+    ApiPostCall.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isSuccess: true,
+      isError: false,
+      data: { data: { Results: 'SOC case PSIT-SOC-20260824-BBBB saved by a@b.test.' } },
+    })
+
+    renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
+
+    expect(screen.queryByText(/saved by/)).not.toBeInTheDocument()
+  })
+
   it('shows the FP and TP clues next to the steps', () => {
     renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
 

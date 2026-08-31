@@ -76,6 +76,9 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
   const caseless = !socCase?.CaseId
 
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
+  // The journal write is bookkeeping: posted on the same mutation it overwrote the
+  // remediation's own answer with 'SOC case saved by', which is noise where feedback was.
+  const journal = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const runAction = (payload, logAction) => {
     action.mutate(
       { url: payload.url, data: { tenantFilter: tenant, ...payload.data } },
@@ -83,7 +86,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
         onSuccess: () => {
           // Every tenant-touching action is written to the case log, so the case tells the whole
           // remediation story without the analyst having to retype it.
-          action.mutate({
+          journal.mutate({
             url: '/api/PSITExecSocCase',
             data: {
               tenantFilter: tenant,
@@ -277,6 +280,7 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
               </Button>
             </Stack>
             <CippApiResults apiObject={action} />
+            <CippApiResults apiObject={journal} errorsOnly />
 
             {/* The heavy enrichment: the BEC collection is an orchestrated job, so it lives on
                 its own page rather than blocking this panel. The case id travels with the link so

@@ -87,6 +87,9 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
   const caseless = !socCase?.CaseId
 
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
+  // The journal write is bookkeeping: posted on the same mutation it overwrote the
+  // remediation's own answer with 'SOC case saved by', which is noise where feedback was.
+  const journal = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const revoke = () => {
     action.mutate(
       {
@@ -102,7 +105,7 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
       },
       {
         onSuccess: () => {
-          action.mutate({
+          journal.mutate({
             url: '/api/PSITExecSocCase',
             data: {
               tenantFilter: tenant,
@@ -330,6 +333,7 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
               </Alert>
             )}
             <CippApiResults apiObject={action} />
+            <CippApiResults apiObject={journal} errorsOnly />
           </div>
         </Stack>
       </CardContent>

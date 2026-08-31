@@ -98,7 +98,7 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
           >
             {logWrite.isPending ? 'Enregistrement...' : 'Consigner l’action'}
           </Button>
-          <CippApiResults apiObject={logWrite} />
+          <CippApiResults apiObject={logWrite} errorsOnly />
         </Stack>
 
         <Divider sx={{ mb: 1 }} />

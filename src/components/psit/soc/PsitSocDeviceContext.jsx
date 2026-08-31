@@ -65,12 +65,15 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
   const mdeOnly = socCase?.Entities?.managedBy === 'MDE'
 
   const action = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
+  // The journal write is bookkeeping: posted on the same mutation it overwrote the
+  // remediation's own answer with 'SOC case saved by', which is noise where feedback was.
+  const journal = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
   const runAction = (payload, logAction) => {
     action.mutate(
       { url: payload.url, data: { tenantFilter: tenant, ...payload.data } },
       {
         onSuccess: () => {
-          action.mutate({
+          journal.mutate({
             url: '/api/PSITExecSocCase',
             data: { tenantFilter: tenant, CaseId: socCase.CaseId, LogAction: logAction },
           })
@@ -258,6 +261,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
               </Typography>
             )}
             <CippApiResults apiObject={action} />
+            <CippApiResults apiObject={journal} errorsOnly />
           </div>
         </Stack>
       </CardContent>

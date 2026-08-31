@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Alert,
   Button,
@@ -6,6 +6,10 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Stack,
   Table,
@@ -79,9 +83,21 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
   // The journal write is bookkeeping: posted on the same mutation it overwrote the
   // remediation's own answer with 'SOC case saved by', which is noise where feedback was.
   const journal = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
-  const runAction = (payload, logAction) => {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // One remediation, CIPP's own. This panel used to carry three separate buttons (revoke
+  // sessions, reset password, block sign-in): three chances to do half a containment, and a
+  // trail split across three endpoints. The upstream Remediate User flow does the six gestures
+  // in order and logs each one under its own name, which is exactly what the fiche BEC's
+  // attestation reads back. The URL keeps upstream's casing (execBecRemediate): the attestation
+  // matches the API field as spelled by the caller.
+  const runRemediation = () => {
+    setConfirmOpen(false)
     action.mutate(
-      { url: payload.url, data: { tenantFilter: tenant, ...payload.data } },
+      {
+        url: '/api/execBecRemediate',
+        data: { tenantFilter: tenant, userId: effectiveUserId, username: upn },
+      },
       {
         onSuccess: () => {
           // Every tenant-touching action is written to the case log, so the case tells the whole
@@ -91,7 +107,10 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
             data: {
               tenantFilter: tenant,
               CaseId: socCase.CaseId,
-              LogAction: logAction,
+              LogAction: {
+                Action: 'remediate-user',
+                Detail: `Remédiation CIPP exécutée pour ${upn} : connexion bloquée, mot de passe réinitialisé, sessions révoquées, méthodes MFA retirées, règles de boîte désactivées, partage OneDrive désactivé`,
+              },
             },
           })
         },
@@ -229,56 +248,51 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              Actions graduées
+              Remédiation
             </Typography>
             {caseless && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Consultation hors dossier : les actions s’exécutent depuis un dossier, pour que chaque
+                Consultation hors dossier : la remédiation s’exécute depuis un dossier, pour que le
                 geste laisse sa trace au journal.
               </Typography>
             )}
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={caseless || !effectiveUserId || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/ExecRevokeSessions', data: { id: effectiveUserId, Username: upn } },
-                    { Action: 'revoke-sessions', Detail: `Sessions révoquées pour ${upn}` }
-                  )
-                }
-              >
-                Révoquer les sessions
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={caseless || !effectiveUserId || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/ExecResetPass', data: { ID: effectiveUserId, displayName: upn, MustChange: true } },
-                    { Action: 'reset-password', Detail: `Mot de passe réinitialisé pour ${upn}` }
-                  )
-                }
-              >
-                Réinitialiser le mot de passe
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                disabled={caseless || !effectiveUserId || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/ExecDisableUser', data: { ID: effectiveUserId, Enable: false } },
-                    { Action: 'block-signin', Detail: `Connexion bloquée pour ${upn}` }
-                  )
-                }
-              >
-                Bloquer la connexion
-              </Button>
-            </Stack>
+            <Button
+              size="small"
+              variant="contained"
+              color="error"
+              disabled={caseless || !effectiveUserId || !upn || action.isPending}
+              onClick={() => setConfirmOpen(true)}
+            >
+              Remédier le compte (CIPP)
+            </Button>
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="sm" fullWidth>
+              <DialogTitle>{`Remédier ${upn} ?`}</DialogTitle>
+              <DialogContent>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  La remédiation CIPP exécute les six gestes suivants, dans cet ordre :
+                </Typography>
+                <Typography variant="body2" component="div">
+                  <ol style={{ margin: 0, paddingLeft: 20 }}>
+                    <li>Réinitialiser le mot de passe</li>
+                    <li>Bloquer la connexion</li>
+                    <li>Révoquer les sessions et les jetons</li>
+                    <li>Retirer toutes les méthodes MFA</li>
+                    <li>Désactiver les règles de boîte</li>
+                    <li>Désactiver le partage OneDrive</li>
+                  </ol>
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Chaque geste est tracé au journal CIPP et attesté sur la fiche BEC. Le titulaire
+                  perd l’accès immédiatement.
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setConfirmOpen(false)}>Annuler</Button>
+                <Button variant="contained" color="error" onClick={runRemediation}>
+                  Remédier
+                </Button>
+              </DialogActions>
+            </Dialog>
             <CippApiResults apiObject={action} />
             <CippApiResults apiObject={journal} errorsOnly />
 

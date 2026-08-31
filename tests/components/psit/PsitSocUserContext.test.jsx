@@ -82,23 +82,51 @@ describe('PsitSocUserContext', () => {
     expect(screen.getByText(/copie — transfère vers l’extérieur/)).toBeInTheDocument()
   })
 
-  it('runs a graduated action, then logs it on the case', async () => {
+  it('runs the one CIPP remediation after a confirmation, then logs it on the case', async () => {
+    // One flow, upstream's: the three separate buttons were three chances to do half a
+    // containment, and their trail was split across three endpoints. The URL keeps the exact
+    // casing the upstream front uses, because the fiche BEC's attestation matches the API field
+    // as spelled by the caller.
     wireApi()
     const mutate = vi.fn((payload, options) => options?.onSuccess?.())
     ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
 
     renderWithProviders(<PsitSocUserContext socCase={socCase} queryKey="k" />)
-    await userEvent.click(screen.getByRole('button', { name: 'Révoquer les sessions' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Remédier le compte (CIPP)' }))
+    // The six gestures are named before anything runs: this is not a button to discover.
+    expect(screen.getByText(/six gestes suivants/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Remédier' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
     // First the tenant action...
     const tenantCall = mutate.mock.calls[0][0]
-    expect(tenantCall.url).toBe('/api/ExecRevokeSessions')
-    expect(tenantCall.data.id).toBe('user-guid')
+    expect(tenantCall.url).toBe('/api/execBecRemediate')
+    expect(tenantCall.data.userId).toBe('user-guid')
+    expect(tenantCall.data.username).toBe('a.tkachenko@contoso.test')
     expect(tenantCall.data.tenantFilter).toBe('contoso.test')
     // ...then the case log entry, so the case tells the whole story.
     const logCall = mutate.mock.calls[1][0]
     expect(logCall.url).toBe('/api/PSITExecSocCase')
-    expect(logCall.data.LogAction.Action).toBe('revoke-sessions')
+    expect(logCall.data.LogAction.Action).toBe('remediate-user')
+  })
+
+  it('does not remediate on the first click: the confirmation is the gesture', async () => {
+    wireApi()
+    const mutate = vi.fn()
+    ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
+
+    renderWithProviders(<PsitSocUserContext socCase={socCase} queryKey="k" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Remédier le compte (CIPP)' }))
+
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('no longer offers the three partial buttons', () => {
+    wireApi()
+    renderWithProviders(<PsitSocUserContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.queryByRole('button', { name: 'Révoquer les sessions' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réinitialiser le mot de passe' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Bloquer la connexion' })).not.toBeInTheDocument()
   })
 })

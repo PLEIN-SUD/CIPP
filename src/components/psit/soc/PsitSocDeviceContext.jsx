@@ -25,7 +25,7 @@ import { PsitSocLoading } from './PsitSocLoading'
  * tenant context an analyst needs to judge the alert - is the device managed, compliant, up to
  * date, who uses it - and the ability to act without leaving the tool.
  */
-export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
+export const PsitSocDeviceContext = ({ socCase, queryKey, hideActions = false }) => {
   const tenant = socCase?.Tenant
   const deviceId = socCase?.Entities?.deviceId
   const deviceName = socCase?.Entities?.deviceName
@@ -181,6 +181,9 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
             </>
           )}
 
+          {/* Hidden on the collect tab: evidence there, gestures on the response tab. */}
+          {!hideActions && (
+            <>
           <Divider />
 
           <div>
@@ -263,6 +266,8 @@ export const PsitSocDeviceContext = ({ socCase, queryKey }) => {
             <CippApiResults apiObject={action} />
             <CippApiResults apiObject={journal} errorsOnly />
           </div>
+            </>
+          )}
         </Stack>
       </CardContent>
     </Card>

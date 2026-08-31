@@ -31,7 +31,7 @@ import { PsitAdminBadge } from './PsitAdminBadge'
  * application, and the panel says so: the grant dates and scopes are evidence the investigation
  * still needs, and a disabled principal can be re-enabled if the call was wrong.
  */
-export const PsitSocAppContext = ({ socCase, queryKey }) => {
+export const PsitSocAppContext = ({ socCase, queryKey, hideActions = false }) => {
   const tenant = socCase?.Tenant
   const appId = socCase?.Entities?.appId
 
@@ -289,6 +289,9 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
             )}
           </div>
 
+          {/* Hidden on the collect tab: evidence there, gestures on the response tab. */}
+          {!hideActions && (
+            <>
           <Divider />
 
           <div>
@@ -335,6 +338,8 @@ export const PsitSocAppContext = ({ socCase, queryKey }) => {
             <CippApiResults apiObject={action} />
             <CippApiResults apiObject={journal} errorsOnly />
           </div>
+            </>
+          )}
         </Stack>
       </CardContent>
     </Card>

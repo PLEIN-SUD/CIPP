@@ -39,7 +39,7 @@ import { CippApiResults } from '../../CippComponents/CippApiResults'
  * instead. A licence that could not be read leaves the button in place: "we could not check" is
  * not "you cannot", and hiding an action on a failed lookup hides one the tenant may well have.
  */
-export const PsitSocMailContext = ({ socCase, queryKey }) => {
+export const PsitSocMailContext = ({ socCase, queryKey, hideActions = false }) => {
   const tenant = socCase?.Tenant
   const networkMessageId = socCase?.Entities?.networkMessageId
   const [recipients, setRecipients] = useState('')
@@ -238,6 +238,9 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
             conclure.
           </Alert>
 
+          {/* Hidden on the collect tab: evidence there, gestures on the response tab. */}
+          {!hideActions && (
+            <>
           {caseless && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Consultation hors dossier : les actions s’exécutent depuis un dossier, pour que chaque
@@ -287,6 +290,8 @@ export const PsitSocMailContext = ({ socCase, queryKey }) => {
 
           <CippApiResults apiObject={action} />
           <CippApiResults apiObject={journal} errorsOnly />
+            </>
+          )}
         </Stack>
       </CardContent>
     </Card>

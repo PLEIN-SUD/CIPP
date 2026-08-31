@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@mui/material'
 import { Grid } from '@mui/system'
-import { Sync, ArrowBack, Launch } from '@mui/icons-material'
+import { Sync, ArrowBack, Launch, Lock } from '@mui/icons-material'
 import Link from 'next/link'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
@@ -33,11 +33,22 @@ import { PsitSocRestoreChecklist } from '../../../components/psit/soc/PsitSocRes
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PsitSocDownloadContext } from '../../../components/psit/soc/PsitSocDownloadContext'
+import { PsitSocCaseTimeline } from '../../../components/psit/soc/PsitSocCaseTimeline'
+import { PsitSocAnalysisPanel } from '../../../components/psit/soc/PsitSocAnalysisPanel'
+import { PsitSocValidateShortcut } from '../../../components/psit/soc/PsitSocValidateShortcut'
+import { PsitSocEmergencyContainment } from '../../../components/psit/soc/PsitSocEmergencyContainment'
+import { PsitAdminBadge } from '../../../components/psit/soc/PsitAdminBadge'
 import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDeviceContext'
 import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
 import { PsitSocAppContext } from '../../../components/psit/soc/PsitSocAppContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
 import { psitSocIsDownloadCase } from '../../../utils/psit-soc-download'
+import {
+  PSIT_SOC_PHASES,
+  psitSocPhaseGatingActive,
+  psitSocPhaseRemaining,
+  psitSocUnlockedPhases,
+} from '../../../utils/psit-soc-phases'
 import {
   PSIT_SOC_STATUS_CHIP_COLORS,
   psitSocDisplaySeverity,
@@ -59,31 +70,6 @@ const frDate = (iso) => {
 const SEVERITY_COLOUR = { P1: 'error', P2: 'error', P3: 'warning', P4: 'default' }
 
 /**
- * The bridge the investigation tab was missing: each panel here is the same component as one of
- * the free-investigation screens, and this row says so - the full-screen door opens that screen
- * on this dossier's entity, carrying the dossier id so the way back exists too.
- */
-const PsitSocPanelHeading = ({ label, href }) => (
-  <Stack direction="row" alignItems="center" justifyContent="space-between">
-    <Typography variant="overline" color="text.secondary">
-      {label}
-    </Typography>
-    <Button
-      size="small"
-      component={Link}
-      href={href}
-      endIcon={
-        <SvgIcon fontSize="small">
-          <Launch />
-        </SvgIcon>
-      }
-    >
-      Plein écran
-    </Button>
-  </Stack>
-)
-
-/**
  * One SOC case: the identity card of the alert, the investigation guide with its FP/TP clues, the
  * context panels, the qualification (written on the case and pushed back to Defender when the
  * case came from there), and the action log.
@@ -94,6 +80,27 @@ const PsitSocPanelHeading = ({ label, href }) => (
  * an infostealer on a laptop is a machine case AND an identity case - and the panels follow the
  * facts rather than the label.
  */
+/**
+ * The footer of a phase tab: what the next tab still waits for. Disabled tabs cannot carry a
+ * tooltip, so the explanation lives where the analyst is working.
+ */
+const PsitSocNextLockHint = ({ socCase, gating, currentPhase }) => {
+  if (!gating) return null
+  const order = PSIT_SOC_PHASES.map((phase) => phase.key)
+  const nextKey = order[order.indexOf(currentPhase) + 1]
+  if (!nextKey) return null
+  const remaining = psitSocPhaseRemaining(socCase, nextKey)
+  if (remaining.length === 0) return null
+  return (
+    <Alert severity="info">
+      {`Onglet suivant verrouillé. Reste à traiter (cocher, ou « sans objet ») : ${remaining
+        .slice(0, 4)
+        .map((step) => step.label)
+        .join(' · ')}${remaining.length > 4 ? '…' : ''}`}
+    </Alert>
+  )
+}
+
 const Page = () => {
   const router = useRouter()
   const { caseId, tenantFilter } = router.query
@@ -112,6 +119,15 @@ const Page = () => {
   // share one mental model: the situation, then the evidence and the gestures, then the decision.
   // The next-step line stays above all three.
   const [tab, setTab] = useState('summary')
+  // The frame's locks, computed from the guide's own checkmarks. Going back is always free;
+  // going forward is earned. Grandfathered and already-decided dossiers are never gated.
+  const gating = psitSocPhaseGatingActive(socCase)
+  const unlockedPhases = psitSocUnlockedPhases(socCase)
+  useEffect(() => {
+    if (gating && tab !== 'summary' && !unlockedPhases.has(tab)) setTab('summary')
+    // unlockedPhases is derived from socCase; keying on the dossier avoids a Set identity loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gating, tab, socCase])
   // Read once, above everything else: the status, the guide and the verdict already said where
   // the case stood, but only to someone willing to read three panels and put them together.
   const nextStep = psitSocNextStep(socCase)
@@ -170,6 +186,7 @@ const Page = () => {
             {/* Whatever the investigation was, it ends the same way: an entry in the
                 ticket. The text is written from the journal, here rather than in a tab,
                 because it is reached for at the end of any of them. */}
+            <PsitSocEmergencyContainment socCase={socCase} queryKey={queryKey} />
             <PsitSocTimeEntry socCase={socCase} />
             {socCase?.TicketUrl && (
               <Button
@@ -226,10 +243,29 @@ const Page = () => {
                 allowScrollButtonsMobile
               >
                 <Tab value="summary" label="Synthèse" />
-                <Tab value="investigation" label="Investigation" />
-                <Tab value="decision" label="Décision" />
+                {PSIT_SOC_PHASES.map((phase) => (
+                  <Tab
+                    key={phase.key}
+                    value={phase.key}
+                    disabled={gating && !unlockedPhases.has(phase.key)}
+                    label={
+                      gating && !unlockedPhases.has(phase.key) ? (
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <SvgIcon fontSize="inherit">
+                            <Lock />
+                          </SvgIcon>
+                          <span>{phase.label}</span>
+                        </Stack>
+                      ) : (
+                        phase.label
+                      )
+                    }
+                  />
+                ))}
               </Tabs>
 
+              <Grid container spacing={2} alignItems="flex-start">
+              <Grid size={{ xs: 12, lg: 8 }}>
               {tab === 'summary' && (
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, md: 7 }}>
@@ -343,65 +379,135 @@ const Page = () => {
                           </PropertyList>
                         </CardContent>
                       </Card>
-                      <PsitSocActionLog socCase={socCase} queryKey={queryKey} />
                     </Stack>
                   </Grid>
                 </Grid>
               )}
 
 
-              {tab === 'investigation' && (
-                <Grid container spacing={2} alignItems="flex-start">
-                  {/* The guide and what it asks about, side by side: the step and the panel that
-                      proves it used to live a full scroll apart. Sticky on wide screens so the
-                      checklist stays in view while the evidence scrolls. */}
-                  <Grid size={{ xs: 12, lg: 5 }} sx={{ position: { lg: 'sticky' }, top: 16 }}>
-                    <PsitSocGuidePanel socCase={socCase} queryKey={queryKey} evidence={evidence} />
-                  </Grid>
-                  <Grid size={{ xs: 12, lg: 7 }}>
-                    <Stack spacing={2}>
-                      {(socCase.Entities?.upn || socCase.Entities?.userId) && (
-                        <>
-                          <PsitSocPanelHeading
-                            label="Identité"
-                            href={`/security/soc/bec?userId=${socCase.Entities.userId ?? socCase.Entities.upn}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
+              {tab === 'validate' && (
+                <Stack spacing={2}>
+                  <Card variant="outlined">
+                    <CardHeader title="L’alerte" subheader={socCase.Title} />
+                    <CardContent>
+                      <Typography variant="body2" color="text.secondary">
+                        {catalogueEntry?.description ?? 'Type inconnu : corriger le type depuis la file d’attente.'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                  <PsitSocGuidePanel
+                    socCase={socCase}
+                    queryKey={queryKey}
+                    evidence={evidence}
+                    phase="validate"
+                    title="Valider l’alerte"
+                    showClues={false}
+                  />
+                  <PsitSocValidateShortcut socCase={socCase} queryKey={queryKey} />
+                  <PsitSocNextLockHint socCase={socCase} gating={gating} currentPhase="validate" />
+                </Stack>
+              )}
+
+              {tab === 'scope' && (
+                <Stack spacing={2}>
+                  <Card variant="outlined">
+                    <CardHeader
+                      title="Entités du dossier"
+                      action={
+                        socCase.Entities?.userId ? (
+                          <PsitAdminBadge
+                            tenant={socCase.Tenant}
+                            userId={socCase.Entities.userId}
+                            caseId={socCase.CaseId}
                           />
-                          <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
-                        </>
+                        ) : null
+                      }
+                    />
+                    <CardContent>
+                      {Object.keys(socCase.Entities ?? {}).length > 0 ? (
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {Object.entries(socCase.Entities ?? {}).map(([kind, value]) => (
+                            <Chip key={kind} size="small" variant="outlined" label={`${kind} : ${value}`} />
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Aucune entité sur ce dossier : renseigner l’UPN, la machine ou l’application
+                          concernée pour que les onglets suivants aient une cible.
+                        </Typography>
                       )}
-                      {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
-                        <>
-                          <PsitSocPanelHeading
-                            label="Machine"
-                            href={`/security/soc/investigate/machine?deviceName=${socCase.Entities.deviceName ?? ''}&deviceId=${socCase.Entities.deviceId ?? ''}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
-                          />
-                          <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} />
-                        </>
-                      )}
-                      {socCase.Entities?.networkMessageId && (
-                        <>
-                          <PsitSocPanelHeading
-                            label="Message"
-                            href={`/security/soc/investigate/message?networkMessageId=${socCase.Entities.networkMessageId}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
-                          />
-                          <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
-                        </>
-                      )}
-                      {psitSocIsDownloadCase(socCase) && (
-                        <PsitSocDownloadContext socCase={socCase} queryKey={queryKey} />
-                      )}
-                      {socCase.Entities?.appId && (
-                        <>
-                          <PsitSocPanelHeading
-                            label="Application"
-                            href={`/security/soc/investigate/app?appId=${socCase.Entities.appId}&tenantFilter=${socCase.Tenant}&caseId=${socCase.CaseId}`}
-                          />
-                          <PsitSocAppContext socCase={socCase} queryKey={queryKey} />
-                        </>
-                      )}
-                    </Stack>
-                  </Grid>
-                </Grid>
+                    </CardContent>
+                  </Card>
+                  <PsitSocGuidePanel
+                    socCase={socCase}
+                    queryKey={queryKey}
+                    evidence={evidence}
+                    phase="scope"
+                    title="Délimiter le périmètre"
+                    showClues={false}
+                  />
+                  <PsitSocNextLockHint socCase={socCase} gating={gating} currentPhase="scope" />
+                </Stack>
+              )}
+
+              {tab === 'collect' && (
+                <Stack spacing={2}>
+                  <PsitSocGuidePanel
+                    socCase={socCase}
+                    queryKey={queryKey}
+                    evidence={evidence}
+                    phase="collect"
+                    title="Collecter et préserver"
+                    showClues={false}
+                  />
+                  {/* Evidence only here: the gestures live on the response tab, plus the
+                      emergency hatch in the header. */}
+                  {(socCase.Entities?.upn || socCase.Entities?.userId) && (
+                    <PsitSocUserContext socCase={socCase} queryKey={queryKey} hideActions />
+                  )}
+                  {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
+                    <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} hideActions />
+                  )}
+                  {socCase.Entities?.networkMessageId && (
+                    <PsitSocMailContext socCase={socCase} queryKey={queryKey} hideActions />
+                  )}
+                  {psitSocIsDownloadCase(socCase) && (
+                    <PsitSocDownloadContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {socCase.Entities?.appId && (
+                    <PsitSocAppContext socCase={socCase} queryKey={queryKey} hideActions />
+                  )}
+                  <PsitSocNextLockHint socCase={socCase} gating={gating} currentPhase="collect" />
+                </Stack>
+              )}
+
+              {tab === 'reconstruct' && (
+                <Stack spacing={2}>
+                  <PsitSocGuidePanel
+                    socCase={socCase}
+                    queryKey={queryKey}
+                    evidence={evidence}
+                    phase="reconstruct"
+                    title="Reconstituer la chronologie"
+                    showClues={false}
+                  />
+                  <PsitSocCaseTimeline socCase={socCase} evidence={evidence} />
+                  <PsitSocNextLockHint socCase={socCase} gating={gating} currentPhase="reconstruct" />
+                </Stack>
+              )}
+
+              {tab === 'map' && (
+                <Stack spacing={2}>
+                  <PsitSocAnalysisPanel socCase={socCase} queryKey={queryKey} />
+                  <PsitSocGuidePanel
+                    socCase={socCase}
+                    queryKey={queryKey}
+                    evidence={evidence}
+                    phase="map"
+                    title="Interpréter"
+                  />
+                  <PsitSocNextLockHint socCase={socCase} gating={gating} currentPhase="map" />
+                </Stack>
               )}
 
               {tab === 'decision' && (
@@ -411,8 +517,28 @@ const Page = () => {
                   <div>
                     <PsitSocResponseBlock socCase={socCase} />
                   </div>
+                  {/* The gestures, next to the evidence that justifies them: the same panels as
+                      the collect tab, actions included. React Query dedupes the reads. */}
+                  {(socCase.Entities?.upn || socCase.Entities?.userId) && (
+                    <PsitSocUserContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
+                    <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {socCase.Entities?.networkMessageId && (
+                    <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {socCase.Entities?.appId && (
+                    <PsitSocAppContext socCase={socCase} queryKey={queryKey} />
+                  )}
                 </Stack>
               )}
+              </Grid>
+              <Grid size={{ xs: 12, lg: 4 }} sx={{ position: { lg: 'sticky' }, top: 16 }}>
+                {/* Document as you go: the journal is not a tab, it is the margin of every tab. */}
+                <PsitSocActionLog socCase={socCase} queryKey={queryKey} />
+              </Grid>
+              </Grid>
             </>
           )}
         </Stack>

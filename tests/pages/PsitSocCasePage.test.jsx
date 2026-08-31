@@ -81,19 +81,46 @@ describe('SOC case view, tabs', () => {
   })
 
   it('keeps the next step visible whatever the tab', async () => {
-    wire(socCase({ Status: 'new' }))
+    // A grandfathered dossier (created before the frame): every tab open, décision reachable.
+    wire(socCase({ Status: 'new', CreatedUtc: '2026-08-20T08:00:00Z' }))
     renderWithProviders(<Page />)
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Décision' }))
+    await userEvent.click(screen.getByRole('tab', { name: /Décision & Réponse/ }))
     expect(screen.getByText('Prendre le dossier en charge')).toBeInTheDocument()
     expect(screen.getByText('Qualification')).toBeInTheDocument()
   })
 
-  it('puts the guide and the evidence under Investigation', async () => {
-    wire(socCase({}))
+  it('gates a fresh dossier: only Valider is open, and the frame says what unlocks next', async () => {
+    wire(socCase({ CreatedUtc: '2026-09-02T08:00:00Z' }))
     renderWithProviders(<Page />)
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Investigation' }))
-    expect(screen.getByText('Guide d’investigation')).toBeInTheDocument()
+    // Type 2's validate phase is the sessions step; everything beyond is earned.
+    expect(screen.getByRole('tab', { name: /1\. Valider/ })).toBeEnabled()
+    expect(screen.getByRole('tab', { name: /3\. Preuves/ })).toBeDisabled()
+    expect(screen.getByRole('tab', { name: /Décision & Réponse/ })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('tab', { name: /1\. Valider/ }))
+    expect(screen.getByText('Valider l’alerte')).toBeInTheDocument()
+    // The assumed shortcut: an evident FP/BTP qualifies here, a TP never does.
+    expect(screen.getByText('Raccourci de qualification')).toBeInTheDocument()
+    expect(screen.getByText(/Onglet suivant verrouillé/)).toBeInTheDocument()
+  })
+
+  it('opens everything on a grandfathered dossier: no retroactive locking', () => {
+    wire(socCase({ CreatedUtc: '2026-08-20T08:00:00Z' }))
+    renderWithProviders(<Page />)
+
+    expect(screen.getByRole('tab', { name: /3\. Preuves/ })).toBeEnabled()
+    expect(screen.getByRole('tab', { name: /Décision & Réponse/ })).toBeEnabled()
+  })
+
+  it('keeps the journal in the margin of every tab: document as you go', async () => {
+    wire(socCase({ CreatedUtc: '2026-08-20T08:00:00Z' }))
+    renderWithProviders(<Page />)
+
+    // On the summary AND after switching tab, the journal card is there.
+    expect(screen.getByText('Journal des actions')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: /1\. Valider/ }))
+    expect(screen.getByText('Journal des actions')).toBeInTheDocument()
   })
 })

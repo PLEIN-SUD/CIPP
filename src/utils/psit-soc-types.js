@@ -65,12 +65,12 @@ export const PSIT_SOC_TYPES = [
     description:
       'Connexion depuis un pays inhabituel ou une IP signalée malveillante',
     guide: [
-      { id: 'correlate', label: 'Vérifier si un dossier « voyage impossible » est déjà ouvert sur le même compte' },
-      { id: 'sessions', label: 'Regrouper les connexions par adresse IP et repérer les succès', evidence: 'user.sessions' },
-      { id: 'mfa', label: 'Vérifier MFA et protocole de chaque succès (client hérité ?)', evidence: 'user.signin-quality' },
-      { id: 'device', label: "Vérifier l'appareil : géré, conforme, déjà vu sur ce compte" },
-      { id: 'locations', label: 'Confronter aux localisations nommées et au pays déclaré' },
-      { id: 'client', label: 'Contacter le titulaire ou le client : déplacement, VPN, roaming ?' },
+      { id: 'correlate', phase: 'validate', label: 'Vérifier si un dossier « voyage impossible » est déjà ouvert sur le même compte' },
+      { id: 'sessions', phase: 'collect', label: 'Regrouper les connexions par adresse IP et repérer les succès', evidence: 'user.sessions' },
+      { id: 'mfa', phase: 'collect', label: 'Vérifier MFA et protocole de chaque succès (client hérité ?)', evidence: 'user.signin-quality' },
+      { id: 'device', phase: 'scope', label: "Vérifier l'appareil : géré, conforme, déjà vu sur ce compte" },
+      { id: 'locations', phase: 'reconstruct', label: 'Confronter aux localisations nommées et au pays déclaré' },
+      { id: 'client', phase: 'map', label: 'Contacter le titulaire ou le client : déplacement, VPN, roaming ?' },
     ],
     fpClues: [
       'MFA satisfaite sur le succès',
@@ -97,11 +97,11 @@ export const PSIT_SOC_TYPES = [
     description:
       'Activité simultanée depuis plusieurs pays, écart de temps impossible',
     guide: [
-      { id: 'sessions', label: 'Construire les sessions par IP et mesurer l’écart de temps entre pays', evidence: 'user.sessions' },
-      { id: 'aitm', label: 'Chercher la signature AiTM : même session vue de deux adresses, MFA « satisfaite » rejouée', evidence: 'user.signin-quality' },
-      { id: 'devicecode', label: 'Vérifier le protocole : deviceCode = hameçonnage par code d’appareil' },
-      { id: 'client', label: 'Contacter le titulaire : VPN, roaming, second appareil ?' },
-      { id: 'bec', label: 'Si TP : collecter le dossier BEC et dérouler la remédiation' },
+      { id: 'sessions', phase: 'validate', label: 'Construire les sessions par IP et mesurer l’écart de temps entre pays', evidence: 'user.sessions' },
+      { id: 'aitm', phase: 'collect', label: 'Chercher la signature AiTM : même session vue de deux adresses, MFA « satisfaite » rejouée', evidence: 'user.signin-quality' },
+      { id: 'devicecode', phase: 'collect', label: 'Vérifier le protocole : deviceCode = hameçonnage par code d’appareil' },
+      { id: 'client', phase: 'map', label: 'Contacter le titulaire : VPN, roaming, second appareil ?' },
+      { id: 'bec', phase: 'collect', label: 'Si TP : collecter le dossier BEC et dérouler la remédiation' },
     ],
     fpClues: [
       'VPN ou roaming confirmé par le titulaire',
@@ -127,10 +127,10 @@ export const PSIT_SOC_TYPES = [
     description:
       'Ajout d’un rôle sensible sur un compte',
     guide: [
-      { id: 'audit', label: 'Lire l’audit RoleManagement : acteur, IP source, rôle, heure' },
-      { id: 'actor', label: 'Qualifier l’acteur : PIM, admin MSP (GDAP), ou compte utilisateur ?' },
-      { id: 'target', label: 'Vérifier les rôles actuels du bénéficiaire' },
-      { id: 'crosscase', label: 'Croiser avec les dossiers ouverts sur l’acteur et le bénéficiaire' },
+      { id: 'audit', phase: 'validate', label: 'Lire l’audit RoleManagement : acteur, IP source, rôle, heure' },
+      { id: 'actor', phase: 'map', label: 'Qualifier l’acteur : PIM, admin MSP (GDAP), ou compte utilisateur ?' },
+      { id: 'target', phase: 'scope', label: 'Vérifier les rôles actuels du bénéficiaire' },
+      { id: 'crosscase', phase: 'scope', label: 'Croiser avec les dossiers ouverts sur l’acteur et le bénéficiaire' },
     ],
     fpClues: [
       'Acteur = PIM ou service de provisioning',
@@ -156,10 +156,10 @@ export const PSIT_SOC_TYPES = [
     description:
       'Création ou modification de règle de boîte, transfert externe',
     guide: [
-      { id: 'rules', label: 'Lister les règles de la boîte, règles masquées incluses', evidence: 'user.rules' },
-      { id: 'targets', label: 'Qualifier chaque règle : destinataire externe ? suppression ? dossier de dissimulation ?', evidence: 'user.rules' },
-      { id: 'origin', label: 'Retrouver la création dans l’audit : IP, heure, hors zone ?' },
-      { id: 'forward', label: 'Vérifier le forward niveau boîte (ForwardingSmtpAddress)' },
+      { id: 'rules', phase: 'validate', label: 'Lister les règles de la boîte, règles masquées incluses', evidence: 'user.rules' },
+      { id: 'targets', phase: 'collect', label: 'Qualifier chaque règle : destinataire externe ? suppression ? dossier de dissimulation ?', evidence: 'user.rules' },
+      { id: 'origin', phase: 'reconstruct', label: 'Retrouver la création dans l’audit : IP, heure, hors zone ?' },
+      { id: 'forward', phase: 'collect', label: 'Vérifier le forward niveau boîte (ForwardingSmtpAddress)' },
     ],
     fpClues: [
       'Classement vers un dossier métier',
@@ -185,10 +185,10 @@ export const PSIT_SOC_TYPES = [
     description:
       'Consentement accordé à une application tierce',
     guide: [
-      { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
-      { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
-      { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
-      { id: 'consent', label: 'Retrouver le consentement dans l’audit : qui, quand, HNO ?', evidence: 'app.consent' },
+      { id: 'catalog', phase: 'validate', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
+      { id: 'scopes', phase: 'collect', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
+      { id: 'publisher', phase: 'collect', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
+      { id: 'consent', phase: 'reconstruct', label: 'Retrouver le consentement dans l’audit : qui, quand, HNO ?', evidence: 'app.consent' },
     ],
     fpClues: [
       'Application métier connue de PSIT',
@@ -213,9 +213,9 @@ export const PSIT_SOC_TYPES = [
     description:
       'Ajout de compte utilisateur ou octroi d’accès à une boîte partagée, hors heures ouvrées',
     guide: [
-      { id: 'audit', label: 'Retrouver la création dans l’audit : acteur, heure' },
-      { id: 'actor', label: 'Qualifier l’acteur : provisioning RH, admin MSP, ou compte utilisateur ?' },
-      { id: 'perms', label: 'Vérifier les délégations posées sur des BAL, surtout de direction' },
+      { id: 'audit', phase: 'validate', label: 'Retrouver la création dans l’audit : acteur, heure' },
+      { id: 'actor', phase: 'map', label: 'Qualifier l’acteur : provisioning RH, admin MSP, ou compte utilisateur ?' },
+      { id: 'perms', phase: 'scope', label: 'Vérifier les délégations posées sur des BAL, surtout de direction' },
     ],
     fpClues: [
       'Onboarding RH (acteur = connecteur de provisioning ou admin MSP)',
@@ -239,10 +239,10 @@ export const PSIT_SOC_TYPES = [
     description:
       'Menace active non mitigée sur une machine, vue par Defender',
     guide: [
-      { id: 'status', label: 'Vérifier le statut de remédiation dans le portail Defender', evidence: 'device.defender' },
-      { id: 'hash', label: 'Qualifier le binaire : hash, signature, chemin (%temp% vs Program Files)' },
-      { id: 'prevalence', label: 'Mesurer la prévalence du binaire sur le parc' },
-      { id: 'identity', label: 'Pivot identité : sessions et mot de passe du titulaire de la machine' },
+      { id: 'status', phase: 'validate', label: 'Vérifier le statut de remédiation dans le portail Defender', evidence: 'device.defender' },
+      { id: 'hash', phase: 'collect', label: 'Qualifier le binaire : hash, signature, chemin (%temp% vs Program Files)' },
+      { id: 'prevalence', phase: 'scope', label: 'Mesurer la prévalence du binaire sur le parc' },
+      { id: 'identity', phase: 'scope', label: 'Pivot identité : sessions et mot de passe du titulaire de la machine' },
     ],
     fpClues: ['Remédiation en fait aboutie côté portail'],
     tpClues: [
@@ -262,11 +262,11 @@ export const PSIT_SOC_TYPES = [
     description:
       'Comportement de commande et contrôle bloqué, ou service suspect lancé sur un poste (ex. AnyDesk en --service)',
     guide: [
-      { id: 'rmm', label: 'L’outil est-il un RMM déployé en interne (liste connue) ?' },
-      { id: 'binary', label: 'Vérifier signature et chemin du binaire' },
-      { id: 'service', label: 'Si un service a été créé : nom, compte de lancement, date de création (récent et hors heures = persistance probable)' },
-      { id: 'context', label: 'Compte exécutant et heure : technicien en heures ouvrées ?', evidence: 'device.compliance' },
-      { id: 'prevalence', label: 'Prévalence sur le parc du client' },
+      { id: 'rmm', phase: 'validate', label: 'L’outil est-il un RMM déployé en interne (liste connue) ?' },
+      { id: 'binary', phase: 'collect', label: 'Vérifier signature et chemin du binaire' },
+      { id: 'service', phase: 'reconstruct', label: 'Si un service a été créé : nom, compte de lancement, date de création (récent et hors heures = persistance probable)' },
+      { id: 'context', phase: 'map', label: 'Compte exécutant et heure : technicien en heures ouvrées ?', evidence: 'device.compliance' },
+      { id: 'prevalence', phase: 'scope', label: 'Prévalence sur le parc du client' },
     ],
     fpClues: [
       'RMM ou agent connu (sauvegarde, antivirus), signé, chemin standard',
@@ -290,11 +290,11 @@ export const PSIT_SOC_TYPES = [
     description:
       'Binaire, script ou fichier suspect observé sur un poste (VBS, runner, téléchargement récent)',
     guide: [
-      { id: 'parent', label: 'Identifier le processus parent (Office vers wscript = TP probable)', evidence: 'device.compliance' },
-      { id: 'binary', label: 'Qualifier le fichier : hash, signature, chemin, origine (mail, web, USB)' },
-      { id: 'prevalence', label: 'Prévalence sur le parc' },
-      { id: 'context', label: 'Autres alertes sur le poste ou sur son titulaire ?' },
-      { id: 'identity', label: 'Si exécuté : pivot identité sur le titulaire de la machine' },
+      { id: 'parent', phase: 'validate', label: 'Identifier le processus parent (Office vers wscript = TP probable)', evidence: 'device.compliance' },
+      { id: 'binary', phase: 'collect', label: 'Qualifier le fichier : hash, signature, chemin, origine (mail, web, USB)' },
+      { id: 'prevalence', phase: 'scope', label: 'Prévalence sur le parc' },
+      { id: 'context', phase: 'scope', label: 'Autres alertes sur le poste ou sur son titulaire ?' },
+      { id: 'identity', phase: 'scope', label: 'Si exécuté : pivot identité sur le titulaire de la machine' },
     ],
     fpClues: [
       'Script d’administration connu, chemin système',
@@ -318,12 +318,12 @@ export const PSIT_SOC_TYPES = [
     description:
       'Malware, logiciel indésirable ou scan de ports détecté et bloqué : risque résiduel faible, à confirmer',
     guide: [
-      { id: 'eicar', label: 'EICAR ou fichier de test : clore en faux positif sans aller plus loin' },
-      { id: 'blocked', label: 'Confirmer le blocage sur l’évidence : bloqué = risque résiduel faible', evidence: 'device.defender' },
-      { id: 'hash', label: 'Qualifier le hash (détections génériques type Wacatac, Malgent) et sa prévalence' },
-      { id: 'tolerated', label: 'Logiciel indésirable : est-il toléré chez ce client ?' },
-      { id: 'operator', label: 'Scan de ports : compte exécutant et plage IP, outillage d’administration ?' },
-      { id: 'context', label: 'Précédé d’une autre alerte identité ou EDR sur le même poste ?' },
+      { id: 'eicar', phase: 'validate', label: 'EICAR ou fichier de test : clore en faux positif sans aller plus loin' },
+      { id: 'blocked', phase: 'validate', label: 'Confirmer le blocage sur l’évidence : bloqué = risque résiduel faible', evidence: 'device.defender' },
+      { id: 'hash', phase: 'collect', label: 'Qualifier le hash (détections génériques type Wacatac, Malgent) et sa prévalence' },
+      { id: 'tolerated', phase: 'map', label: 'Logiciel indésirable : est-il toléré chez ce client ?' },
+      { id: 'operator', phase: 'map', label: 'Scan de ports : compte exécutant et plage IP, outillage d’administration ?' },
+      { id: 'context', phase: 'scope', label: 'Précédé d’une autre alerte identité ou EDR sur le même poste ?' },
     ],
     fpClues: [
       'EICAR ou fichier de test',
@@ -350,10 +350,10 @@ export const PSIT_SOC_TYPES = [
     description:
       'Activité de vol d’identifiants sur un poste',
     guide: [
-      { id: 'assume', label: 'TP jusqu’à preuve du contraire : les identifiants du poste sont considérés exposés' },
-      { id: 'identity', label: 'Pivot identité immédiat : révoquer les sessions, réinitialiser le mot de passe', evidence: 'user.sessions' },
-      { id: 'bec', label: 'Collecter le dossier BEC du titulaire' },
-      { id: 'device', label: 'Machine : scan complet, envisager l’isolation (portail Defender)', evidence: 'device.defender' },
+      { id: 'assume', phase: 'validate', label: 'TP jusqu’à preuve du contraire : les identifiants du poste sont considérés exposés' },
+      { id: 'identity', phase: 'scope', label: 'Pivot identité immédiat : révoquer les sessions, réinitialiser le mot de passe', evidence: 'user.sessions' },
+      { id: 'bec', phase: 'collect', label: 'Collecter le dossier BEC du titulaire' },
+      { id: 'device', phase: 'collect', label: 'Machine : scan complet, envisager l’isolation (portail Defender)', evidence: 'device.defender' },
     ],
     fpClues: ['Rarissime : n’écarter que sur preuve (fichier de test, faux positif confirmé par MS)'],
     tpClues: ['Par défaut : agir d’abord, qualifier ensuite'],
@@ -370,12 +370,12 @@ export const PSIT_SOC_TYPES = [
     description:
       'Phishing non bloqué, entités non purgées après livraison (ZAP incomplet)',
     guide: [
-      { id: 'evidence', label: 'Lire l’évidence : networkMessageId, destinataires, objet, URLs, verdict' },
-      { id: 'trace', label: 'Message trace : à qui le message a réellement été livré' },
-      { id: 'quarantine', label: 'Vérifier la quarantaine : déjà purgé en fait ?' },
-      { id: 'block', label: 'Bloquer expéditeur, domaine ou URL (Tenant Allow/Block List)' },
-      { id: 'clicks', label: 'Limite : les clics Safe Links ne sont pas collectés ici, ne pas conclure « pas de clic »' },
-      { id: 'identity', label: 'Si clic suspecté : pivot identité sur les destinataires' },
+      { id: 'evidence', phase: 'validate', label: 'Lire l’évidence : networkMessageId, destinataires, objet, URLs, verdict' },
+      { id: 'trace', phase: 'reconstruct', label: 'Message trace : à qui le message a réellement été livré' },
+      { id: 'quarantine', phase: 'collect', label: 'Vérifier la quarantaine : déjà purgé en fait ?' },
+      { id: 'block', phase: 'map', label: 'Bloquer expéditeur, domaine ou URL (Tenant Allow/Block List)' },
+      { id: 'clicks', phase: 'collect', label: 'Limite : les clics Safe Links ne sont pas collectés ici, ne pas conclure « pas de clic »' },
+      { id: 'identity', phase: 'scope', label: 'Si clic suspecté : pivot identité sur les destinataires' },
     ],
     fpClues: [
       'La remédiation a en fait abouti (remediationStatus)',
@@ -404,16 +404,16 @@ export const PSIT_SOC_TYPES = [
       'Ajout, modification ou consentement applicatif, action non précisée par la source',
     guide: [
       {
-        id: 'action',
+        id: 'action', phase: 'validate',
         label:
           'Déterminer l’action réelle dans le journal d’audit Entra : ajout, modification ou consentement. L’alerte ne le dit pas.',
         evidence: 'app.consent',
       },
-      { id: 'catalog', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
-      { id: 'scopes', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
-      { id: 'publisher', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
+      { id: 'catalog', phase: 'collect', label: 'Confronter l’appId au catalogue malveillant CIPP', evidence: 'app.catalogue' },
+      { id: 'scopes', phase: 'collect', label: 'Lire les permissions accordées : Mail.ReadWrite, Mail.Send, offline_access ?', evidence: 'app.scopes' },
+      { id: 'publisher', phase: 'collect', label: 'Vérifier l’éditeur (vérifié ou non) et la date d’apparition', evidence: 'app.publisher' },
       {
-        id: 'route',
+        id: 'route', phase: 'map',
         label: 'Si l’action est un consentement, requalifier le dossier en type 6 pour son guide dédié',
       },
     ],
@@ -442,16 +442,16 @@ export const PSIT_SOC_TYPES = [
       'Volume inhabituel de fichiers téléchargés depuis SharePoint ou OneDrive par un compte',
     guide: [
       {
-        id: 'files',
+        id: 'files', phase: 'collect',
         label:
           'Lire ce que le journal d’audit a réellement enregistré : quels fichiers, depuis quels sites (panneau « Téléchargements »)',
         evidence: 'download.files',
       },
-      { id: 'baseline', label: 'Situer le volume : habituel pour ce compte et pour son service, ou hors norme ?' },
-      { id: 'origin', label: 'Depuis quelles adresses les téléchargements sont partis', evidence: 'download.origin' },
-      { id: 'context', label: 'D’où : appareil géré, adresse habituelle, heures ouvrées ?', evidence: 'user.sessions' },
-      { id: 'client', label: 'Demander au titulaire ou à son responsable : migration, départ, sauvegarde personnelle ?' },
-      { id: 'exfil', label: 'Si retenu : chercher un partage externe consécutif, et cadrer la révocation des accès' },
+      { id: 'baseline', phase: 'validate', label: 'Situer le volume : habituel pour ce compte et pour son service, ou hors norme ?' },
+      { id: 'origin', phase: 'collect', label: 'Depuis quelles adresses les téléchargements sont partis', evidence: 'download.origin' },
+      { id: 'context', phase: 'reconstruct', label: 'D’où : appareil géré, adresse habituelle, heures ouvrées ?', evidence: 'user.sessions' },
+      { id: 'client', phase: 'map', label: 'Demander au titulaire ou à son responsable : migration, départ, sauvegarde personnelle ?' },
+      { id: 'exfil', phase: 'scope', label: 'Si retenu : chercher un partage externe consécutif, et cadrer la révocation des accès' },
     ],
     fpClues: [
       'Migration ou réorganisation annoncée',
@@ -480,14 +480,14 @@ export const PSIT_SOC_TYPES = [
     description:
       'Libellé absent de la table de correspondance : le type reste à corriger',
     guide: [
-      { id: 'read', label: 'Lire le sujet et le corps de l’alerte d’origine, dans le ticket' },
+      { id: 'read', phase: 'validate', label: 'Lire le sujet et le corps de l’alerte d’origine, dans le ticket' },
       {
-        id: 'assign',
+        id: 'assign', phase: 'validate',
         label:
           'Corriger le type : action « Corriger le type » sur la ligne du dossier, dans la file d’attente. Le guide correspondant remplace celui-ci.',
       },
       {
-        id: 'report',
+        id: 'report', phase: 'validate',
         label: 'Signaler le libellé pour compléter la table, sans quoi la prochaine alerte identique reviendra ici',
       },
     ],

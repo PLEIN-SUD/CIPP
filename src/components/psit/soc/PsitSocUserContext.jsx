@@ -36,7 +36,7 @@ import { PsitAdminBadge } from './PsitAdminBadge'
  * "impossible travel / spray that succeeded / legacy client" judgement is the exact one the BEC
  * dossier makes, not a second implementation that could drift from it.
  */
-export const PsitSocUserContext = ({ socCase, queryKey }) => {
+export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) => {
   const tenant = socCase?.Tenant
   const upn = socCase?.Entities?.upn
   const userId = socCase?.Entities?.userId
@@ -244,6 +244,9 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
             )}
           </div>
 
+          {/* Hidden on the collect tab: evidence there, gestures on the response tab. */}
+          {!hideActions && (
+            <>
           <Divider />
 
           <div>
@@ -310,6 +313,8 @@ export const PsitSocUserContext = ({ socCase, queryKey }) => {
               Ouvrir le dossier BEC
             </Button>
           </div>
+            </>
+          )}
         </Stack>
       </CardContent>
     </Card>

@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -30,11 +31,14 @@ import { psitSocStepEvidence } from '../../../utils/psit-soc-evidence'
  * reports and never concludes, and says when it does not know - data that has not arrived is not
  * data that came back empty.
  */
-export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
+export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, showClues = true }) => {
   const catalogueEntry = psitSocTypeById(socCase?.TypeId)
   const progressWrite = ApiPostCall({ relatedQueryKeys: queryKey ? [queryKey] : [] })
 
   if (!catalogueEntry) {
+    // Scoped to a phase, an unknown type renders nothing: the frame's tabs already ungate
+    // themselves for it, and one 'type inconnu' card per tab would say it seven times.
+    if (phase) return null
     return (
       <Card variant="outlined">
         <CardHeader title="Guide d’investigation" />
@@ -47,32 +51,59 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
     )
   }
 
+  // Scoped to one investigation phase when the tabbed frame asks for it; the whole guide
+  // otherwise (older callers, and tests).
+  const steps = phase
+    ? catalogueEntry.guide.filter((step) => step.phase === phase)
+    : catalogueEntry.guide
+  if (phase && steps.length === 0) return null
+
   const stepState = (stepId) => socCase?.GuideProgress?.[stepId]
 
   const EVIDENCE_COLOUR = { good: 'success.main', bad: 'error.main', unknown: 'text.secondary' }
 
-  const toggleStep = (step) => {
-    const done = stepState(step.id)?.State === 'done'
+  const writeStep = (step, state) => {
     progressWrite.mutate({
       url: '/api/PSITExecSocCase',
       data: {
         tenantFilter: socCase.Tenant,
         CaseId: socCase.CaseId,
-        GuideProgress: [{ StepId: step.id, State: done ? 'pending' : 'done' }],
+        GuideProgress: [{ StepId: step.id, State: state }],
       },
     })
   }
 
+  const toggleStep = (step) => {
+    const done = stepState(step.id)?.State === 'done'
+    writeStep(step, done ? 'pending' : 'done')
+  }
+
   return (
     <Card variant="outlined">
-      <CardHeader title="Guide d’investigation" subheader={catalogueEntry.label} />
+      <CardHeader title={title ?? 'Guide d’investigation'} subheader={catalogueEntry.label} />
       <CardContent>
         <List dense>
-          {catalogueEntry.guide.map((step) => {
+          {steps.map((step) => {
             const state = stepState(step.id)
             const answer = psitSocStepEvidence(step.evidence, evidence)
+            const skipped = state?.State === 'skipped'
             return (
-              <ListItem key={step.id} disablePadding>
+              <ListItem
+                key={step.id}
+                disablePadding
+                secondaryAction={
+                  // 'Sans objet' is work, not evasion: stating that a step does not apply to
+                  // this dossier is a recorded judgement (who, when), and it unlocks like done.
+                  <Button
+                    size="small"
+                    color="inherit"
+                    sx={{ color: 'text.secondary', textTransform: 'none' }}
+                    onClick={() => writeStep(step, skipped ? 'pending' : 'skipped')}
+                  >
+                    {skipped ? 'réactiver' : 'sans objet'}
+                  </Button>
+                }
+              >
                 <ListItemButton onClick={() => toggleStep(step)} dense>
                   <ListItemIcon>
                     <Checkbox
@@ -85,6 +116,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={step.label}
+                    sx={skipped ? { textDecoration: 'line-through', opacity: 0.6 } : undefined}
                     secondary={
                       <>
                         {answer && (
@@ -114,6 +146,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
         </List>
         <CippApiResults apiObject={progressWrite} errorsOnly />
 
+        {showClues && (
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="success.main" gutterBottom>
@@ -136,6 +169,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence }) => {
             ))}
           </Grid>
         </Grid>
+        )}
       </CardContent>
     </Card>
   )

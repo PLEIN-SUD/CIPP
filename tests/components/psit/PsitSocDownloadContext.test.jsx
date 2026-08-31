@@ -155,6 +155,25 @@ describe('PsitSocDownloadContext', () => {
     expect(screen.getByText(/ne nomme aucun utilisateur/)).toBeInTheDocument()
   })
 
+  it('keeps the raw launch response out of the screen', () => {
+    // Seen in production: the POST answers with the whole audit object, and the results band
+    // spilled it as green chips - the search GUID, 'notStarted', the UPN. A successful launch
+    // is already visible (the panel says the search is running); only a refusal needs a voice.
+    ApiPostCall.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isSuccess: true,
+      isError: false,
+      data: { data: { SearchId: '84cc3120-dbb4-4d4a-b62b-991ba2eebbf9', Status: 'notStarted', Started: true } },
+    })
+    wireApi({ audit: { Started: true, Running: true, Records: [], Summary: null, Warnings: [] } })
+
+    renderWithProviders(<PsitSocDownloadContext socCase={socCase} queryKey="k" />)
+
+    expect(screen.queryByText(/84cc3120/)).not.toBeInTheDocument()
+    expect(screen.queryByText('notStarted')).not.toBeInTheDocument()
+  })
+
   it('shows the endpoint warnings where the analyst works', () => {
     wireApi({
       audit: { ...finishedAnswer, Warnings: ['État de la recherche illisible (Graph refused).'] },

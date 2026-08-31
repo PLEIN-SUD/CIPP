@@ -319,7 +319,7 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                 Relancer la recherche
               </Button>
             </Stack>
-            <CippApiResults apiObject={launch} />
+            <CippApiResults apiObject={launch} errorsOnly />
           </div>
         </Stack>
       </CardContent>

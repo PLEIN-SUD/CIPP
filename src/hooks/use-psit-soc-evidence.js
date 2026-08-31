@@ -1,5 +1,6 @@
 import { ApiGetCall } from '../api/ApiCall'
 import { readConsentAudit } from '../utils/psit-soc-consent'
+import { psitReadDownloadAudit, psitSocIsDownloadCase } from '../utils/psit-soc-download'
 
 /**
  * The case's evidence, gathered once for the guide and the panels.
@@ -65,6 +66,19 @@ export const usePsitSocEvidence = (socCase) => {
     waiting: Boolean(appId),
   })
 
+  // --- downloads -----------------------------------------------------------------------------
+  // Read-only: the endpoint only starts a search when asked to, so the guide reading it never
+  // opens one. Same key and url as PsitSocDownloadContext, so the two share one request, and the
+  // same polling rule, so the guide stops saying "recherche en cours" at the same instant the
+  // panel does.
+  const download = ApiGetCall({
+    url: `/api/PSITExecDownloadAudit?tenantFilter=${tenant}&CaseId=${socCase?.CaseId}`,
+    queryKey: `PSITSocDownload-${tenant}-${socCase?.CaseId}`,
+    waiting: Boolean(tenant && socCase?.CaseId && psitSocIsDownloadCase(socCase)),
+    staleTime: 0,
+    refetchInterval: (query) => (query?.state?.data?.Running === true ? 8000 : false),
+  })
+
   // --- device --------------------------------------------------------------------------------
   const device = ApiGetCall({
     url: deviceId
@@ -103,6 +117,7 @@ export const usePsitSocEvidence = (socCase) => {
           )
         : undefined,
     },
+    download: download.isSuccess ? psitReadDownloadAudit(download.data) : undefined,
     device: {
       device: deviceData,
       defenderState: Array.isArray(defender.data)

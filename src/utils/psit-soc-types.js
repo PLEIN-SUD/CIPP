@@ -412,8 +412,14 @@ export const PSIT_SOC_TYPES = [
     description:
       'Volume inhabituel de fichiers téléchargés depuis SharePoint ou OneDrive par un compte',
     guide: [
-      { id: 'files', label: 'Lire la liste des fichiers téléchargés jointe à l’alerte : quoi, et depuis quels sites' },
+      {
+        id: 'files',
+        label:
+          'Lire ce que le journal d’audit a réellement enregistré : quels fichiers, depuis quels sites (panneau « Téléchargements »)',
+        evidence: 'download.files',
+      },
       { id: 'baseline', label: 'Situer le volume : habituel pour ce compte et pour son service, ou hors norme ?' },
+      { id: 'origin', label: 'Depuis quelles adresses les téléchargements sont partis', evidence: 'download.origin' },
       { id: 'context', label: 'D’où : appareil géré, adresse habituelle, heures ouvrées ?', evidence: 'user.sessions' },
       { id: 'client', label: 'Demander au titulaire ou à son responsable : migration, départ, sauvegarde personnelle ?' },
       { id: 'exfil', label: 'Si retenu : chercher un partage externe consécutif, et cadrer la révocation des accès' },

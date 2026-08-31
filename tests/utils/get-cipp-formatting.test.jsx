@@ -175,3 +175,15 @@ describe('getCippFormatting Members (roles export)', () => {
     expect(cell?.props?.tableTitle).toBe('Members')
   })
 })
+
+// PSIT: the SOC queue's 'Compte admin' column. Text mode is what the CSV export and the column
+// filter see, so the composed string must survive the formatter untouched.
+describe("getCippFormatting ('Compte admin', text mode)", () => {
+  it('keeps verdict and account name together for export and filtering', () => {
+    expect(getCippFormatting('Oui — p.durand@contoso.test', 'Compte admin', 'text')).toBe(
+      'Oui — p.durand@contoso.test'
+    )
+    expect(getCippFormatting('Non', 'Compte admin', 'text')).toBe('Non')
+    expect(getCippFormatting('', 'Compte admin', 'text')).toBe('')
+  })
+})

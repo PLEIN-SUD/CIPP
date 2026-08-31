@@ -153,6 +153,26 @@ export const psitSocTicketParts = (value) => {
 }
 
 /**
+ * The 'Compte admin' cell: does this alert touch an admin account, and which one.
+ *
+ * Reads what the dossier recorded when the identity was looked at (Evidence.identity), never
+ * Entra per row. Three states that must not collapse into each other:
+ * - 'Oui — upn' / 'Éligible — upn' : the roles were read and the account holds (or can elect)
+ *   admin roles. The name is in the cell because "Admin" alone left the reader guessing whose
+ *   privilege it was;
+ * - 'Non' : the roles were read and came back empty — an answer;
+ * - '' : nobody has looked yet — the absence of one.
+ */
+export const psitSocAdminCell = (row) => {
+  const identity = row?.Evidence?.identity
+  if (!identity || !identity.readUtc) return ''
+  const upn = row?.Entities?.upn || ''
+  if (identity.isAdmin) return upn ? `Oui — ${upn}` : 'Oui'
+  if (identity.isEligible) return upn ? `Éligible — ${upn}` : 'Éligible'
+  return 'Non'
+}
+
+/**
  * The word the queue shows for a case's severity: the emitter's own tag when the case carries
  * one - that is the vocabulary the analyst reads in the alert mail - our P level otherwise.
  * 'Unknown' is the automation's fallback for "the mail named no priority": an absence, not a

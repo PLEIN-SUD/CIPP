@@ -179,6 +179,24 @@ export const getCippFormatting = (
       </>
     )
   }
+  // 'Compte admin' answers the triage question - does this alert touch an admin account - with
+  // the account's name beside the verdict. The chip carries the weight ('Oui' in red, 'Éligible'
+  // in orange, 'Non' plain), the name stays text. One composed string underneath, because an
+  // object cell is recursed into dotted sub-columns; export, sort and search see the words.
+  if (cellName === 'Compte admin') {
+    const text = String(data ?? '')
+    if (isText) return text
+    if (!text) return ''
+    const [verdict, account = ''] = text.split(' — ')
+    const color = verdict === 'Oui' ? 'error' : verdict === 'Éligible' ? 'warning' : 'default'
+    if (verdict === 'Non') return 'Non'
+    return (
+      <>
+        <Chip variant="outlined" label={verdict} size="small" color={color} />
+        {account ? <span style={{ marginLeft: 6 }}>{account}</span> : null}
+      </>
+    )
+  }
   // The address on its own, for the drawer, where there is no number beside it.
   if (cellName === 'Lien') {
     if (isText) return String(data ?? '')

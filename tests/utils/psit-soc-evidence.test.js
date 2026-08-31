@@ -196,3 +196,41 @@ describe('consent evidence', () => {
     expect(answer.text).toMatch(/non chargé/)
   })
 })
+
+describe('download evidence keys', () => {
+  it('routes the guide answer through the download reading', () => {
+    const evidence = {
+      download: {
+        started: true,
+        running: false,
+        files: [],
+        warnings: [],
+        window: { startUtc: '2026-08-28T03:27:00Z', endUtc: '2026-08-28T19:27:00Z' },
+        summary: {
+          fileCount: 3,
+          siteCount: 2,
+          sites: [],
+          extensions: [],
+          firstUtc: '2026-08-28T15:20:00Z',
+          lastUtc: '2026-08-28T15:50:00Z',
+          addresses: ['203.0.113.9'],
+          addressCount: 1,
+          agents: ['Mozilla/5.0'],
+        },
+      },
+    }
+    const files = psitSocStepEvidence('download.files', evidence)
+    expect(files.tone).toBe('bad')
+    expect(files.text).toMatch(/3 fichier\(s\) depuis 2 site\(s\)/)
+
+    const origin = psitSocStepEvidence('download.origin', evidence)
+    expect(origin.tone).toBe('good')
+    expect(origin.text).toMatch(/une seule adresse/)
+  })
+
+  it('says "recherche non lue" while the answer has not arrived, never an all-clear', () => {
+    // undefined means the call is in flight or was never made - not an empty result.
+    expect(psitSocStepEvidence('download.files', {}).text).toMatch(/non lue/)
+    expect(psitSocStepEvidence('download.origin', {}).tone).toBe('unknown')
+  })
+})

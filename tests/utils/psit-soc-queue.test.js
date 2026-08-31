@@ -1,4 +1,5 @@
 import {
+  psitSocAdminCell,
   psitSocTicketCell,
   psitSocTicketParts,
   psitSocStatusLabel,
@@ -243,5 +244,43 @@ describe('the ticket cell', () => {
     expect(psitSocTicketCell('', 'https://x.test')).toBe('')
     expect(psitSocTicketParts('').label).toBe('')
     expect(psitSocTicketParts(undefined).href).toBeNull()
+  })
+})
+
+describe('psitSocAdminCell', () => {
+  // Three states that must not collapse: an answer of yes, an answer of no, and no answer yet.
+  it('names the account when the alert touches an admin', () => {
+    const row = {
+      Entities: { upn: 'p.durand@contoso.test' },
+      Evidence: { identity: { isAdmin: true, isEligible: false, readUtc: '2026-08-28T15:30:00Z' } },
+    }
+    expect(psitSocAdminCell(row)).toBe('Oui — p.durand@contoso.test')
+  })
+
+  it('says eligible when the account can elect a role without holding one', () => {
+    const row = {
+      Entities: { upn: 'p.durand@contoso.test' },
+      Evidence: { identity: { isAdmin: false, isEligible: true, readUtc: '2026-08-28T15:30:00Z' } },
+    }
+    expect(psitSocAdminCell(row)).toBe('Éligible — p.durand@contoso.test')
+  })
+
+  it('answers Non when the roles were read and came back empty', () => {
+    const row = {
+      Entities: { upn: 'p.durand@contoso.test' },
+      Evidence: { identity: { isAdmin: false, isEligible: false, readUtc: '2026-08-28T15:30:00Z' } },
+    }
+    expect(psitSocAdminCell(row)).toBe('Non')
+  })
+
+  it('stays empty while nobody has looked, which is not the same as Non', () => {
+    expect(psitSocAdminCell({ Entities: { upn: 'x@y.test' } })).toBe('')
+    expect(psitSocAdminCell({ Evidence: { identity: {} } })).toBe('')
+    expect(psitSocAdminCell(undefined)).toBe('')
+  })
+
+  it('still answers without a name when the dossier carries only a user id', () => {
+    const row = { Evidence: { identity: { isAdmin: true, readUtc: '2026-08-28T15:30:00Z' } } }
+    expect(psitSocAdminCell(row)).toBe('Oui')
   })
 })

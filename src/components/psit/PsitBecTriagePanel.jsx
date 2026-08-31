@@ -249,7 +249,7 @@ export const PsitBecTriagePanel = ({
                   const saved = storedById.get(signal.id)
                   return (
                     <Stack key={signal.id} spacing={1}>
-                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                         <Typography variant="body1" sx={{ fontWeight: 600 }}>
                           {signal.title}
                         </Typography>
@@ -352,7 +352,7 @@ export const PsitBecTriagePanel = ({
                     const saved = storedById.get(signal.id)
                     return (
                       <Stack key={signal.id} spacing={1} sx={{ pb: 1 }}>
-                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {signal.title}
                           </Typography>

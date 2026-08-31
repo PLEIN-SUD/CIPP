@@ -103,7 +103,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
       <CardContent>
         <Stack spacing={2}>
           {qualification?.Verdict && (
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Chip
                 color={qualification.Verdict === 'true-positive' ? 'error' : 'default'}
                 label={`${

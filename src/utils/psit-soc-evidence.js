@@ -1,6 +1,7 @@
 import { groupSignInsByIp } from './psit-bec-signals'
 import { adaptGraphSignIns, readSignInGroup } from './psit-soc-signin-adapter'
 import { readAppScopes } from './psit-soc-app-scopes'
+import { psitDownloadHeadline, psitDownloadOriginLine } from './psit-soc-download'
 
 // The answers the guide steps carry.
 //
@@ -133,6 +134,18 @@ const RESOLVERS = {
     return verified
       ? answer('good', `éditeur vérifié : ${verified}${since}`)
       : answer('bad', `éditeur non vérifié${since}`)
+  },
+
+  /** What the audit log says was pulled: how much, from where, over how long. */
+  'download.files': (evidence) => {
+    if (evidence?.download === undefined) return unknown('recherche non lue')
+    return psitDownloadHeadline(evidence.download)
+  },
+
+  /** The addresses behind those downloads: one machine, or several places. */
+  'download.origin': (evidence) => {
+    if (evidence?.download === undefined) return unknown('recherche non lue')
+    return psitDownloadOriginLine(evidence.download)
   },
 
   /** Intune's verdict on the machine. */

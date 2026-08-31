@@ -30,10 +30,12 @@ import { PsitSocGuidePanel } from '../../../components/psit/soc/PsitSocGuidePane
 import { PsitSocQualificationPanel } from '../../../components/psit/soc/PsitSocQualificationPanel'
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
+import { PsitSocDownloadContext } from '../../../components/psit/soc/PsitSocDownloadContext'
 import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDeviceContext'
 import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
 import { PsitSocAppContext } from '../../../components/psit/soc/PsitSocAppContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
+import { psitSocIsDownloadCase } from '../../../utils/psit-soc-download'
 import {
   PSIT_SOC_STATUS_CHIP_COLORS,
   psitSocDisplaySeverity,
@@ -382,6 +384,9 @@ const Page = () => {
                           />
                           <PsitSocMailContext socCase={socCase} queryKey={queryKey} />
                         </>
+                      )}
+                      {psitSocIsDownloadCase(socCase) && (
+                        <PsitSocDownloadContext socCase={socCase} queryKey={queryKey} />
                       )}
                       {socCase.Entities?.appId && (
                         <>

@@ -7,6 +7,7 @@ import { CippDataTable } from '../../../components/CippTable/CippDataTable.js'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { useSettings } from '../../../hooks/use-settings'
 import {
+  psitSocAdminCell,
   psitSocAge,
   psitSocDisplaySeverity,
   psitSocGuideProgress,
@@ -125,14 +126,12 @@ const Page = () => {
         // The address the dossier is assigned to; the cell resolves the face and the name from it.
         'Assigné à': row?.AssignedTo ?? '',
         // From what the dossier recorded, never a read per row: a queue that asks Entra once
-        // per line is a queue nobody waits for. It appears once the identity has been looked
-        // at, which is also when the fact was worth keeping. The header names the question
-        // rather than the answer: 'Admin' alone left a reader guessing whose privilege it was.
-        'Compte à privilèges': row?.Evidence?.identity?.isAdmin
-          ? 'Admin'
-          : row?.Evidence?.identity?.isEligible
-            ? 'Admin éligible'
-            : '',
+        // per line is a queue nobody waits for. The header asks the triage question - does this
+        // alert touch an admin account - and the cell answers it with the account's name, because
+        // 'Admin' alone left the reader guessing whose privilege it was. 'Non' means the roles
+        // were read and came back empty; an empty cell means nobody has looked yet. Those two
+        // must not collapse: one is an answer, the other is the absence of one.
+        'Compte admin': psitSocAdminCell(row),
         Titre: row?.Title ?? '',
         'Catégorie': psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
@@ -408,7 +407,7 @@ const Page = () => {
     'Statut',
     'Âge',
     'Assigné à',
-    'Compte à privilèges',
+    'Compte admin',
     'Titre',
     'Catégorie',
     'Guide',

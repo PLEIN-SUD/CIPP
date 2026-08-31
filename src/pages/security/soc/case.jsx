@@ -30,6 +30,7 @@ import { PsitSocGuidePanel } from '../../../components/psit/soc/PsitSocGuidePane
 import { PsitSocQualificationPanel } from '../../../components/psit/soc/PsitSocQualificationPanel'
 import { PsitSocResponseBlock } from '../../../components/psit/soc/PsitSocResponseBlock'
 import { PsitSocRestoreChecklist } from '../../../components/psit/soc/PsitSocRestoreChecklist'
+import { PsitSocBecSection } from '../../../components/psit/soc/PsitSocBecSection'
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PsitSocDownloadContext } from '../../../components/psit/soc/PsitSocDownloadContext'
@@ -119,6 +120,7 @@ const Page = () => {
   // share one mental model: the situation, then the evidence and the gestures, then the decision.
   // The next-step line stays above all three.
   const [tab, setTab] = useState('summary')
+  const [becStarted, setBecStarted] = useState(false)
   // The frame's locks, computed from the guide's own checkmarks. Going back is always free;
   // going forward is earned. Grandfathered and already-decided dossiers are never gated.
   const gating = psitSocPhaseGatingActive(socCase)
@@ -463,7 +465,16 @@ const Page = () => {
                   {/* Evidence only here: the gestures live on the response tab, plus the
                       emergency hatch in the header. */}
                   {(socCase.Entities?.upn || socCase.Entities?.userId) && (
-                    <PsitSocUserContext socCase={socCase} queryKey={queryKey} hideActions />
+                    <>
+                      <PsitSocUserContext socCase={socCase} queryKey={queryKey} hideActions />
+                      <PsitSocBecSection
+                        socCase={socCase}
+                        queryKey={queryKey}
+                        part="collect"
+                        started={becStarted}
+                        onStart={() => setBecStarted(true)}
+                      />
+                    </>
                   )}
                   {(socCase.Entities?.deviceId || socCase.Entities?.deviceName) && (
                     <PsitSocDeviceContext socCase={socCase} queryKey={queryKey} hideActions />
@@ -517,6 +528,15 @@ const Page = () => {
                   <div>
                     <PsitSocResponseBlock socCase={socCase} />
                   </div>
+                  {(socCase.Entities?.upn || socCase.Entities?.userId) && (
+                    <PsitSocBecSection
+                      socCase={socCase}
+                      queryKey={queryKey}
+                      part="decision"
+                      started={becStarted}
+                      onStart={() => setBecStarted(true)}
+                    />
+                  )}
                   {/* The gestures, next to the evidence that justifies them: the same panels as
                       the collect tab, actions included. React Query dedupes the reads. */}
                   {(socCase.Entities?.upn || socCase.Entities?.userId) && (

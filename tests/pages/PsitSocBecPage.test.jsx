@@ -12,8 +12,9 @@ import { ApiGetCall } from '../../src/api/ApiCall'
 vi.setConfig({ testTimeout: 60000 })
 
 const routerQuery = vi.hoisted(() => ({ current: {} }))
+const routerReplace = vi.hoisted(() => vi.fn())
 vi.mock('next/router', () => ({
-  useRouter: () => ({ query: routerQuery.current, push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ query: routerQuery.current, push: vi.fn(), back: vi.fn(), replace: routerReplace }),
 }))
 
 vi.mock('../../src/api/ApiCall', () => ({
@@ -93,18 +94,17 @@ describe('SOC BEC investigation page', () => {
     expect(screen.queryByText(/Qualification avant diffusion/)).not.toBeInTheDocument()
   })
 
-  it('offers the way back to the case it was opened from', () => {
+  it('sends a dossier-carrying link straight to the dossier: the BEC lives in its tabs now', () => {
     routerQuery.current = {
       userId: 'user-guid',
       tenantFilter: 'contoso.test',
       caseId: 'PSIT-SOC-20260824-AAAA',
     }
+    routerReplace.mockClear()
     wireApi()
     renderWithProviders(<Page />)
 
-    const back = screen.getByRole('link', { name: /Retour au dossier/ })
-    expect(back).toHaveAttribute(
-      'href',
+    expect(routerReplace).toHaveBeenCalledWith(
       '/security/soc/case?caseId=PSIT-SOC-20260824-AAAA&tenantFilter=contoso.test'
     )
   })

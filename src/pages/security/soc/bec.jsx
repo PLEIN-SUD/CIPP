@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import Link from 'next/link'
 import {
@@ -108,6 +108,17 @@ const PsitBecTargetPicker = () => {
 const Page = () => {
   const router = useRouter()
   const { userId, tenantFilter, caseId } = router.query
+
+  // The BEC investigation now lives inside the dossier's tabs (collecte under Preuves, fiche
+  // under Décision & Réponse): a link that carries a dossier goes there. The caseless entry
+  // stays until the free-investigation retirement finishes the move.
+  useEffect(() => {
+    if (caseId && tenantFilter) {
+      router.replace(`/security/soc/case?caseId=${caseId}&tenantFilter=${tenantFilter}`)
+    }
+    // router identity churns; the query values are the real inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseId, tenantFilter])
   // Left to right in the order the work happens: who the account holder is, what was found and
   // how the analyst reads it, then the conclusion. Stacked in one column, the analyst scrolled
   // past the reading to reach what it rested on, and back up to act on it.

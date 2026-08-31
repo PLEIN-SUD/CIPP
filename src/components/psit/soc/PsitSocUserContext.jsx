@@ -19,7 +19,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import Link from 'next/link'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
@@ -299,19 +298,6 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
             <CippApiResults apiObject={action} />
             <CippApiResults apiObject={journal} errorsOnly />
 
-            {/* The heavy enrichment: the BEC collection is an orchestrated job, so it lives on
-                its own page rather than blocking this panel. The case id travels with the link so
-                the analyst comes back here. */}
-            <Button
-              size="small"
-              variant="text"
-              sx={{ mt: 1 }}
-              disabled={caseless || !effectiveUserId}
-              component={Link}
-              href={`/security/soc/bec?userId=${effectiveUserId}&tenantFilter=${tenant}&caseId=${socCase?.CaseId}`}
-            >
-              Ouvrir le dossier BEC
-            </Button>
           </div>
             </>
           )}

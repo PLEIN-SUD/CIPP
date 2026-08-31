@@ -1,6 +1,7 @@
 import {
   PSIT_SOC_STATUS_CHIP_COLORS,
   psitSocAdminCell,
+  psitSocHoldAge,
   psitSocTicketCell,
   psitSocTicketParts,
   psitSocStatusLabel,
@@ -252,6 +253,36 @@ describe('the fourth status', () => {
   it('labels qualified-btp in the analysts vocabulary with its own colour', () => {
     expect(psitSocStatusLabel('qualified-btp')).toBe('VP bénin')
     expect(PSIT_SOC_STATUS_CHIP_COLORS['VP bénin']).toBe('primary')
+  })
+})
+
+describe('psitSocHoldAge', () => {
+  const NOW = Date.parse('2026-09-03T10:00:00Z')
+
+  it('counts from the most recent on-hold journal entry', () => {
+    const age = psitSocHoldAge(
+      {
+        Status: 'on-hold',
+        ActionLog: [
+          { Action: 'on-hold', Utc: '2026-08-30T10:00:00Z' },
+          { Action: 'resumed', Utc: '2026-08-31T10:00:00Z' },
+          { Action: 'on-hold', Utc: '2026-09-01T10:00:00Z' },
+        ],
+      },
+      NOW
+    )
+    expect(age.label).toMatch(/2 j/)
+  })
+
+  it('gives no age to a dossier that is not on hold: resumed stops the clock', () => {
+    expect(
+      psitSocHoldAge({ Status: 'investigating', ActionLog: [{ Action: 'on-hold', Utc: '2026-09-01T10:00:00Z' }] }, NOW)
+    ).toBeNull()
+  })
+
+  it('labels the status in the analysts vocabulary', () => {
+    expect(psitSocStatusLabel('on-hold')).toBe('En attente')
+    expect(PSIT_SOC_STATUS_CHIP_COLORS['En attente']).toBe('warning')
   })
 })
 

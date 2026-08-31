@@ -134,6 +134,7 @@ describe('constants the rest of the dashboard leans on', () => {
       'qualified-fp',
       'qualified-tp',
       'qualified-btp',
+      'on-hold',
       'contained',
       'closed',
     ])

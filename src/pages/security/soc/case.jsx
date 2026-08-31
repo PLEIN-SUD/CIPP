@@ -38,6 +38,7 @@ import { PsitSocCaseTimeline } from '../../../components/psit/soc/PsitSocCaseTim
 import { PsitSocAnalysisPanel } from '../../../components/psit/soc/PsitSocAnalysisPanel'
 import { PsitSocValidateShortcut } from '../../../components/psit/soc/PsitSocValidateShortcut'
 import { PsitSocEmergencyContainment } from '../../../components/psit/soc/PsitSocEmergencyContainment'
+import { PsitSocHoldControls } from '../../../components/psit/soc/PsitSocHoldControls'
 import { PsitAdminBadge } from '../../../components/psit/soc/PsitAdminBadge'
 import { PsitSocDeviceContext } from '../../../components/psit/soc/PsitSocDeviceContext'
 import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailContext'
@@ -189,6 +190,7 @@ const Page = () => {
                 ticket. The text is written from the journal, here rather than in a tab,
                 because it is reached for at the end of any of them. */}
             <PsitSocEmergencyContainment socCase={socCase} queryKey={queryKey} />
+            <PsitSocHoldControls socCase={socCase} queryKey={queryKey} />
             <PsitSocTimeEntry socCase={socCase} />
             {socCase?.TicketUrl && (
               <Button

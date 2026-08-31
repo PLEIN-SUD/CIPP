@@ -74,6 +74,12 @@ describe('next step on a case', () => {
     expect(next.detail).toMatch(/garder la détection/)
   })
 
+  it('says an on-hold dossier waits, and where the resume lives', () => {
+    const next = psitSocNextStep(caseOf({ Status: 'on-hold' }))
+    expect(next.id).toBe('hold')
+    expect(next.detail).toMatch(/Reprendre/)
+  })
+
   it('says a closed case is closed instead of proposing work', () => {
     const next = psitSocNextStep(
       caseOf({ Status: 'closed', ClosedBy: 'analyste', ClosedUtc: '2026-08-25T10:00:00Z' })

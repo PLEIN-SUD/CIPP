@@ -38,6 +38,15 @@ export const psitSocNextStep = (socCase) => {
     return STEP('closed', 'Dossier clos', `Clos${when}${who}. Rouvrir si le fil repart.`, 'done')
   }
 
+  if (status === 'on-hold') {
+    return STEP(
+      'hold',
+      'En attente d’un retour',
+      'Le dossier attend une réponse (SOC externe, client). Reprendre dès qu’elle arrive : bouton « Reprendre » dans l’en-tête.',
+      'action'
+    )
+  }
+
   if (status === 'new') {
     return STEP(
       'take',

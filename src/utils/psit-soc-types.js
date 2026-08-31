@@ -46,6 +46,7 @@ export const PSIT_SOC_STATUSES = [
   'qualified-fp',
   'qualified-tp',
   'qualified-btp',
+  'on-hold',
   'contained',
   'closed',
 ]

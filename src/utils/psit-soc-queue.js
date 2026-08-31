@@ -25,6 +25,8 @@ export const PSIT_SOC_STATUS_LABELS_FR = {
   'qualified-tp': 'Vrai positif',
   // Detection right, behaviour real, no compromise: the fourth honest outcome.
   'qualified-btp': 'VP bénin',
+  // Waiting on the emitter or the client: out of the to-take pile, still open.
+  'on-hold': 'En attente',
   contained: 'Confiné',
   closed: 'Clos',
 }
@@ -40,6 +42,7 @@ export const PSIT_SOC_STATUS_CHIP_COLORS = {
   'En cours': 'warning',
   'Vrai positif': 'secondary',
   'VP bénin': 'primary',
+  'En attente': 'warning',
   'Faux positif': 'success',
   Confiné: 'info',
   Clos: 'default',
@@ -181,6 +184,20 @@ export const psitSocAdminCell = (row) => {
  * 'Unknown' is the automation's fallback for "the mail named no priority": an absence, not a
  * tag, so it never shadows a severity set by hand on the case.
  */
+/**
+ * How long a dossier has been waiting: from its most recent 'on-hold' journal entry. Null when
+ * the dossier is not on hold - an age that outlives its state would keep counting after resume.
+ */
+export const psitSocHoldAge = (row, now = Date.now()) => {
+  if (row?.Status !== 'on-hold') return null
+  const stamps = (row?.ActionLog ?? [])
+    .filter((entry) => entry?.Action === 'on-hold')
+    .map((entry) => Date.parse(entry?.Utc))
+    .filter((stamp) => !Number.isNaN(stamp))
+  if (stamps.length === 0) return psitSocAge(row?.UpdatedUtc, now)
+  return psitSocAge(new Date(Math.max(...stamps)).toISOString(), now)
+}
+
 export const psitSocDisplaySeverity = (row) => {
   const tag = row?.SeverityTag
   if (tag && tag !== 'Unknown') return tag

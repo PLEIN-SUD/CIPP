@@ -11,6 +11,7 @@ import {
   psitSocAge,
   psitSocDisplaySeverity,
   psitSocGuideProgress,
+  psitSocHoldAge,
   psitSocQueueOrder,
   psitSocQueueSummary,
   psitSocStatusLabel,
@@ -31,6 +32,7 @@ import {
   SwapHoriz,
 } from '@mui/icons-material'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import { usePsitSocAnalysts } from '../../../hooks/use-psit-soc-analysts'
 import { PsitSocCaseDrawer } from '../../../components/psit/soc/PsitSocCaseDrawer'
 import { PsitSocImportDrawer } from '../../../components/psit/soc/PsitSocImportDrawer'
 
@@ -61,33 +63,7 @@ const Page = () => {
   // The reassignment picker: the portal's own users. When Graph is out the endpoint degrades to
   // email-only entries and says so in Warnings; the queue keeps working either way. The names
   // shown in the table are resolved by the cell itself, from this same cached request.
-  const analystsRequest = ApiGetCall({
-    url: '/api/PSITListSocAnalysts',
-    queryKey: 'PSITSocAnalysts',
-    staleTime: 5 * 60 * 1000,
-  })
-  const analysts = useMemo(
-    () => (Array.isArray(analystsRequest.data?.Analysts) ? analystsRequest.data.Analysts : []),
-    [analystsRequest.data]
-  )
-  // The endpoint reports why a name is missing rather than returning an empty list; the
-  // queue shows that reason instead of leaving an analyst to wonder why he reads an address.
-  const analystWarnings = useMemo(
-    () => (Array.isArray(analystsRequest.data?.Warnings) ? analystsRequest.data.Warnings : []),
-    [analystsRequest.data]
-  )
-
-  const analystOptions = useMemo(
-    () =>
-      analysts.map((analyst) => ({
-        // Name and email both in the label: typing either finds the person.
-        label: analyst.displayName
-          ? analyst.displayName + ' (' + analyst.userPrincipalName + ')'
-          : analyst.userPrincipalName,
-        value: analyst.userPrincipalName,
-      })),
-    [analysts]
-  )
+  const { request: analystsRequest, options: analystOptions, warnings: analystWarnings } = usePsitSocAnalysts()
 
   // The endpoint answers with a bare array on success and { Results: '<message>' } on failure.
   // The first version of this read data.Results for both, which emptied the queue while the
@@ -143,6 +119,7 @@ const Page = () => {
         'Entités': Object.entries(row?.Entities ?? {})
           .map(([kind, value]) => `${kind} : ${value}`)
           .join(', '),
+        Attente: psitSocHoldAge(row)?.label ?? '',
         'Créé le': row?.CreatedUtc ?? '',
         'Créé par': row?.CreatedBy ?? '',
         'Mis à jour le': row?.UpdatedUtc ?? '',
@@ -417,6 +394,7 @@ const Page = () => {
       'Entités',
       'Ticket Autotask',
       'Lien',
+      'Attente',
       'Créé le',
       'Créé par',
       'Mis à jour le',
@@ -457,6 +435,11 @@ const Page = () => {
     {
       filterName: 'Qualifiés faux positifs',
       value: [{ id: 'Statut', value: 'Faux positif' }],
+      type: 'column',
+    },
+    {
+      filterName: 'En attente',
+      value: [{ id: 'Statut', value: 'En attente' }],
       type: 'column',
     },
     { filterName: 'Confinés', value: [{ id: 'Statut', value: 'Confiné' }], type: 'column' },
@@ -506,6 +489,9 @@ const Page = () => {
                 label={`${summary.counts.investigating ?? 0} en cours`}
               />
               <Chip label={`${summary.counts.contained ?? 0} confinés`} />
+              {(summary.counts['on-hold'] ?? 0) > 0 && (
+                <Chip color="warning" label={`${summary.counts['on-hold']} en attente`} />
+              )}
               <Typography variant="body2" color="text.secondary">
                 {summary.oldestUntaken
                   ? `Le plus ancien non pris : ${summary.oldestUntaken.row.CaseId}, il y a ${summary.oldestUntaken.age.label}.`

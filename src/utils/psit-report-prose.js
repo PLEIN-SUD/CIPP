@@ -28,6 +28,7 @@ const NOUNS = {
   destinataire: { one: 'destinataire', many: 'destinataires', gender: 'm' },
   dossier: { one: 'dossier', many: 'dossiers', gender: 'm' },
   entree: { one: 'entrée', many: 'entrées', gender: 'f' },
+  fichier: { one: 'fichier', many: 'fichiers', gender: 'm' },
   jour: { one: 'jour', many: 'jours', gender: 'm' },
   ligne: { one: 'ligne', many: 'lignes', gender: 'f' },
   ligneSuivi: { one: 'ligne de suivi', many: 'lignes de suivi', gender: 'f' },
@@ -41,8 +42,10 @@ const NOUNS = {
   question: { one: 'question', many: 'questions', gender: 'f' },
   regle: { one: 'règle', many: 'règles', gender: 'f' },
   session: { one: 'session', many: 'sessions', gender: 'f' },
+  site: { one: 'site', many: 'sites', gender: 'm' },
   signal: { one: 'signal', many: 'signaux', gender: 'm' },
   tentative: { one: 'tentative', many: 'tentatives', gender: 'f' },
+  typeFichier: { one: 'type de fichier', many: 'types de fichiers', gender: 'm' },
   // Invariable: "1 tiers", "4 tiers".
   tiers: { one: 'tiers', many: 'tiers', gender: 'm' },
   voieExfiltration: { one: "voie d'exfiltration", many: "voies d'exfiltration", gender: 'f' },

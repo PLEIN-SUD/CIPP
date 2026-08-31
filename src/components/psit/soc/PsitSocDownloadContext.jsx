@@ -21,10 +21,13 @@ import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { PsitSocLoading } from './PsitSocLoading'
 import { PsitAdminBadge } from './PsitAdminBadge'
+import { PsitSocDownloadReportButton } from '../PsitSocDownloadReportFr'
 import {
   PSIT_DOWNLOAD_WINDOWS,
   psitDownloadBySite,
   psitDownloadClientLabel,
+  psitDownloadOperationLabel,
+  psitDownloadOperations,
   psitDownloadSpanMinutes,
   psitDownloadWindowLabel,
   psitReadDownloadAudit,
@@ -55,6 +58,9 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
   const userId = socCase?.Entities?.userId
   const [windowHours, setWindowHours] = useState(PSIT_DOWNLOAD_WINDOWS[0].hours)
   const [showAll, setShowAll] = useState(false)
+  // Operations kept, not operations dropped: an empty set means everything, and the set resets
+  // with the search it filtered.
+  const [operationFilter, setOperationFilter] = useState(() => new Set())
 
   const auditQueryKey = `PSITSocDownload-${tenant}-${caseId}`
   const audit = ApiGetCall({
@@ -90,15 +96,38 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
 
   const relaunch = () => {
     setShowAll(false)
+    setOperationFilter(new Set())
     launch.mutate({
       url: '/api/PSITExecDownloadAudit',
       data: { tenantFilter: tenant, CaseId: caseId, Restart: true, HoursBefore: windowHours },
     })
   }
 
-  const bySite = useMemo(() => psitDownloadBySite(read), [read])
+  // 'Consulté' is not 'téléchargé': the filter lets the analyst read one story at a time, and
+  // the per-site table follows it, because 'quels sites ont perdu quoi' changes with the verb.
+  const operations = useMemo(() => psitDownloadOperations(read.files), [read.files])
+  const filteredFiles = useMemo(
+    () =>
+      operationFilter.size === 0
+        ? read.files
+        : read.files.filter((file) => operationFilter.has(file?.Operation)),
+    [read.files, operationFilter]
+  )
+  const toggleOperation = (operation) => {
+    setShowAll(false)
+    setOperationFilter((current) => {
+      const next = new Set(current)
+      if (next.has(operation)) {
+        next.delete(operation)
+      } else {
+        next.add(operation)
+      }
+      return next
+    })
+  }
+  const bySite = useMemo(() => psitDownloadBySite({ files: filteredFiles }), [filteredFiles])
   const span = psitDownloadSpanMinutes(read)
-  const rows = showAll ? read.files : read.files.slice(0, MAX_ROWS)
+  const rows = showAll ? filteredFiles : filteredFiles.slice(0, MAX_ROWS)
   const loading = (audit.isFetching && !audit.isFetched) || launch.isPending
 
   if (!caseId) {
@@ -135,7 +164,10 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
         title="Téléchargements"
         subheader={upn}
         action={
-          userId ? <PsitAdminBadge tenant={tenant} userId={userId} caseId={caseId} /> : null
+          <Stack direction="row" spacing={1} alignItems="center">
+            <PsitSocDownloadReportButton socCase={socCase} read={read} />
+            {userId ? <PsitAdminBadge tenant={tenant} userId={userId} caseId={caseId} /> : null}
+          </Stack>
         }
       />
       <CardContent>
@@ -222,6 +254,33 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                 </div>
               )}
 
+              {operations.length > 0 && (
+                <div>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Type d&rsquo;action
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {operations.map((entry) => (
+                      <Chip
+                        key={entry.operation}
+                        size="small"
+                        label={`${entry.label} : ${entry.count}`}
+                        color={operationFilter.has(entry.operation) ? 'primary' : 'default'}
+                        variant={operationFilter.has(entry.operation) ? 'filled' : 'outlined'}
+                        onClick={() => toggleOperation(entry.operation)}
+                      />
+                    ))}
+                  </Stack>
+                  {operationFilter.size > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      {`Tables filtrées : ${[...operationFilter]
+                        .map((operation) => psitDownloadOperationLabel(operation).toLowerCase())
+                        .join(', ')} (${filteredFiles.length} sur ${read.files.length} lignes)`}
+                    </Typography>
+                  )}
+                </div>
+              )}
+
               {bySite.length > 0 && (
                 <div>
                   <Typography variant="subtitle2" gutterBottom>
@@ -248,7 +307,7 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                 </div>
               )}
 
-              {read.files.length > 0 && (
+              {filteredFiles.length > 0 && (
                 <div>
                   <Typography variant="subtitle2" gutterBottom>
                     Fichiers
@@ -266,18 +325,18 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                       {rows.map((file, index) => (
                         <TableRow key={`${file.Path}-${file.WhenUtc}-${index}`}>
                           <TableCell>{file.Name}</TableCell>
-                          <TableCell>{file.Operation}</TableCell>
+                          <TableCell>{psitDownloadOperationLabel(file.Operation)}</TableCell>
                           <TableCell>{file.WhenUtc}</TableCell>
                           <TableCell>{file.Ip}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                  {read.files.length > MAX_ROWS && (
+                  {filteredFiles.length > MAX_ROWS && (
                     <Button size="small" onClick={() => setShowAll((value) => !value)}>
                       {showAll
                         ? `Réduire à ${MAX_ROWS} lignes`
-                        : `Afficher les ${read.files.length} fichiers`}
+                        : `Afficher les ${filteredFiles.length} fichiers`}
                     </Button>
                   )}
                 </div>

@@ -31,6 +31,32 @@ export const psitSocIsDownloadCase = (socCase) =>
 const asArray = (value) => (Array.isArray(value) ? value : [])
 
 /**
+ * The audit operations in the analyst's language. 'FileAccessed' matters most: a page of accessed
+ * files is not a download, and the two must never blur into one count.
+ */
+export const PSIT_DOWNLOAD_OPERATION_LABELS = {
+  FileDownloaded: 'Téléchargé',
+  FileSyncDownloadedFull: 'Synchronisé (OneDrive)',
+  FileAccessed: 'Consulté',
+}
+
+export const psitDownloadOperationLabel = (operation) =>
+  PSIT_DOWNLOAD_OPERATION_LABELS[operation] ?? String(operation || '')
+
+/** The operations present in a file list, counted, biggest first: what the filter chips show. */
+export const psitDownloadOperations = (files) => {
+  const counts = new Map()
+  for (const file of asArray(files)) {
+    const operation = file?.Operation || ''
+    if (!operation) continue
+    counts.set(operation, (counts.get(operation) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([operation, count]) => ({ operation, count, label: psitDownloadOperationLabel(operation) }))
+    .sort((a, b) => b.count - a.count)
+}
+
+/**
  * The endpoint's answer, normalised.
  *
  * `started` false means no search has ever been launched for this dossier — distinct from a
@@ -70,6 +96,10 @@ export const psitReadDownloadAudit = (data) => {
           addresses: asArray(summary.Addresses),
           addressCount: Number(summary.AddressCount ?? 0),
           agents: asArray(summary.Agents),
+          operations: asArray(summary.Operations).map((entry) => ({
+            operation: entry?.Operation ?? '',
+            count: Number(entry?.Count ?? 0),
+          })),
         }
       : null,
   }

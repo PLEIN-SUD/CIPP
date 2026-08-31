@@ -440,6 +440,40 @@ const Page = () => {
                       )}
                     </CardContent>
                   </Card>
+                  {/* Filed by the ingestion-time enrichment: a repeat customer is a scope fact
+                      worth knowing before the first click, and its absence is just silence. */}
+                  {(socCase.Evidence?.related?.cases ?? []).length > 0 && (
+                    <Card variant="outlined">
+                      <CardHeader
+                        title="Dossiers récents sur la même entité"
+                        subheader={`Relevé à l'ingestion (${socCase.Evidence.related.readUtc ?? ''})`}
+                      />
+                      <CardContent>
+                        <Stack spacing={1}>
+                          {socCase.Evidence.related.cases.map((related) => (
+                            <Stack key={related.caseId} direction="row" spacing={1} alignItems="center">
+                              <Chip
+                                size="small"
+                                variant="outlined"
+                                color={PSIT_SOC_STATUS_CHIP_COLORS[psitSocStatusLabel(related.status)] ?? 'default'}
+                                label={psitSocStatusLabel(related.status)}
+                              />
+                              <MuiLink
+                                href={`/security/soc/case?caseId=${related.caseId}&tenantFilter=${socCase.Tenant}`}
+                              >
+                                {related.title || related.caseId}
+                              </MuiLink>
+                              {related.verdict && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {related.verdict}
+                                </Typography>
+                              )}
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  )}
                   <PsitSocGuidePanel
                     socCase={socCase}
                     queryKey={queryKey}

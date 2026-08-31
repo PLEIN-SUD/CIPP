@@ -42,12 +42,6 @@ export const nativeMenuItems = [
         permissions: ['Security.Incident.*'],
       },
       {
-        // One entry; the four screens carry their own tabs to switch between each other.
-        title: 'Investigation libre',
-        path: '/security/soc/bec',
-        permissions: ['Security.Incident.*'],
-      },
-      {
         title: 'Santé du parc',
         path: '/security/soc/fleet',
         permissions: ['Endpoint.MEM.*'],

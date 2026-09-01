@@ -101,8 +101,12 @@ const PsitSocNextLockHint = ({ socCase, gating, currentPhase }) => {
     <Alert severity="info">
       {`Onglet suivant verrouillé. Reste à traiter (cocher chaque étape, ou la marquer « Sans objet ») : ${remaining
         .slice(0, 4)
-        .map((step) => step.label)
-        .join(' · ')}${remaining.length > 4 ? '…' : ''}`}
+        .map((step) => (step.state === 'unknown' ? `${step.label} (sans réponse)` : step.label))
+        .join(' · ')}${remaining.length > 4 ? '…' : ''}${
+        remaining.some((step) => step.state === 'unknown')
+          ? ' — une étape sans réponse se débloque en qualifiant tôt, en escaladant ou en mettant en attente.'
+          : ''
+      }`}
     </Alert>
   )
 }

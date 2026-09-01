@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
+import { psitSocUnansweredSteps } from '../../../utils/psit-soc-phases'
 
 // The four-outcome taxonomy. Each help line is the definition the analyst chooses by, because
 // the wrong verdict here teaches the external SOC the wrong lesson: an FP on a founded detection
@@ -163,6 +164,15 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
             </Stack>
           )}
 
+          {psitSocUnansweredSteps(socCase).length > 0 && (
+            <Alert severity="warning">
+              {`${
+                psitSocUnansweredSteps(socCase).length > 1
+                  ? `${psitSocUnansweredSteps(socCase).length} étapes du guide sont restées sans réponse`
+                  : 'Une étape du guide est restée sans réponse'
+              }. Si l'impasse demeure, les issues honnêtes sont le verdict indéterminé, l'escalade ou la mise en attente — pas un verdict qui affirme ce que l'investigation n'a pas pu établir.`}
+            </Alert>
+          )}
           <ToggleButtonGroup
             exclusive
             orientation="vertical"

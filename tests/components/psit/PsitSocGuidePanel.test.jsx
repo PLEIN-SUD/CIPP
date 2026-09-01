@@ -48,7 +48,7 @@ describe('PsitSocGuidePanel', () => {
     expect(checkboxes[1]).not.toBeChecked()
   })
 
-  it('persists a ticked step under its stable id', async () => {
+  it('ticking a manual step asks for its finding, and persists both under the stable id', async () => {
     const mutate = vi.fn()
     ApiPostCall.mockImplementation(() => ({
       mutate,
@@ -58,13 +58,31 @@ describe('PsitSocGuidePanel', () => {
     }))
     renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
 
-    // Second step of type 2: the AiTM check, still pending.
+    // Second step of type 2: the AiTM check, still pending, no automatic answer wired here.
     await userEvent.click(screen.getAllByRole('checkbox')[1])
+
+    // No write yet: a tick without a result is exactly the old incoherence.
+    expect(mutate).not.toHaveBeenCalled()
+    const field = screen.getByLabelText(/Constat \(obligatoire\) : ce que cette étape a établi/)
+    await userEvent.type(field, 'Aucune signature AiTM sur la période')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
     const payload = mutate.mock.calls[0][0]
     expect(payload.url).toBe('/api/PSITExecSocCase')
-    expect(payload.data.GuideProgress).toEqual([{ StepId: 'aitm', State: 'done' }])
+    expect(payload.data.GuideProgress).toEqual([
+      { StepId: 'aitm', State: 'done', Note: 'Aucune signature AiTM sur la période' },
+    ])
+  })
+
+  it('refuses to save a finding made of nothing', async () => {
+    const mutate = vi.fn()
+    ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
+    renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
+
+    await userEvent.click(screen.getAllByRole('checkbox')[1])
+
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
   })
 
   it('unticking a done step records it as pending again, never deletes the trace', async () => {
@@ -167,5 +185,91 @@ describe('PsitSocGuidePanel', () => {
     )
 
     expect(screen.getByText(/Type d’alerte inconnu 999/)).toBeInTheDocument()
+  })
+})
+
+
+describe('PsitSocGuidePanel, findings', () => {
+  const baseCase = {
+    CaseId: 'PSIT-SOC-1',
+    Tenant: 'contoso.test',
+    TypeId: 2,
+    GuideProgress: {},
+    Entities: { upn: 'p.martin@contoso.test' },
+  }
+
+  it('captures the automatic answer as the finding when the data already answered', async () => {
+    const mutate = vi.fn()
+    ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
+    renderWithProviders(
+      <PsitSocGuidePanel
+        socCase={baseCase}
+        queryKey="k"
+        evidence={{
+          user: {
+            usageLocation: 'FR',
+            signIns: [
+              {
+                ipAddress: '195.65.131.222',
+                createdDateTime: '2026-08-24T09:00:00Z',
+                status: { errorCode: 0 },
+                location: { countryOrRegion: 'FR' },
+                clientAppUsed: 'Browser',
+              },
+            ],
+          },
+        }}
+      />
+    )
+
+    // First step of type 2 carries the sessions evidence: the tick freezes what was on screen.
+    await userEvent.click(screen.getAllByRole('checkbox')[0])
+
+    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
+    const step = mutate.mock.calls[0][0].data.GuideProgress[0]
+    expect(step.State).toBe('done')
+    expect(step.Note).toMatch(/^Donnée : /)
+  })
+
+  it("records the impasse: 'sans réponse' requires what was tried, and blocks like pending", async () => {
+    const mutate = vi.fn()
+    ApiPostCall.mockImplementation(() => ({ mutate, isPending: false, isSuccess: false, isError: false }))
+    renderWithProviders(<PsitSocGuidePanel socCase={baseCase} queryKey="k" evidence={{}} />)
+
+    await userEvent.click(screen.getAllByRole('button', { name: /Sans réponse/ })[0])
+    expect(mutate).not.toHaveBeenCalled()
+    await userEvent.type(
+      screen.getByLabelText(/ce qui a été tenté/),
+      'Titulaire injoignable après deux appels'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
+    const step = mutate.mock.calls[0][0].data.GuideProgress[0]
+    expect(step.State).toBe('unknown')
+    expect(step.Note).toBe('Titulaire injoignable après deux appels')
+  })
+
+  it('shows the recorded finding under the step, with its impasse state in warning', () => {
+    renderWithProviders(
+      <PsitSocGuidePanel
+        socCase={{
+          ...baseCase,
+          GuideProgress: {
+            sessions: {
+              State: 'unknown',
+              By: 'a@example.test',
+              Utc: '2026-09-01T10:00:00Z',
+              Note: 'Journal de connexion vide sur la fenêtre',
+            },
+          },
+        }}
+        queryKey="k"
+        evidence={{}}
+      />
+    )
+
+    expect(screen.getByText(/sans réponse, a@example.test/)).toBeInTheDocument()
+    expect(screen.getByText('Journal de connexion vide sur la fenêtre')).toBeInTheDocument()
   })
 })

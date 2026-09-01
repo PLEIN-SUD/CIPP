@@ -6,6 +6,7 @@ import {
   psitSocPhaseRemaining,
   psitSocPhaseSteps,
   psitSocUnlockedPhases,
+  psitSocUnansweredSteps,
 } from '../../src/utils/psit-soc-phases'
 import { PSIT_SOC_TYPES } from '../../src/utils/psit-soc-types'
 
@@ -109,5 +110,29 @@ describe('psitSocPhaseComplete tolerates both GuideProgress read shapes', () => 
   it('lists the steps of one phase, in guide order', () => {
     const steps = psitSocPhaseSteps(gatedCase(), 'collect')
     expect(steps.map((step) => step.id)).toEqual(['aitm', 'devicecode', 'bec'])
+  })
+})
+
+describe("'sans réponse' and the walk", () => {
+  const caseWith = (state) => ({
+    CaseId: 'PSIT-SOC-1',
+    TypeId: 2,
+    Status: 'investigating',
+    CreatedUtc: '2026-09-02T08:00:00Z',
+    GuideProgress: { sessions: { State: state, By: 'a', Utc: '2026-09-02T09:00:00Z' } },
+  })
+
+  it('a recorded impasse blocks like an untouched step: honesty is not a free pass', () => {
+    expect(psitSocPhaseComplete(caseWith('unknown'), 'validate')).toBe(false)
+  })
+
+  it('the remaining list carries the state, so the hint can name the impasses apart', () => {
+    const remaining = psitSocPhaseRemaining(caseWith('unknown'), 'scope')
+    expect(remaining.find((step) => step.id === 'sessions')?.state).toBe('unknown')
+  })
+
+  it('counts the impasses across the whole guide for the Décision nudge', () => {
+    expect(psitSocUnansweredSteps(caseWith('unknown')).map((step) => step.id)).toEqual(['sessions'])
+    expect(psitSocUnansweredSteps(caseWith('done'))).toHaveLength(0)
   })
 })

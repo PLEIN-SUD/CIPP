@@ -32,12 +32,42 @@ const socCase = {
 }
 
 describe('PsitSocValidateShortcut', () => {
-  it('offers FP and benign only: a compromise never skips the walk', () => {
+  it('offers the three established verdicts: FP, benign, and the CONFIRMED true positive', () => {
+    // Doctrine revised with the user (2026-09-01): a compromise established by an outside fact
+    // (the holder reached, not in the country) does not walk five tabs before remediation.
     renderWithProviders(<PsitSocValidateShortcut socCase={socCase} queryKey="k" />)
 
     expect(screen.getByRole('button', { name: 'Faux positif évident' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'VP bénin évident' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Vrai positif$/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'VP confirmé' })).toBeInTheDocument()
+  })
+
+  it('a confirmed TP poses the verdict then offers the remediation in the same breath', async () => {
+    const calls = []
+    const mutate = vi.fn((payload, options) => {
+      calls.push(payload)
+      options?.onSuccess?.()
+    })
+    ApiPostCall.mockReturnValue({ mutate, isPending: false, isSuccess: false, isError: false })
+
+    renderWithProviders(<PsitSocValidateShortcut socCase={socCase} queryKey="k" />)
+    await userEvent.click(screen.getByRole('button', { name: 'VP confirmé' }))
+    await userEvent.type(
+      screen.getByLabelText(/qui a confirmé, et comment/),
+      'Titulaire joint au téléphone : pas dans le pays de l’alerte'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Qualifier maintenant' }))
+
+    // Verdict posed, and the proposal replaces the form instead of vanishing with the refetch.
+    expect(calls.some((c) => c.data?.Verdict === 'true-positive')).toBe(true)
+    expect(screen.getByText(/Vrai positif posé — remédier maintenant \?/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Exécuter les six gestes' }))
+
+    expect(calls.some((c) => c.url === '/api/execBecRemediate')).toBe(true)
+    const journal = calls.find((c) => c.data?.LogAction?.Action === 'remediate-user')
+    expect(journal.data.Status).toBe('contained')
+    expect(journal.data.LogAction.Detail).toMatch(/vrai positif confirmé/)
   })
 
   it('refuses to qualify without the justification that replaces the skipped tabs', async () => {
@@ -54,7 +84,8 @@ describe('PsitSocValidateShortcut', () => {
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ Verdict: 'false-positive' }),
-      })
+      }),
+      expect.anything()
     )
   })
 
@@ -138,7 +169,7 @@ describe("PsitSocGuidePanel, scoped to a phase with 'sans objet'", () => {
     expect(screen.queryByText(/mesurer l’écart de temps/)).not.toBeInTheDocument()
   })
 
-  it("writes 'skipped' for a sans-objet step: stating a step does not apply IS the work", async () => {
+  it("writes 'skipped' with its why: stating a step does not apply IS the work, and says so", async () => {
     const mutate = vi.fn()
     ApiPostCall.mockReturnValue({ mutate, isPending: false, isSuccess: false, isError: false })
 
@@ -147,10 +178,24 @@ describe("PsitSocGuidePanel, scoped to a phase with 'sans objet'", () => {
     )
     await userEvent.click(screen.getAllByRole('button', { name: /Sans objet/ })[0])
 
+    // The judgement needs its reason before anything is written.
+    expect(mutate).not.toHaveBeenCalled()
+    await userEvent.type(
+      screen.getByLabelText(/pourquoi cette étape ne s’applique pas/),
+      'Pas de MFA sur ce tenant : la question AiTM ne se pose pas'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          GuideProgress: [{ StepId: 'aitm', State: 'skipped' }],
+          GuideProgress: [
+            {
+              StepId: 'aitm',
+              State: 'skipped',
+              Note: 'Pas de MFA sur ce tenant : la question AiTM ne se pose pas',
+            },
+          ],
         }),
       })
     )

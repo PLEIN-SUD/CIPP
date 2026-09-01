@@ -7,6 +7,11 @@ import { psitSocTypeById } from './psit-soc-types'
 // when the previous phase's steps are all done or skipped ('sans objet' counts: stating that a
 // step does not apply IS the work) - never by clicking harder. Going back is always free: new
 // evidence widens scope.
+//
+// 'unknown' ('sans réponse': looked, cannot answer) deliberately does NOT unlock: an unanswered
+// question blocks the walk, and the exits are the honest ones - find the answer, qualify early
+// through a shortcut (FP, benign, confirmed TP), escalate, or put the dossier on hold. The
+// recorded impasse then feeds the Décision tab as a push toward 'indéterminé'.
 
 export const PSIT_SOC_PHASES = [
   { key: 'validate', label: '1. Valider', title: 'Valider l’alerte' },
@@ -78,7 +83,10 @@ export const psitSocUnlockedPhases = (socCase) => {
   return unlocked
 }
 
-/** The steps still owed before a locked phase opens: what the tooltip names. */
+/**
+ * The steps still owed before a locked phase opens: what the tooltip names. Each carries its
+ * state so the hint can say which ones are recorded impasses rather than simply not done.
+ */
 export const psitSocPhaseRemaining = (socCase, phaseKey) => {
   const order = PSIT_SOC_PHASES.map((phase) => phase.key)
   const index = order.indexOf(phaseKey)
@@ -87,8 +95,17 @@ export const psitSocPhaseRemaining = (socCase, phaseKey) => {
   for (const previous of order.slice(0, index)) {
     for (const step of psitSocPhaseSteps(socCase, previous)) {
       const state = stepState(socCase, step.id)
-      if (state !== 'done' && state !== 'skipped') remaining.push(step)
+      if (state !== 'done' && state !== 'skipped') remaining.push({ ...step, state })
     }
   }
   return remaining
+}
+
+/**
+ * The recorded impasses across the whole guide: steps someone looked at and could not answer.
+ * The Décision tab counts them as a push toward the 'indéterminé' verdict or the escalation.
+ */
+export const psitSocUnansweredSteps = (socCase) => {
+  const entry = psitSocTypeById(socCase?.TypeId)
+  return (entry?.guide ?? []).filter((step) => stepState(socCase, step.id) === 'unknown')
 }

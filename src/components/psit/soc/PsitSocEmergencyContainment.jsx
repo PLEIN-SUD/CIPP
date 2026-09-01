@@ -11,6 +11,7 @@ import {
 import { GppMaybe } from '@mui/icons-material'
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
+import { psitSocRemediationPlan } from '../../../utils/psit-soc-remediation'
 
 /**
  * The escape hatch of the gated frame: an active compromise cannot wait five tabs.
@@ -28,32 +29,26 @@ export const PsitSocEmergencyContainment = ({ socCase, queryKey }) => {
 
   const tenant = socCase?.Tenant
   const upn = socCase?.Entities?.upn
-  const userId = socCase?.Entities?.userId
-  const aadDeviceId = socCase?.Entities?.azureADDeviceId
+
+  // One shared definition of 'remediate this dossier' with the confirmed-TP shortcut: the
+  // payload, the journal action and the detail line can never drift between the two paths.
+  const plan = psitSocRemediationPlan(socCase)
 
   // Qualified, contained or closed dossiers have their response tab; the hatch is for the open
   // question. No target entity, no hatch.
   if (!socCase?.CaseId || socCase?.Qualification?.Verdict) return null
   if (['contained', 'closed'].includes(socCase?.Status)) return null
-  if (!upn && !aadDeviceId) return null
+  if (!plan.available) return null
 
-  const isUser = Boolean(upn)
+  const isUser = plan.kind === 'user'
 
   const run = () => {
     setOpen(false)
     const payload = isUser
-      ? {
-          url: '/api/execBecRemediate',
-          data: { tenantFilter: tenant, userId, username: upn },
-        }
+      ? plan.payload
       : {
-          url: '/api/PSITExecMdeIsolation',
-          data: {
-            tenantFilter: tenant,
-            AzureADDeviceId: aadDeviceId,
-            Comment: 'Confinement d’urgence avant verdict (dossier SOC)',
-            CaseId: socCase.CaseId,
-          },
+          ...plan.payload,
+          data: { ...plan.payload.data, Comment: 'Confinement d’urgence avant verdict (dossier SOC)' },
         }
     action.mutate(payload, {
       onSuccess: () => {
@@ -64,12 +59,8 @@ export const PsitSocEmergencyContainment = ({ socCase, queryKey }) => {
             CaseId: socCase.CaseId,
             Status: 'contained',
             LogAction: {
-              Action: isUser ? 'remediate-user' : 'mde-isolate',
-              Detail: `Mesure conservatoire avant verdict : ${
-                isUser
-                  ? `remédiation CIPP exécutée pour ${upn} (connexion bloquée, mot de passe réinitialisé, sessions révoquées, méthodes MFA retirées, règles de boîte désactivées, partage OneDrive désactivé)`
-                  : 'poste isolé du réseau (MDE)'
-              }`,
+              Action: plan.journalAction,
+              Detail: plan.journalDetail('Mesure conservatoire avant verdict'),
             },
           },
         })

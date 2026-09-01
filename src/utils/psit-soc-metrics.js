@@ -61,6 +61,12 @@ export const psitReadSocMetrics = (data) => {
       truePositives: Number(entry?.TruePositives ?? 0),
       falsePositives: Number(entry?.FalsePositives ?? 0),
     })),
+    byWeek: asArray(data.ByWeek).map((entry) => ({
+      week: entry?.Week ?? '',
+      count: Number(entry?.Count ?? 0),
+      truePositives: Number(entry?.TruePositives ?? 0),
+      falsePositives: Number(entry?.FalsePositives ?? 0),
+    })),
     delays: {
       takeMedianMinutes: delays.TakeMedianMinutes ?? null,
       takeCount: Number(delays.TakeCount ?? 0),
@@ -141,4 +147,67 @@ export const psitRecentMonths = (count = 6, now = new Date()) => {
     months.push({ month, label: psitMonthLabel(month) })
   }
   return months
+}
+
+/** '2026-S36' said as 'S36' — the year returns only when the series crosses a year boundary. */
+export const psitWeekLabels = (byWeek) => {
+  const weeks = Array.isArray(byWeek) ? byWeek : []
+  const years = new Set(weeks.map((entry) => String(entry.week).slice(0, 4)))
+  return weeks.map((entry) => {
+    const match = /^(\d{4})-(S\d{2})$/.exec(String(entry.week))
+    if (!match) return String(entry.week)
+    return years.size > 1 ? `${match[2]} ${match[1]}` : match[2]
+  })
+}
+
+/** The window-wide FP rate, over qualified dossiers only — null when nothing is qualified yet. */
+export const psitMetricsFpRate = (metrics) => {
+  const byVerdict = metrics?.byVerdict ?? []
+  const count = (verdict) => byVerdict.find((entry) => entry.verdict === verdict)?.count ?? 0
+  const qualified =
+    count('true-positive') + count('benign-true-positive') + count('false-positive') + count('undetermined')
+  if (qualified === 0) return { ratePercent: null, qualified: 0 }
+  return { ratePercent: Math.round((100 * count('false-positive')) / qualified), qualified }
+}
+
+const delta = (current, previous, { downIsGood = false, neutral = false } = {}) => {
+  if (current === null || current === undefined || previous === null || previous === undefined) {
+    return { value: current ?? null, previous: previous ?? null, delta: null, trend: 'flat', tone: 'neutral' }
+  }
+  const diff = current - previous
+  const trend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat'
+  // downIsGood: a falling median or FP rate is the good direction.
+  return {
+    value: current,
+    previous,
+    delta: diff,
+    trend,
+    tone: neutral || diff === 0 ? 'neutral' : downIsGood === diff < 0 ? 'good' : 'bad',
+  }
+}
+
+/**
+ * The four steering deltas, current window against the previous one of equal length. The tone
+ * says whether the move is good news: more dossiers is neither (volume is the emitter's), more
+ * true positives is bad, a falling FP rate and a falling take median are good.
+ */
+export const psitMetricsDeltas = (current, previous) => {
+  const tp = (metrics) =>
+    metrics?.byVerdict?.find((entry) => entry.verdict === 'true-positive')?.count ?? 0
+  return {
+    cases: delta(current?.caseCount ?? null, previous?.caseCount ?? null, { neutral: true }),
+    truePositives: delta(current ? tp(current) : null, previous ? tp(previous) : null, {
+      downIsGood: true,
+    }),
+    fpRatePercent: delta(
+      current ? psitMetricsFpRate(current).ratePercent : null,
+      previous ? psitMetricsFpRate(previous).ratePercent : null,
+      { downIsGood: true }
+    ),
+    takeMedianMinutes: delta(
+      current?.delays?.takeMedianMinutes ?? null,
+      previous?.delays?.takeMedianMinutes ?? null,
+      { downIsGood: true }
+    ),
+  }
 }

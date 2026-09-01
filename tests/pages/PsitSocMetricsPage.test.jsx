@@ -20,6 +20,14 @@ vi.mock('../../src/api/ApiCall', () => ({
   ApiGetCallWithPagination: vi.fn(() => ({ data: undefined, isFetching: false })),
 }))
 
+// ApexCharts does not render in jsdom; the page test asserts the data handed to the charts,
+// not the SVG. One mock covers the direct Chart uses and CippChartCard alike.
+vi.mock('../../src/components/chart', () => ({
+  Chart: ({ type, series }) => (
+    <div data-testid="chart" data-type={type} data-series={JSON.stringify(series)} />
+  ),
+}))
+
 // The PDF stack is exercised by its own tests; the page test only needs the button's contract.
 vi.mock('../../src/components/psit/PsitSocMonthlyReportFr', () => ({
   PsitSocMonthlyReportButton: ({ tenant, month, metrics, disabled }) => (
@@ -71,12 +79,26 @@ const metricsAnswer = {
     CloseMedianMinutes: 840,
     CloseCount: 2,
   },
+  ByWeek: [{ Week: '2026-S36', Count: 3, TruePositives: 1, FalsePositives: 0 }],
   Window: { Tenant: 'AllTenants', StartUtc: '2026-06-01T00:00:00Z', EndUtc: '' },
 }
 
-const wireApi = ({ metrics } = {}) => {
+// The previous window of equal length: what the KPI deltas compare against.
+const previousAnswer = {
+  ...metricsAnswer,
+  CaseCount: 1,
+  OpenCount: 0,
+  ByVerdict: [{ Verdict: 'none', Count: 1 }],
+  Delays: { ...metricsAnswer.Delays, TakeMedianMinutes: 40 },
+}
+
+const wireApi = ({ metrics, previous = previousAnswer } = {}) => {
   ApiGetCall.mockImplementation((opts) => {
     const url = opts?.url ?? ''
+    // The previous-window read carries an EndUtc on the AllTenants scope; the current one not.
+    if (url.includes('PSITListSocMetrics') && url.includes('AllTenants') && url.includes('EndUtc=')) {
+      return { data: previous, isFetching: false, isFetched: true, isSuccess: true, isError: false }
+    }
     if (url.includes('PSITListSocMetrics')) {
       return metrics === undefined
         ? { data: undefined, isFetching: true, isFetched: false, isSuccess: false, isError: false }
@@ -96,14 +118,30 @@ const wireApi = ({ metrics } = {}) => {
 }
 
 describe('PsitSocMetricsPage', () => {
-  it('shows the volumes with the dossiers awaiting a verdict as a number', () => {
+  it('shows the KPI tiles with their direction against the previous window', () => {
     wireApi({ metrics: metricsAnswer })
 
     renderWithProviders(<Page />)
 
-    expect(screen.getByText('3 dossiers')).toBeInTheDocument()
-    expect(screen.getByText('1 ouverts')).toBeInTheDocument()
-    expect(screen.getByText(/À qualifier : 2/)).toBeInTheDocument()
+    expect(screen.getByText('Dossiers reçus')).toBeInTheDocument()
+    // 3 now vs 1 before: the tile says which way it moved.
+    expect(screen.getByText('+2 vs période précédente')).toBeInTheDocument()
+    expect(screen.getAllByText('Vrais positifs').length).toBeGreaterThan(0)
+    // Take median 30 vs 40 before: falling is the good direction, said in minutes.
+    expect(screen.getByText('−10 min vs période précédente')).toBeInTheDocument()
+  })
+
+  it('hands the charts the honest series: trend, verdicts with the waiting bucket', () => {
+    wireApi({ metrics: metricsAnswer })
+
+    renderWithProviders(<Page />)
+
+    const charts = screen.getAllByTestId('chart')
+    const area = charts.find((chart) => chart.dataset.type === 'area')
+    expect(JSON.parse(area.dataset.series)[0]).toMatchObject({ name: 'Reçus', data: [3] })
+    const donut = charts.find((chart) => chart.dataset.type === 'donut')
+    // [FP, VP bénin, VP, indéterminé, à qualifier] — the waiting 2 stay visible.
+    expect(JSON.parse(donut.dataset.series)).toEqual([0, 0, 1, 0, 2])
   })
 
   it('keeps N/D distinct from zero, on rates and on medians', () => {
@@ -111,9 +149,10 @@ describe('PsitSocMetricsPage', () => {
 
     renderWithProviders(<Page />)
 
-    // Type 5 has no verdict: N/D. Type 2 has one, at an honest 0 %.
+    // Type 5 has no verdict: N/D. Type 2 has one, at an honest 0 % — and the KPI tile
+    // computes the same global rate, so the string legitimately appears twice.
     expect(screen.getAllByText('N/D').length).toBeGreaterThan(0)
-    expect(screen.getByText('0 %')).toBeInTheDocument()
+    expect(screen.getAllByText('0 %').length).toBeGreaterThan(0)
   })
 
   it('says the delays as durations, with how many dossiers were measured', () => {
@@ -121,13 +160,13 @@ describe('PsitSocMetricsPage', () => {
 
     renderWithProviders(<Page />)
 
-    expect(screen.getByText('30 min')).toBeInTheDocument()
+    expect(screen.getAllByText('30 min').length).toBeGreaterThan(0)
     expect(screen.getByText('14 h')).toBeInTheDocument()
     expect(screen.getByText('0 mesurés')).toBeInTheDocument()
   })
 
   it('shows a failed read as a failure, never as a quiet period', () => {
-    wireApi({ metrics: { Results: 'Les indicateurs ne sont pas disponibles.' } })
+    wireApi({ metrics: { Results: 'Les indicateurs ne sont pas disponibles.' }, previous: { Results: 'x' } })
 
     renderWithProviders(<Page />)
 

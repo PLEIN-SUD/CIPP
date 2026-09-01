@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  psitMetricsDeltas,
+  psitMetricsFpRate,
   psitMinutesLabel,
   psitMonthBounds,
   psitMonthLabel,
   psitReadSocMetrics,
   psitRecentMonths,
+  psitWeekLabels,
 } from '../../src/utils/psit-soc-metrics'
 
 // The endpoint's own shape, PascalCase, as Invoke-PSITListSocMetrics builds it.
@@ -106,5 +109,69 @@ describe('psitMonthLabel and psitMonthBounds', () => {
     const months = psitRecentMonths(3, new Date(Date.UTC(2026, 8, 15)))
     expect(months.map((entry) => entry.month)).toEqual(['2026-09', '2026-08', '2026-07'])
     expect(months[1].label).toBe('août 2026')
+  })
+})
+
+
+describe('psitWeekLabels', () => {
+  it('says S36, and adds the year only when the series crosses a year boundary', () => {
+    expect(psitWeekLabels([{ week: '2026-S35' }, { week: '2026-S36' }])).toEqual(['S35', 'S36'])
+    expect(psitWeekLabels([{ week: '2026-S53' }, { week: '2027-S01' }])).toEqual([
+      'S53 2026',
+      'S01 2027',
+    ])
+  })
+})
+
+describe('psitMetricsFpRate', () => {
+  it('computes the window-wide rate over qualified dossiers only', () => {
+    const metrics = {
+      byVerdict: [
+        { verdict: 'false-positive', count: 3 },
+        { verdict: 'true-positive', count: 1 },
+        { verdict: 'none', count: 10 },
+      ],
+    }
+    expect(psitMetricsFpRate(metrics)).toEqual({ ratePercent: 75, qualified: 4 })
+  })
+
+  it('answers null over an unqualified window: no rate is not a rate of zero', () => {
+    expect(psitMetricsFpRate({ byVerdict: [{ verdict: 'none', count: 5 }] })).toEqual({
+      ratePercent: null,
+      qualified: 0,
+    })
+  })
+})
+
+describe('psitMetricsDeltas', () => {
+  const window = (cases, tp, fp, take) => ({
+    caseCount: cases,
+    byVerdict: [
+      { verdict: 'true-positive', count: tp },
+      { verdict: 'false-positive', count: fp },
+    ],
+    delays: { takeMedianMinutes: take },
+  })
+
+  it('says the direction, and whether the move is good news', () => {
+    const deltas = psitMetricsDeltas(window(12, 4, 2, 20), window(10, 6, 2, 45))
+    // Volume is the emitter's: neither good nor bad.
+    expect(deltas.cases).toMatchObject({ value: 12, delta: 2, trend: 'up', tone: 'neutral' })
+    // Fewer true positives is the good direction.
+    expect(deltas.truePositives).toMatchObject({ value: 4, delta: -2, tone: 'good' })
+    // A falling take median is the good direction.
+    expect(deltas.takeMedianMinutes).toMatchObject({ value: 20, delta: -25, tone: 'good' })
+  })
+
+  it('flags a rising FP rate as bad, in points', () => {
+    const deltas = psitMetricsDeltas(window(10, 2, 6, 30), window(10, 5, 3, 30))
+    // 6/8 = 75 % now vs 3/8 = 38 % before.
+    expect(deltas.fpRatePercent.tone).toBe('bad')
+    expect(deltas.fpRatePercent.delta).toBeGreaterThan(0)
+  })
+
+  it('answers a null delta when either window is missing or unmeasured', () => {
+    expect(psitMetricsDeltas(window(5, 1, 1, null), window(4, 1, 1, 30)).takeMedianMinutes.delta).toBeNull()
+    expect(psitMetricsDeltas(window(5, 1, 1, 30), null).cases.delta).toBeNull()
   })
 })

@@ -37,7 +37,7 @@ const finishedAnswer = {
       Actor: 'y.exemple@contoso.test',
       Target: 'y.exemple@contoso.test',
       Ip: '203.0.113.9',
-      Detail: '[{"Name":"ForwardingSmtpAddress","Value":"smtp:pivot@exemple.net"}]',
+      Detail: '[{"Name":"ForwardingSmtpAddress","Value":"smtp:pivot@example.net"}]',
     },
   ],
   Summary: {

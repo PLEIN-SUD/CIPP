@@ -68,6 +68,7 @@ import {
 import { PsitSocAnalystCell } from '../../../components/psit/PsitSocAnalystCell'
 import { PsitSocTimeEntry } from '../../../components/psit/soc/PsitSocTimeEntry'
 import { PsitSocAutotaskNote } from '../../../components/psit/soc/PsitSocAutotaskNote'
+import { PsitSocScopeContext } from '../../../components/psit/soc/PsitSocScopeContext'
 import {
   PsitSocSourceMailButton,
   PsitSocSourceMailCard,
@@ -481,6 +482,7 @@ const Page = () => {
                       )}
                     </CardContent>
                   </Card>
+                  <PsitSocScopeContext socCase={socCase} evidence={evidence} />
                   {/* Filed by the ingestion-time enrichment: a repeat customer is a scope fact
                       worth knowing before the first click, and its absence is just silence. */}
                   {(socCase.Evidence?.related?.cases ?? []).length > 0 && (

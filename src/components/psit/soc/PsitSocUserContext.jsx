@@ -169,6 +169,7 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell>Réputation</TableCell>
                   <TableCell>Adresse</TableCell>
                   <TableCell>Pays</TableCell>
                   <TableCell align="right">Réussies</TableCell>
@@ -194,10 +195,10 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
                   ].filter(Boolean)
                   return (
                     <TableRow key={group.ip}>
-                      <TableCell sx={{ color: colour }}>
-                        {group.ip}
+                      <TableCell>
                         <PsitIpChip ip={group.ip} reputation={reputation} />
                       </TableCell>
+                      <TableCell sx={{ color: colour }}>{group.ip}</TableCell>
                       <TableCell sx={{ color: colour }}>
                         {group.country || (
                           <Tooltip describeChild title="Pays non renseigné dans le journal de connexion">

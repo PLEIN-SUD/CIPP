@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DOWNLOAD_CONCLUSION,
   buildDownloadReportModel,
+  downloadReputationRows,
 } from '../../src/utils/psit-soc-download-report'
 import { psitReadDownloadAudit } from '../../src/utils/psit-soc-download'
 
@@ -168,5 +169,29 @@ describe('buildDownloadReportModel: French a non-technical reader can follow', (
     const model = buildDownloadReportModel({ socCase: baseCase, read: liveRead })
     expect(model.clientSentence).toMatch(/logiciel de synchronisation/)
     expect(model.clientSentence).not.toMatch(/SkyDriveSync|agent/i)
+  })
+})
+
+
+describe('downloadReputationRows', () => {
+  const read = { summary: { addresses: ['203.0.113.9', '198.51.100.4', '192.0.2.7'] } }
+  const reputationMap = {
+    '203.0.113.9': { Score: 12, Reports: 2, UsageType: 'isp', Isp: 'x', IsTor: false, CheckedUtc: '2026-09-02T08:00:00Z', Stale: false },
+    '198.51.100.4': { Score: 87, Reports: 23, UsageType: 'Data Center/Web Hosting/Transit', Isp: 'y', IsTor: true, CheckedUtc: '2026-09-02T08:00:00Z', Stale: false },
+  }
+
+  it('prints only the dated readings, worst first: no reading is an absence, not a zero', () => {
+    const rows = downloadReputationRows(read, reputationMap)
+    expect(rows.map((row) => row.ip)).toEqual(['198.51.100.4', '203.0.113.9'])
+    expect(rows[0].isTor).toBe(true)
+  })
+
+  it('travels on the model so the document can print the section', () => {
+    const model = buildDownloadReportModel({
+      socCase: { CaseId: 'PSIT-SOC-1', Tenant: 't', Qualification: { Verdict: 'true-positive' }, Status: 'contained', ActionLog: [] },
+      read,
+      reputationMap,
+    })
+    expect(model.reputation).toHaveLength(2)
   })
 })

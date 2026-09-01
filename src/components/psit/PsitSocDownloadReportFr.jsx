@@ -78,13 +78,14 @@ const MAX_REPORT_FILES = 40
 export const PsitSocDownloadReportFrDocument = ({
   socCase,
   read,
+  reputationMap,
   brandingSettings,
   variables,
   contributors = [],
   contributorNames = {},
   contributorPhotos = {},
 }) => {
-  const model = buildDownloadReportModel({ socCase, read })
+  const model = buildDownloadReportModel({ socCase, read, reputationMap })
   const tenantName = socCase?.Tenant ?? ''
   const ticket = socCase?.TicketRef || socCase?.ExternalRef || socCase?.CaseId || 'sans référence'
   const generated = new Date().toLocaleDateString('fr-FR', {
@@ -260,6 +261,38 @@ export const PsitSocDownloadReportFrDocument = ({
           </Section>
         )}
 
+        {model.reputation.length > 0 && (
+          <Section title="Réputation des adresses">
+            <Paragraph>
+              Chaque adresse à l'origine des téléchargements a été confrontée à la base de
+              signalements AbuseIPDB. Le score (0 à 100) mesure la confiance dans le caractère
+              abusif de l'adresse, d'après les signalements de la communauté.
+            </Paragraph>
+            <DataTable
+              columns={[
+                { header: 'Adresse', key: 'ip', width: 1.6, bold: true },
+                { header: 'Score', key: 'score', width: 0.7 },
+                { header: 'Signalements', key: 'reports', width: 1 },
+                { header: 'Usage', key: 'usage', width: 1.8 },
+                { header: 'Relevé le (UTC)', key: 'checked', width: 1.3 },
+              ]}
+              rows={model.reputation.map((entry) => ({
+                ip: entry.isTor ? `${entry.ip} (Tor)` : entry.ip,
+                score: `${entry.score}/100`,
+                reports: String(entry.reports),
+                usage: entry.usage || 'non renseigné',
+                checked: formatUtc(entry.checkedUtc),
+              }))}
+              emptyText="Aucun relevé."
+            />
+            <Note>
+              Relevés AbuseIPDB, chacun daté. Un score élevé signale une adresse largement
+              rapportée comme abusive ; il ne prouve pas à lui seul la compromission, et la
+              conclusion de ce document repose sur l'ensemble des faits relevés.
+            </Note>
+          </Section>
+        )}
+
         {reportFiles.length > 0 && (
           <Section title="Détail des fichiers">
             <DataTable
@@ -331,7 +364,7 @@ export const PsitSocDownloadReportFrDocument = ({
   )
 }
 
-export const PsitSocDownloadReportButton = ({ socCase, read }) => {
+export const PsitSocDownloadReportButton = ({ socCase, read, reputationMap }) => {
   const [dialogOpen, setDialogOpen] = useState(false)
   // A generated report is an act of the dossier: the download is journaled with its source, so
   // 'which numbers did the client get' stays answerable.
@@ -379,6 +412,7 @@ export const PsitSocDownloadReportButton = ({ socCase, read }) => {
     <PsitSocDownloadReportFrDocument
       socCase={socCase}
       read={read}
+      reputationMap={reputationMap}
       brandingSettings={brandingSettings}
       variables={variables}
       contributors={contributors}

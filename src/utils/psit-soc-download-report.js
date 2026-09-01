@@ -104,7 +104,32 @@ const operationsProse = (operations) => {
  *   under Evidence.download with the summary captured at the first successful read).
  * @param read the live search reading from psitReadDownloadAudit, when the panel has one.
  */
-export const buildDownloadReportModel = ({ socCase, read } = {}) => {
+/**
+ * The AbuseIPDB rows the report prints for the summary addresses, dated. Only addresses with a
+ * reading appear: an address the service never answered for is an absence, not a zero. Sorted
+ * worst first, because the flagged one is the conversation.
+ */
+export const downloadReputationRows = (read, reputationMap) => {
+  const addresses = read?.summary?.addresses ?? []
+  const rows = []
+  for (const ip of addresses) {
+    const entry = reputationMap?.[ip]
+    if (!entry) continue
+    rows.push({
+      ip,
+      score: Number(entry.Score ?? 0),
+      reports: Number(entry.Reports ?? 0),
+      usage: String(entry.UsageType ?? ''),
+      isp: String(entry.Isp ?? ''),
+      isTor: Boolean(entry.IsTor),
+      checkedUtc: String(entry.CheckedUtc ?? ''),
+      stale: Boolean(entry.Stale),
+    })
+  }
+  return rows.sort((a, b) => b.score - a.score)
+}
+
+export const buildDownloadReportModel = ({ socCase, read, reputationMap } = {}) => {
   const verdict = socCase?.Qualification?.Verdict
   const kind = !verdict
     ? DOWNLOAD_CONCLUSION.UNQUALIFIED
@@ -171,5 +196,6 @@ export const buildDownloadReportModel = ({ socCase, read } = {}) => {
     files,
     fromSnapshot,
     journal,
+    reputation: downloadReputationRows(read, reputationMap),
   }
 }

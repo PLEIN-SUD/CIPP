@@ -70,7 +70,7 @@ import { PsitSocTimeEntry } from '../../../components/psit/soc/PsitSocTimeEntry'
 import { PsitSocAutotaskNote } from '../../../components/psit/soc/PsitSocAutotaskNote'
 import {
   PsitSocSourceMailButton,
-  PsitSocSourceMailSection,
+  PsitSocSourceMailCard,
 } from '../../../components/psit/soc/PsitSocSourceMail'
 import { usePsitSocEvidence } from '../../../hooks/use-psit-soc-evidence'
 
@@ -354,7 +354,6 @@ const Page = () => {
                             </PropertyList>
                           </Grid>
                         </Grid>
-                        <PsitSocSourceMailSection socCase={socCase} />
                         {/* The entities drive the investigation panels; chips read better than
                             the JSON the record stores. */}
                         {Object.keys(socCase.Entities ?? {}).length > 0 && (
@@ -416,6 +415,9 @@ const Page = () => {
                       </Card>
                     </Stack>
                   </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <PsitSocSourceMailCard socCase={socCase} />
+                  </Grid>
                 </Grid>
               )}
 
@@ -428,9 +430,9 @@ const Page = () => {
                       <Typography variant="body2" color="text.secondary">
                         {catalogueEntry?.description ?? 'Type inconnu : corriger le type depuis la file d’attente.'}
                       </Typography>
-                      <PsitSocSourceMailSection socCase={socCase} />
                     </CardContent>
                   </Card>
+                  <PsitSocSourceMailCard socCase={socCase} />
                   <PsitSocGuidePanel
                     socCase={socCase}
                     queryKey={queryKey}

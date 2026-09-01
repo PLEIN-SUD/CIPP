@@ -42,7 +42,6 @@ export const PsitIpChip = ({ ip, reputation }) => {
         color={colour}
         variant={score === 0 ? 'outlined' : 'filled'}
         label={reputation.IsTor ? `${score} · Tor` : String(score)}
-        sx={{ ml: 0.5 }}
       />
     </Tooltip>
   )

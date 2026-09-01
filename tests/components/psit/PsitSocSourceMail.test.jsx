@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test-utils'
 import {
   PsitSocSourceMailButton,
-  PsitSocSourceMailSection,
+  PsitSocSourceMailCard,
 } from '../../../src/components/psit/soc/PsitSocSourceMail'
 
 vi.setConfig({ testTimeout: 60000 })
@@ -19,9 +19,9 @@ const socCase = {
   SourceMail: 'Bonjour,\nUne connexion inhabituelle a été détectée.\nCordialement.',
 }
 
-describe('PsitSocSourceMailSection', () => {
+describe('PsitSocSourceMailCard', () => {
   it('shows the subject and the body verbatim', () => {
-    renderWithProviders(<PsitSocSourceMailSection socCase={socCase} />)
+    renderWithProviders(<PsitSocSourceMailCard socCase={socCase} />)
 
     expect(screen.getByText('Mail d’origine du SOC')).toBeInTheDocument()
     expect(screen.getByText('[SOC x Client] Impossible travel - p.martin')).toBeInTheDocument()
@@ -30,7 +30,7 @@ describe('PsitSocSourceMailSection', () => {
 
   it('renders nothing on a dossier from before the fields existed', () => {
     const { container } = renderWithProviders(
-      <PsitSocSourceMailSection socCase={{ CaseId: 'X' }} />
+      <PsitSocSourceMailCard socCase={{ CaseId: 'X' }} />
     )
     expect(container).toBeEmptyDOMElement()
   })

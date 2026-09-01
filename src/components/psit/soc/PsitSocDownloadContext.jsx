@@ -172,7 +172,7 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
         subheader={upn}
         action={
           <Stack direction="row" spacing={1} alignItems="center">
-            <PsitSocDownloadReportButton socCase={socCase} read={read} />
+            <PsitSocDownloadReportButton socCase={socCase} read={read} reputationMap={ipReputation.map} />
             {userId ? <PsitAdminBadge tenant={tenant} userId={userId} caseId={caseId} /> : null}
           </Stack>
         }
@@ -325,6 +325,7 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                         <TableCell>Fichier</TableCell>
                         <TableCell>Opération</TableCell>
                         <TableCell>Horodatage</TableCell>
+                        <TableCell>Réputation</TableCell>
                         <TableCell>Adresse</TableCell>
                       </TableRow>
                     </TableHead>
@@ -335,9 +336,9 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                           <TableCell>{psitDownloadOperationLabel(file.Operation)}</TableCell>
                           <TableCell>{file.WhenUtc}</TableCell>
                           <TableCell>
-                            {file.Ip}
                             <PsitIpChip ip={file.Ip} reputation={ipReputation.map[file.Ip]} />
                           </TableCell>
+                          <TableCell>{file.Ip}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

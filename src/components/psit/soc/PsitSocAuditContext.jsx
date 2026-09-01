@@ -241,6 +241,7 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
                         <TableCell>Opération</TableCell>
                         <TableCell>Acteur</TableCell>
                         <TableCell>Cible</TableCell>
+                        <TableCell>Réputation</TableCell>
                         <TableCell>Adresse</TableCell>
                         <TableCell>Détail</TableCell>
                       </TableRow>
@@ -253,9 +254,9 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
                           <TableCell>{event.Actor}</TableCell>
                           <TableCell>{event.Target}</TableCell>
                           <TableCell>
-                            {event.Ip}
                             <PsitIpChip ip={event.Ip} reputation={ipReputation.map[event.Ip]} />
                           </TableCell>
+                          <TableCell>{event.Ip}</TableCell>
                           {/* The rule's conditions or the rights granted: the substance, compact. */}
                           <TableCell sx={{ maxWidth: 320, overflowWrap: 'anywhere' }}>
                             <Typography variant="caption">{event.Detail}</Typography>

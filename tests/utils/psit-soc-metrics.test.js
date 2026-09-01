@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  psitFillMonths,
+  psitFillWeeks,
   psitMetricsDeltas,
   psitMetricsFpRate,
   psitMinutesLabel,
@@ -173,5 +175,56 @@ describe('psitMetricsDeltas', () => {
   it('answers a null delta when either window is missing or unmeasured', () => {
     expect(psitMetricsDeltas(window(5, 1, 1, null), window(4, 1, 1, 30)).takeMedianMinutes.delta).toBeNull()
     expect(psitMetricsDeltas(window(5, 1, 1, 30), null).cases.delta).toBeNull()
+  })
+})
+
+// The aggregation only returns the periods that hold dossiers. What is pinned here is the
+// repair: the window's empty months and weeks come back at zero, in order, so a trend chart
+// has neighbours to draw a line between - and a missing window changes nothing.
+describe('psitFillMonths', () => {
+  const august = { month: '2026-08', count: 12, truePositives: 0, falsePositives: 5 }
+
+  it('walks the whole window and puts the busy month where it belongs', () => {
+    const filled = psitFillMonths([august], {
+      startUtc: '2026-03-01T10:00:00Z',
+      endUtc: '2026-09-01T09:00:00Z',
+    })
+    expect(filled.map((row) => row.month)).toEqual([
+      '2026-03',
+      '2026-04',
+      '2026-05',
+      '2026-06',
+      '2026-07',
+      '2026-08',
+      '2026-09',
+    ])
+    expect(filled[5]).toEqual(august)
+    expect(filled[4]).toEqual({ month: '2026-07', count: 0, truePositives: 0, falsePositives: 0 })
+  })
+
+  it('returns the rows untouched when the window is absent or unreadable', () => {
+    expect(psitFillMonths([august], null)).toEqual([august])
+    expect(psitFillMonths([august], { startUtc: 'garbage', endUtc: '2026-09-01T00:00:00Z' })).toEqual([august])
+  })
+})
+
+describe('psitFillWeeks', () => {
+  it('walks the ISO weeks of the window, zeros where nothing happened', () => {
+    const s36 = { week: '2026-S36', count: 5, truePositives: 1, falsePositives: 2 }
+    const filled = psitFillWeeks([s36], {
+      startUtc: '2026-08-17T00:00:00Z',
+      endUtc: '2026-09-01T12:00:00Z',
+    })
+    expect(filled.map((row) => row.week)).toEqual(['2026-S34', '2026-S35', '2026-S36'])
+    expect(filled[0].count).toBe(0)
+    expect(filled[2]).toEqual(s36)
+  })
+
+  it('starts from the Monday of the first ISO week, mid-week window starts included', () => {
+    const filled = psitFillWeeks([], {
+      startUtc: '2026-08-19T15:00:00Z',
+      endUtc: '2026-08-31T08:00:00Z',
+    })
+    expect(filled.map((row) => row.week)).toEqual(['2026-S34', '2026-S35', '2026-S36'])
   })
 })

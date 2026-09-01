@@ -149,6 +149,56 @@ export const psitRecentMonths = (count = 6, now = new Date()) => {
   return months
 }
 
+/** ISO week key for a date, in the API's own format: '2026-S36'. */
+export const psitIsoWeekKey = (date) => {
+  const probe = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+  const day = probe.getUTCDay() || 7
+  probe.setUTCDate(probe.getUTCDate() + 4 - day)
+  const yearStart = new Date(Date.UTC(probe.getUTCFullYear(), 0, 1))
+  const week = Math.ceil(((probe - yearStart) / 86400000 + 1) / 7)
+  return `${probe.getUTCFullYear()}-S${String(week).padStart(2, '0')}`
+}
+
+/**
+ * Every month of the window, oldest first, absent ones at zero. The aggregation only returns
+ * months that hold dossiers, and a chart fed those alone draws one point per busy month and
+ * nothing between - a single busy month draws nothing at all.
+ */
+export const psitFillMonths = (byMonth, window) => {
+  const rows = Array.isArray(byMonth) ? byMonth : []
+  const start = new Date(window?.startUtc ?? NaN)
+  const end = new Date(window?.endUtc ?? NaN)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return rows
+  const byKey = new Map(rows.map((row) => [row.month, row]))
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1))
+  const filled = []
+  for (let steps = 0; steps < 60 && cursor <= end; steps += 1) {
+    const month = `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}`
+    filled.push(byKey.get(month) ?? { month, count: 0, truePositives: 0, falsePositives: 0 })
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1)
+  }
+  return filled
+}
+
+/** Same repair for the weekly series: every ISO week of the window, absent ones at zero. */
+export const psitFillWeeks = (byWeek, window) => {
+  const rows = Array.isArray(byWeek) ? byWeek : []
+  const start = new Date(window?.startUtc ?? NaN)
+  const end = new Date(window?.endUtc ?? NaN)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return rows
+  const byKey = new Map(rows.map((row) => [row.week, row]))
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()))
+  const day = cursor.getUTCDay() || 7
+  cursor.setUTCDate(cursor.getUTCDate() + 1 - day)
+  const filled = []
+  for (let steps = 0; steps < 120 && cursor <= end; steps += 1) {
+    const week = psitIsoWeekKey(cursor)
+    filled.push(byKey.get(week) ?? { week, count: 0, truePositives: 0, falsePositives: 0 })
+    cursor.setUTCDate(cursor.getUTCDate() + 7)
+  }
+  return filled
+}
+
 /** '2026-S36' said as 'S36' — the year returns only when the series crosses a year boundary. */
 export const psitWeekLabels = (byWeek) => {
   const weeks = Array.isArray(byWeek) ? byWeek : []

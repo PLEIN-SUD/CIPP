@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Alert,
+  Box,
   Card,
   CardContent,
   CardHeader,
@@ -25,10 +26,11 @@ import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { CippHead } from '../../../components/CippComponents/CippHead'
 import { CippInfoBar } from '../../../components/CippCards/CippInfoBar'
-import { CippChartCard } from '../../../components/CippCards/CippChartCard'
 import { Chart } from '../../../components/chart'
 import { PsitSocMonthlyReportButton } from '../../../components/psit/PsitSocMonthlyReportFr'
 import {
+  psitFillMonths,
+  psitFillWeeks,
   psitMetricsDeltas,
   psitMetricsFpRate,
   psitMetricsVerdictLabel,
@@ -55,6 +57,18 @@ const periodStartUtc = (months, from = new Date()) =>
 const signed = (value) => (value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : '=')
 
 const DELTA_COLOUR = { good: 'success.main', bad: 'error.main', neutral: 'text.secondary' }
+
+// One hue per meaning, repeated nowhere on the page: red only ever says 'vrai positif',
+// green 'faux positif' (a benign outcome for the client), blue 'VP bénin', amber 'indéterminé',
+// grey 'à qualifier'. The trend reuses the same red and green.
+const VERDICT_COLOURS = {
+  truePositive: '#C4453A',
+  falsePositive: '#2E7D4F',
+  benign: '#2F6DA8',
+  undetermined: '#C87F1F',
+}
+// Qualitative row for the type chart: colours there only separate bars, so none may repeat.
+const TYPE_PALETTE = ['#2F6DA8', '#C87F1F', '#7A4FA3', '#2E7D4F', '#C4453A', '#1F8A8A', '#8A6D3B', '#5B6B7A']
 
 /** The small line under a KPI value: where it sits against the previous window. */
 const DeltaCaption = ({ entry, unit = '' }) => {
@@ -123,11 +137,15 @@ const Page = () => {
   const trend = useMemo(() => {
     if (!metrics) return null
     const weekly = months === 3 && metrics.byWeek.length > 0
-    const rows = weekly ? metrics.byWeek : metrics.byMonth
+    // Filled over the whole window: a single busy month is a point, and a point without
+    // neighbours draws no line - the markers and the zero months around it make it readable.
+    const rows = weekly
+      ? psitFillWeeks(metrics.byWeek, metrics.window)
+      : psitFillMonths(metrics.byMonth, metrics.window)
     if (rows.length === 0) return null
     return {
       granularity: weekly ? 'semaine' : 'mois',
-      labels: weekly ? psitWeekLabels(metrics.byWeek) : rows.map((row) => psitMonthLabel(row.month)),
+      labels: weekly ? psitWeekLabels(rows) : rows.map((row) => psitMonthLabel(row.month)),
       counts: rows.map((row) => row.count),
       truePositives: rows.map((row) => row.truePositives),
       falsePositives: rows.map((row) => row.falsePositives),
@@ -137,9 +155,14 @@ const Page = () => {
   const trendOptions = useMemo(
     () => ({
       chart: { background: 'transparent', toolbar: { show: false }, zoom: { enabled: false } },
-      colors: [theme.palette.info.main, theme.palette.error.main, theme.palette.success.main],
+      colors: [
+        theme.palette.mode === 'dark' ? '#8FA3B8' : '#5B6B7A',
+        VERDICT_COLOURS.truePositive,
+        VERDICT_COLOURS.falsePositive,
+      ],
       dataLabels: { enabled: false },
       stroke: { curve: 'smooth', width: 2 },
+      markers: { size: 3, strokeWidth: 0, hover: { size: 5 } },
       fill: { type: 'solid', opacity: [0.12, 0.16, 0.1] },
       legend: { show: true, position: 'top', horizontalAlign: 'left' },
       grid: { borderColor: theme.palette.divider, strokeDashArray: 3 },
@@ -161,10 +184,10 @@ const Page = () => {
       chart: { background: 'transparent' },
       labels: verdictOrder.map(psitMetricsVerdictLabel),
       colors: [
-        theme.palette.success.main,
-        theme.palette.primary.main,
-        theme.palette.error.main,
-        theme.palette.warning.main,
+        VERDICT_COLOURS.falsePositive,
+        VERDICT_COLOURS.benign,
+        VERDICT_COLOURS.truePositive,
+        VERDICT_COLOURS.undetermined,
         theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[400],
       ],
       dataLabels: { enabled: false },
@@ -184,6 +207,26 @@ const Page = () => {
   )
 
   const typeBars = useMemo(() => (metrics?.byType ?? []).slice(0, 8), [metrics])
+  const typeLabels = useMemo(
+    () =>
+      typeBars.map((entry) => (entry.typeId === null ? 'Sans type' : psitSocTypeLabel(entry.typeId))),
+    [typeBars]
+  )
+  const typeBarOptions = useMemo(
+    () => ({
+      chart: { background: 'transparent', toolbar: { show: false } },
+      colors: TYPE_PALETTE,
+      plotOptions: { bar: { distributed: true, columnWidth: '55%', borderRadius: 2 } },
+      dataLabels: { enabled: false },
+      legend: { show: false },
+      grid: { borderColor: theme.palette.divider, strokeDashArray: 3 },
+      // The list under the chart names the bars; axis labels at this density collide.
+      xaxis: { categories: typeLabels, labels: { show: false }, axisTicks: { show: false } },
+      yaxis: { labels: { formatter: (value) => `${Math.round(value)}` }, forceNiceScale: true },
+      theme: { mode: theme.palette.mode },
+    }),
+    [theme, typeLabels]
+  )
 
   // --- monthly client report ------------------------------------------------------------------
   const tenantsRequest = ApiGetCall({
@@ -366,16 +409,50 @@ const Page = () => {
                 </Grid>
 
                 <Grid size={{ xs: 12, lg: 5 }}>
-                  <CippChartCard
-                    isFetching={false}
-                    title="Par type de signalement"
-                    chartType="bar"
-                    totalLabel="Dossiers"
-                    chartSeries={typeBars.map((entry) => entry.count)}
-                    labels={typeBars.map((entry) =>
-                      entry.typeId === null ? 'Sans type' : psitSocTypeLabel(entry.typeId)
-                    )}
-                  />
+                  <Card variant="outlined">
+                    <CardHeader title="Par type de signalement" />
+                    <CardContent>
+                      {typeBars.length > 0 ? (
+                        <>
+                          <Chart
+                            height={240}
+                            options={typeBarOptions}
+                            series={[{ name: 'Dossiers', data: typeBars.map((entry) => entry.count) }]}
+                            type="bar"
+                          />
+                          <Stack spacing={1} sx={{ mt: 1 }}>
+                            {typeBars.map((entry, index) => (
+                              <Stack
+                                key={entry.typeId ?? 'none'}
+                                direction="row"
+                                alignItems="center"
+                                spacing={1}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: '50%',
+                                    backgroundColor: TYPE_PALETTE[index % TYPE_PALETTE.length],
+                                  }}
+                                />
+                                <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                                  {typeLabels[index]}
+                                </Typography>
+                                <Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                                  {entry.count}
+                                </Typography>
+                              </Stack>
+                            ))}
+                          </Stack>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Aucun dossier sur la période.
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
                 </Grid>
 
                 <Grid size={{ xs: 12, lg: 7 }}>

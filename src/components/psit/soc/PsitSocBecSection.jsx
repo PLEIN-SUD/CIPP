@@ -91,8 +91,7 @@ export const PsitSocBecSection = ({ socCase, queryKey, part, started, onStart })
           />
           <CardContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              La collecte est un traitement orchestré (quelques minutes) : elle se lance quand
-              l’investigation identité le justifie, pas à chaque ouverture de dossier.
+              Traitement de une à deux minutes ; la progression s’affiche ici.
             </Typography>
             <Tooltip describeChild title="Lancer la collecte BEC : traitement orchestré d'une à deux minutes ; la progression s'affiche ici et la fiche BEC s'ouvre ensuite dans l'onglet Décision">
               <Button size="small" variant="contained" onClick={onStart}>

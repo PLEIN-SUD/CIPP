@@ -374,7 +374,7 @@ export const PsitBecIncidentPanel = ({
                     fullWidth
                     helperText={
                       phrase('effect', value('EffectDescription')) ||
-                      "Saisi, jamais déduit : la collecte ne distingue pas un fil détourné d'un envoi en masse, et le résumé l'affirme."
+                      "À saisir manuellement : la collecte ne distingue pas un fil détourné d'un envoi en masse."
                     }
                     value={value('EffectDescription')}
                     onChange={(event) => set('EffectDescription', event.target.value)}

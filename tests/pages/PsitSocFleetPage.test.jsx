@@ -96,7 +96,7 @@ describe('fleet health page', () => {
 
     // "1 to look at out of 2 reported" - the denominator is what makes a drop visible.
     expect(screen.getByText('fabrikam.test — 1/2')).toBeInTheDocument()
-    expect(screen.getByText(/c’est une absence, pas une bonne/)).toBeInTheDocument()
+    expect(screen.getByText(/machines qui ne remontent plus/)).toBeInTheDocument()
   })
 
   it('says the read failed instead of rendering a healthy-looking dashboard', () => {
@@ -138,7 +138,7 @@ describe('fleet health page', () => {
     wire(fleet)
     renderWithProviders(<Page />)
 
-    expect(screen.queryByText(/relevé quotidien/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/relevé de la veille/)).not.toBeInTheDocument()
   })
 
   it('names its source and points at the portal for a single machine', () => {
@@ -160,14 +160,14 @@ describe('fleet health page', () => {
 
     expect(screen.getByText('08-24 — 2/42')).toBeInTheDocument()
     // A day with no reading must not read as a day with no problem.
-    expect(screen.getByText(/pas des jours sans problème/)).toBeInTheDocument()
+    expect(screen.getByText(/jours sans relevé/)).toBeInTheDocument()
   })
 
   it('says the trend is empty rather than drawing an empty one', () => {
     wire(fleet, { Daily: [] })
     renderWithProviders(<Page />)
 
-    expect(screen.getByText(/après le premier passage de la tâche quotidienne/)).toBeInTheDocument()
+    expect(screen.getByText(/Aucun relevé quotidien enregistré/)).toBeInTheDocument()
   })
 
   it('shows a call that never landed as a failure, not as an empty fleet', () => {

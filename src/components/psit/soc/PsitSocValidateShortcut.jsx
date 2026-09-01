@@ -90,7 +90,7 @@ export const PsitSocValidateShortcut = ({ socCase, queryKey }) => {
       <Card variant="outlined">
         <CardHeader
           title="Vrai positif posé — remédier maintenant ?"
-          subheader="Le verdict est enregistré et tous les onglets sont ouverts pour évaluer l'impact. La compromission confirmée, elle, n'attend pas."
+          subheader="Le verdict est enregistré et tous les onglets sont ouverts. La remédiation peut se lancer ici, ou plus tard depuis l'onglet Décision & Réponse."
         />
         <CardContent>
           <Stack spacing={2}>
@@ -144,7 +144,7 @@ export const PsitSocValidateShortcut = ({ socCase, queryKey }) => {
     <Card variant="outlined">
       <CardHeader
         title="Raccourci de qualification"
-        subheader="Pour l’établi seulement : un FP ou un VP bénin manifeste, ou un vrai positif déjà confirmé (titulaire joint, fait avéré). Un soupçon non confirmé déroule les onglets."
+        subheader="Qualifie sans dérouler les onglets : faux positif manifeste, VP bénin manifeste, ou vrai positif confirmé par un fait extérieur. Justification obligatoire."
       />
       <CardContent>
         <Stack spacing={2}>
@@ -187,7 +187,7 @@ export const PsitSocValidateShortcut = ({ socCase, queryKey }) => {
           />
           {verdict && !justification.trim() && (
             <Alert severity="info">
-              Le raccourci exige la justification : c’est elle qui remplace les onglets sautés.
+              Renseigner la justification pour pouvoir qualifier.
             </Alert>
           )}
           <div>
@@ -196,7 +196,7 @@ export const PsitSocValidateShortcut = ({ socCase, queryKey }) => {
               title={
                 verdict === 'true-positive'
                   ? 'Qualifier maintenant : pose le verdict vrai positif puis propose la remédiation immédiate — tous les onglets s’ouvrent pour évaluer l’impact'
-                  : 'Qualifier maintenant : pose le verdict choisi sans passer par les autres onglets — la justification tient lieu d’investigation'
+                  : 'Qualifier maintenant : enregistre le verdict choisi et sa justification, sans passer par les autres onglets'
               }
             >
               <span>

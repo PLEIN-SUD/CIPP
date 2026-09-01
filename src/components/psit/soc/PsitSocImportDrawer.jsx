@@ -50,7 +50,7 @@ const SOURCES = {
       },
     ],
     confirmText:
-      'Adopter cet incident comme dossier SOC ? Si un dossier existe déjà pour cet incident, il est réutilisé, pas dupliqué.',
+      'Adopter cet incident comme dossier SOC ? Si un dossier existe déjà pour cet incident, il est réutilisé.',
     simpleColumns: ['Created', 'Tenant', 'Severity', 'Status', 'DisplayName', 'Id'],
     offCanvasFields: [
       'Created',
@@ -91,7 +91,7 @@ const SOURCES = {
       },
     ],
     confirmText:
-      'Ouvrir un dossier « Phishing livré » depuis cette alerte Defender for Office ? Si un dossier existe déjà pour cette alerte, il est réutilisé, pas dupliqué.',
+      'Ouvrir un dossier « Phishing livré » depuis cette alerte Defender for Office ? Si un dossier existe déjà pour cette alerte, il est réutilisé.',
     simpleColumns: ['createdDateTime', 'status', 'severity', 'title', 'category', 'id'],
     offCanvasFields: [
       'createdDateTime',

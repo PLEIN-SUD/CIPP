@@ -81,7 +81,7 @@ export const PsitSocTimeEntry = ({ socCase }) => {
             />
             <Typography variant="body2" color="text.secondary">
               {elapsed
-                ? `Le journal s'étend sur ${elapsed} h entre la première et la dernière action. C'est un point de départ, pas un temps passé : vous seul savez ce qui a réellement été travaillé.`
+                ? `Le journal s'étend sur ${elapsed} h entre la première et la dernière action. Durée indicative, à ajuster selon le temps réellement travaillé.`
                 : "Le journal ne permet pas d'estimer une durée : une seule action y figure, ou aucune."}
             </Typography>
           </Stack>

@@ -160,7 +160,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, s
                           exits are the shortcut verdicts, the escalation, or the hold. */}
                       <Tooltip
                         describeChild
-                        title="Sans réponse : la question a été travaillée mais ne peut pas être tranchée. Constat obligatoire (ce qui a été tenté). L’étape reste bloquante : qualifier tôt, escalader ou mettre en attente sont les sorties."
+                        title="Sans réponse : la question a été travaillée mais ne peut pas être tranchée. Constat obligatoire (ce qui a été tenté). L’étape reste bloquante ; pour avancer : raccourci de qualification, escalade, ou mise en attente."
                       >
                         <Button
                           size="small"

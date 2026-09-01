@@ -253,7 +253,7 @@ const Page = () => {
           ),
           toolTip:
             fpRate.ratePercent === null
-              ? 'Aucun dossier encore qualifié sur la période : pas de taux (ce n’est pas 0 %)'
+              ? 'Aucun dossier qualifié sur la période : taux non calculable'
               : `Faux positifs sur les ${fpRate.qualified} dossiers qualifiés de la période`,
         },
         {
@@ -338,8 +338,7 @@ const Page = () => {
                         />
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Aucun dossier sur la période : la tendance apparaîtra avec les premiers
-                          signalements.
+                          Aucun dossier sur la période.
                         </Typography>
                       )}
                     </CardContent>
@@ -348,10 +347,7 @@ const Page = () => {
 
                 <Grid size={{ xs: 12, lg: 4 }}>
                   <Card variant="outlined">
-                    <CardHeader
-                      title="Verdicts"
-                      subheader="« À qualifier » en gris : un nombre, jamais retranché des taux"
-                    />
+                    <CardHeader title="Verdicts" subheader="Dossiers de la période, par verdict" />
                     <CardContent>
                       {metrics.caseCount > 0 ? (
                         <Chart
@@ -416,7 +412,7 @@ const Page = () => {
                               <TableCell align="right">{entry.count - entry.qualified}</TableCell>
                               <TableCell align="right">
                                 {entry.fpRatePercent === null ? (
-                                  <Tooltip title="Aucun dossier encore qualifié dans cette catégorie : pas de taux à afficher (ce n'est pas 0 %)">
+                                  <Tooltip title="Aucun dossier qualifié dans cette catégorie : taux non calculable">
                                     <span>N/D</span>
                                   </Tooltip>
                                 ) : (
@@ -466,9 +462,6 @@ const Page = () => {
                           </TableRow>
                         </TableBody>
                       </Table>
-                      <Typography variant="caption" color="text.secondary">
-                        Médianes : le dossier typique, non gonflé par un dossier resté en attente.
-                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -550,8 +543,8 @@ const Page = () => {
           </Card>
 
           <Typography variant="caption" color="text.secondary">
-            Source : les dossiers de la file, agrégés côté serveur ; tendances par date de
-            création, comparaisons contre la période précédente de même durée.{' '}
+            Tendances établies sur la date de création des dossiers ; comparaisons avec la
+            période précédente de même durée.{' '}
             <Link href="/security/soc/queue">Retour à la file d’attente</Link>
           </Typography>
         </Stack>

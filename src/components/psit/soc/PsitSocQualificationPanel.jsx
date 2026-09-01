@@ -170,7 +170,7 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
                 psitSocUnansweredSteps(socCase).length > 1
                   ? `${psitSocUnansweredSteps(socCase).length} étapes du guide sont restées sans réponse`
                   : 'Une étape du guide est restée sans réponse'
-              }. Si l'impasse demeure, les issues honnêtes sont le verdict indéterminé, l'escalade ou la mise en attente — pas un verdict qui affirme ce que l'investigation n'a pas pu établir.`}
+              }. Issues possibles : verdict indéterminé, escalade, ou mise en attente.`}
             </Alert>
           )}
           <ToggleButtonGroup

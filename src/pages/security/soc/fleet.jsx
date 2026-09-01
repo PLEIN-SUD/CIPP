@@ -224,9 +224,8 @@ const Page = () => {
                   ))}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  Machines à regarder sur machines rapportées. Un client dont le nombre rapporté
-                  chute a des machines qui ne remontent plus : c’est une absence, pas une bonne
-                  nouvelle.
+                  Machines à regarder / machines rapportées par Intune. Une baisse du nombre
+                  rapporté signale des machines qui ne remontent plus.
                 </Typography>
               </CardContent>
             </Card>
@@ -255,8 +254,8 @@ const Page = () => {
                   ))}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
-                  Machines à regarder sur machines rapportées, par jour. Les jours absents sont des
-                  jours sans relevé, pas des jours sans problème.
+                  Machines à regarder / machines rapportées, par jour. Les jours absents sont les
+                  jours sans relevé.
                 </Typography>
               </CardContent>
             </Card>
@@ -264,8 +263,7 @@ const Page = () => {
 
           {daily.length === 0 && !failed && (
             <Typography variant="caption" color="text.secondary">
-              Aucun relevé enregistré pour l’instant : la tendance apparaîtra après le premier
-              passage de la tâche quotidienne.
+              Aucun relevé quotidien enregistré pour l’instant.
             </Typography>
           )}
 

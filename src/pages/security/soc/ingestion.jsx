@@ -212,7 +212,7 @@ const Page = () => {
                 <Alert severity="info">
                   Un sujet dont le libellé n’est dans aucune table ouvre également un dossier, sur le
                   type « non déterminé ». L’émetteur ajoute des règles sans prévenir : un libellé
-                  inconnu est une table à compléter, pas une alerte à jeter.
+                  inconnu ouvre un dossier « à déterminer », à re-catégoriser ensuite depuis la file.
                 </Alert>
               </Stack>
             </CardContent>

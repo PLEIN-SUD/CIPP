@@ -106,7 +106,7 @@ export const PsitSocAnalysisPanel = ({ socCase, queryKey }) => {
             label="Cause racine"
             value={rootCause}
             onChange={(event) => setRootCause(event.target.value)}
-            helperText="Pourquoi c’est arrivé, pas ce qui est arrivé : c’est elle qui rend la recommandation concrète"
+            helperText="La cause de l’incident (hameçonnage, mot de passe réutilisé, protocole hérité…) ; reprise dans les recommandations des rapports"
           >
             {PSIT_ROOT_CAUSES.map((cause) => (
               <MenuItem key={cause.value} value={cause.value}>

@@ -68,6 +68,10 @@ import {
 import { PsitSocAnalystCell } from '../../../components/psit/PsitSocAnalystCell'
 import { PsitSocTimeEntry } from '../../../components/psit/soc/PsitSocTimeEntry'
 import { PsitSocAutotaskNote } from '../../../components/psit/soc/PsitSocAutotaskNote'
+import {
+  PsitSocSourceMailButton,
+  PsitSocSourceMailSection,
+} from '../../../components/psit/soc/PsitSocSourceMail'
 import { usePsitSocEvidence } from '../../../hooks/use-psit-soc-evidence'
 
 // Timestamps land as UTC ISO strings; the analyst reads them in his own clock. An unreadable or
@@ -191,6 +195,7 @@ const Page = () => {
                 label={psitSocStatusLabel(socCase.Status)}
               />
             )}
+            <PsitSocSourceMailButton socCase={socCase} />
             <Tooltip describeChild title="Actualiser : recharger le dossier et ses panneaux">
               <Button
                 size="small"
@@ -349,6 +354,7 @@ const Page = () => {
                             </PropertyList>
                           </Grid>
                         </Grid>
+                        <PsitSocSourceMailSection socCase={socCase} />
                         {/* The entities drive the investigation panels; chips read better than
                             the JSON the record stores. */}
                         {Object.keys(socCase.Entities ?? {}).length > 0 && (
@@ -422,6 +428,7 @@ const Page = () => {
                       <Typography variant="body2" color="text.secondary">
                         {catalogueEntry?.description ?? 'Type inconnu : corriger le type depuis la file d’attente.'}
                       </Typography>
+                      <PsitSocSourceMailSection socCase={socCase} />
                     </CardContent>
                   </Card>
                   <PsitSocGuidePanel

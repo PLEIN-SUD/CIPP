@@ -1,16 +1,9 @@
 import { blue, orange, indigo, purple } from "./colors";
-/* PSIT-CUSTOM-BEGIN: Plein Sud preset */
-import { psitBlue } from "./colors";
-/* PSIT-CUSTOM-END */
 
 export const getPrimary = (preset) => {
   switch (preset) {
     case "blue":
       return blue;
-    /* PSIT-CUSTOM-BEGIN: Plein Sud preset */
-    case "psit":
-      return psitBlue;
-    /* PSIT-CUSTOM-END */
     case "orange":
       return orange;
     case "indigo":

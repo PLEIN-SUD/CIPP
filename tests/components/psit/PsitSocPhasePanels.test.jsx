@@ -107,7 +107,7 @@ describe('PsitSocEmergencyContainment', () => {
 
     renderWithProviders(<PsitSocEmergencyContainment socCase={socCase} queryKey="k" />)
     await userEvent.click(screen.getByRole('button', { name: /Confinement d’urgence/ }))
-    await userEvent.click(screen.getByRole('button', { name: 'Confiner' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confiner le compte' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
     expect(mutate.mock.calls[0][0].url).toBe('/api/execBecRemediate')
@@ -145,7 +145,7 @@ describe("PsitSocGuidePanel, scoped to a phase with 'sans objet'", () => {
     renderWithProviders(
       <PsitSocGuidePanel socCase={socCase} queryKey="k" evidence={{}} phase="collect" showClues={false} />
     )
-    await userEvent.click(screen.getAllByRole('button', { name: 'sans objet' })[0])
+    await userEvent.click(screen.getAllByRole('button', { name: /Sans objet/ })[0])
 
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({

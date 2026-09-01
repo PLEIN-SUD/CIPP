@@ -1,4 +1,4 @@
-import { Button, Chip, Stack, Typography } from '@mui/material'
+import { Button, Chip, Stack, Typography, Tooltip } from '@mui/material'
 import CippButtonCard from '../CippCards/CippButtonCard'
 import { PsitBecCollectionStatus } from './PsitBecCollectionStatus'
 import { PsitBecTriagePanel } from './PsitBecTriagePanel'
@@ -74,9 +74,11 @@ export const PsitBecDecisionPanel = ({
               />
             </Stack>
             {onRestart && (
-              <Button size="small" onClick={() => onRestart()}>
-                Relancer la collecte
-              </Button>
+              <Tooltip describeChild title="Relancer la collecte : relit la boîte en profondeur (une à deux minutes) et remplace la collecte affichée (les qualifications déjà posées sont conservées)">
+                <Button size="small" variant="outlined" onClick={() => onRestart()}>
+                  Relancer la collecte
+                </Button>
+              </Tooltip>
             )}
           </Stack>
         }

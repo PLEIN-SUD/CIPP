@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Button } from '@mui/material'
+import { Box, Button, Tooltip } from '@mui/material'
 import { PlaylistAdd } from '@mui/icons-material'
 import { CippOffCanvas } from '../../CippComponents/CippOffCanvas'
 import { CippDataTable } from '../../CippTable/CippDataTable'
@@ -91,7 +91,7 @@ const SOURCES = {
       },
     ],
     confirmText:
-      'Adopter cette alerte MDO comme dossier SOC de type 18 ? Si un dossier existe déjà pour cette alerte, il est réutilisé, pas dupliqué.',
+      'Ouvrir un dossier « Phishing livré » depuis cette alerte Defender for Office ? Si un dossier existe déjà pour cette alerte, il est réutilisé, pas dupliqué.',
     simpleColumns: ['createdDateTime', 'status', 'severity', 'title', 'category', 'id'],
     offCanvasFields: [
       'createdDateTime',
@@ -113,7 +113,7 @@ export const PsitSocImportDrawer = ({ source, relatedQueryKeys = [] }) => {
 
   const actions = [
     {
-      label: 'Adopter dans le triage SOC',
+      label: 'Ouvrir un dossier depuis cette alerte',
       type: 'POST',
       icon: <PlaylistAdd />,
       url: '/api/PSITExecSocCase',
@@ -126,9 +126,11 @@ export const PsitSocImportDrawer = ({ source, relatedQueryKeys = [] }) => {
 
   return (
     <>
-      <Button size="small" onClick={() => setVisible(true)} startIcon={<PlaylistAdd />}>
-        {config.button}
-      </Button>
+      <Tooltip describeChild title={`${config.button} : ${config.title} — chaque alerte adoptée devient un dossier de la file`}>
+        <Button size="small" variant="outlined" onClick={() => setVisible(true)} startIcon={<PlaylistAdd />}>
+          {config.button}
+        </Button>
+      </Tooltip>
       <CippOffCanvas
         title={config.title}
         visible={visible}

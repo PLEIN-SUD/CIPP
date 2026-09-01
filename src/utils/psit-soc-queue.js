@@ -88,6 +88,54 @@ export const psitSocGuideProgress = (socCase) => {
 }
 
 /** The type in words. The number alone asks the analyst to know a catalogue by heart. */
+/** The entity keys, said in French: raw API names on a chip read as a bug, not a fact. */
+export const PSIT_SOC_ENTITY_LABELS = {
+  upn: 'Compte',
+  userId: 'Id du compte',
+  deviceName: 'Machine',
+  deviceId: 'Id de la machine',
+  azureADDeviceId: 'Id Entra de la machine',
+  appId: 'Application (appId)',
+  networkMessageId: 'Message (networkMessageId)',
+  sender: 'Expéditeur',
+  recipient: 'Destinataire',
+}
+
+export const psitSocEntityLabel = (kind) => PSIT_SOC_ENTITY_LABELS[kind] ?? String(kind || '')
+
+/**
+ * The journal action tokens, said in French. The journal is the analyst's reading surface:
+ * 'remediate-user' as the bold title of a French line reads as a bug. Free-text actions typed by
+ * an analyst pass through untouched — they are already words.
+ */
+export const PSIT_SOC_ACTION_LABELS = {
+  created: 'Dossier créé',
+  ingested: 'Ingestion',
+  enriched: 'Pré-rempli à l’ingestion',
+  status: 'Changement de statut',
+  qualified: 'Qualification',
+  reopened: 'Réouverture',
+  escalated: 'Escalade',
+  'on-hold': 'Mise en attente',
+  resumed: 'Reprise',
+  'duplicate-signal': 'Signal doublon rattaché',
+  'audit-search': 'Recherche d’audit',
+  'report-generated': 'Rapport généré',
+  restored: 'Restauration',
+  'log-truncated': 'Journal tronqué',
+  'remediate-user': 'Remédiation du compte',
+  'mde-isolate': 'Isolation réseau (MDE)',
+  'mde-unisolate': 'Levée d’isolation (MDE)',
+  'defender-scan': 'Analyse Defender lancée',
+  'device-reboot': 'Redémarrage du poste',
+  'mail-soft-delete': 'Suppression du message (réversible)',
+  'revoke-app-consent': 'Consentement d’application révoqué',
+  'bec-import': 'Import BEC',
+}
+
+export const psitSocActionLabel = (action) =>
+  PSIT_SOC_ACTION_LABELS[action] ?? String(action || '')
+
 export const psitSocTypeLabel = (typeId) => {
   const entry = psitSocTypeById(typeId)
   if (!entry) return typeId ? `Type ${typeId}` : ''
@@ -171,7 +219,9 @@ export const psitSocTicketParts = (value) => {
  */
 export const psitSocAdminCell = (row) => {
   const identity = row?.Evidence?.identity
-  if (!identity || !identity.readUtc) return ''
+  // 'Non vérifié' rather than an empty cell: 'Non' is an answer (roles read, none found), and
+  // the absence of a read must not look like it.
+  if (!identity || !identity.readUtc) return 'Non vérifié'
   const upn = row?.Entities?.upn || ''
   if (identity.isAdmin) return upn ? `Oui — ${upn}` : 'Oui'
   if (identity.isEligible) return upn ? `Éligible — ${upn}` : 'Éligible'

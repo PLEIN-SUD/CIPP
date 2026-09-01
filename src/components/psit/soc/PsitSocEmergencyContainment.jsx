@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { GppMaybe } from '@mui/icons-material'
 import { ApiPostCall } from '../../../api/ApiCall'
@@ -78,16 +79,27 @@ export const PsitSocEmergencyContainment = ({ socCase, queryKey }) => {
 
   return (
     <>
-      <Button
-        size="small"
-        variant="contained"
-        color="error"
-        startIcon={<GppMaybe />}
-        disabled={action.isPending}
-        onClick={() => setOpen(true)}
+      <Tooltip
+        describeChild
+        title={
+          isUser
+            ? 'Confinement d’urgence : exécute la remédiation CIPP complète du compte (mot de passe, blocage, sessions, MFA, règles, partage) sans attendre le verdict — une confirmation détaille tout avant'
+            : 'Confinement d’urgence : isole le poste du réseau via MDE sans attendre le verdict — une confirmation détaille tout avant'
+        }
       >
-        Confinement d’urgence
-      </Button>
+        <span>
+          <Button
+            size="small"
+            variant="contained"
+            color="error"
+            startIcon={<GppMaybe />}
+            disabled={action.isPending}
+            onClick={() => setOpen(true)}
+          >
+            Confinement d’urgence
+          </Button>
+        </span>
+      </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{isUser ? `Confiner ${upn} maintenant ?` : 'Isoler le poste maintenant ?'}</DialogTitle>
         <DialogContent>
@@ -105,7 +117,7 @@ export const PsitSocEmergencyContainment = ({ socCase, queryKey }) => {
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Annuler</Button>
           <Button variant="contained" color="error" onClick={run}>
-            Confiner
+            {isUser ? 'Confiner le compte' : 'Isoler le poste'}
           </Button>
         </DialogActions>
       </Dialog>

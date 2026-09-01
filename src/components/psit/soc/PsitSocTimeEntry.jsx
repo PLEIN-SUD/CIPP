@@ -8,6 +8,7 @@ import {
   Stack,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Schedule, ContentCopy } from '@mui/icons-material'
 import { CippCopyToClipBoard } from '../../CippComponents/CippCopyToClipboard'
@@ -55,9 +56,11 @@ export const PsitSocTimeEntry = ({ socCase }) => {
 
   return (
     <>
-      <Button size="small" variant="outlined" startIcon={<Schedule />} onClick={openDialog}>
-        Saisie de temps
-      </Button>
+      <Tooltip describeChild title="Saisie de temps : rédige depuis le journal le texte à coller dans le ticket Autotask — rien n'est écrit dans Autotask d'ici">
+        <Button size="small" variant="outlined" startIcon={<Schedule />} onClick={openDialog}>
+          Saisie de temps
+        </Button>
+      </Tooltip>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Saisie de temps Autotask</DialogTitle>

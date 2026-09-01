@@ -44,7 +44,7 @@ describe('PsitSocGuidePanel', () => {
     expect(checkboxes).toHaveLength(5)
     // The step another analyst completed shows checked, with who and when.
     expect(checkboxes[0]).toBeChecked()
-    expect(screen.getByText(/done, a \(2026-08-24T14:00:00Z\)/)).toBeInTheDocument()
+    expect(screen.getByText(/faite, a \(2026-08-24T14:00:00Z\)/)).toBeInTheDocument()
     expect(checkboxes[1]).not.toBeChecked()
   })
 
@@ -132,7 +132,7 @@ describe('PsitSocGuidePanel', () => {
       />
     )
 
-    expect(screen.getByText(/done, a \(2026-08-24T14:00:00Z\)/)).toBeInTheDocument()
+    expect(screen.getByText(/faite, a \(2026-08-24T14:00:00Z\)/)).toBeInTheDocument()
     // Un-ticking removes the claim rather than recording "pending, someone, at some time".
     expect(screen.queryByText(/pending, a/)).not.toBeInTheDocument()
   })
@@ -156,8 +156,8 @@ describe('PsitSocGuidePanel', () => {
   it('shows the FP and TP clues next to the steps', () => {
     renderWithProviders(<PsitSocGuidePanel socCase={socCase} queryKey="k" />)
 
-    expect(screen.getByText('Se lit comme une activité attendue')).toBeInTheDocument()
-    expect(screen.getByText('Se lit comme une compromission')).toBeInTheDocument()
+    expect(screen.getByText(/Se lit comme une activité attendue/)).toBeInTheDocument()
+    expect(screen.getByText(/Se lit comme une compromission/)).toBeInTheDocument()
     expect(screen.getByText(/Protocole deviceCode/)).toBeInTheDocument()
   })
 

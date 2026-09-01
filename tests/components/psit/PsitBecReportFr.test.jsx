@@ -179,7 +179,7 @@ describe('PsitBecReportFrButton', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: /Rapport FR/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Rapport d’incident/ })).toBeDisabled()
   })
 
   it('renders the French report button and opens the preview dialog', async () => {
@@ -188,15 +188,15 @@ describe('PsitBecReportFrButton', () => {
     )
 
     // The MUI tooltip title becomes the accessible name, so it must contain the visible label
-    // (WCAG 2.5.3). Asserting on /Rapport FR/ covers both.
-    const button = screen.getByRole('button', { name: /Rapport FR/ })
+    // (WCAG 2.5.3). Asserting on /Rapport d’incident/ covers both.
+    const button = screen.getByRole('button', { name: /Rapport d’incident/ })
     expect(button).toBeEnabled()
-    expect(button).toHaveTextContent('Rapport FR')
+    expect(button).toHaveTextContent('Rapport d’incident (FR)')
 
     await userEvent.click(button)
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByText("Aperçu du rapport d'investigation")).toBeInTheDocument()
+    expect(screen.getByText('Aperçu du rapport d’incident BEC')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Fermer' })).toBeInTheDocument()
   })
 })

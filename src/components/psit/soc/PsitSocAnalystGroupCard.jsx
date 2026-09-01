@@ -8,6 +8,7 @@ import {
   Stack,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -83,18 +84,22 @@ export const PsitSocAnalystGroupCard = () => {
           />
 
           <div>
-            <Button
-              variant="contained"
-              disabled={save.isPending}
-              onClick={() =>
-                save.mutate({
-                  url: '/api/PSITExecSocAnalystGroup',
-                  data: { GroupId: groupId.trim() },
-                })
-              }
-            >
-              {save.isPending ? 'Enregistrement...' : 'Enregistrer'}
-            </Button>
+            <Tooltip describeChild title="Enregistrer : vérifie le groupe auprès de Graph puis en fait la seule source de la liste des analystes (champ vide : réglage effacé)">
+              <span>
+                <Button
+                  variant="contained"
+                  disabled={save.isPending}
+                  onClick={() =>
+                    save.mutate({
+                      url: '/api/PSITExecSocAnalystGroup',
+                      data: { GroupId: groupId.trim() },
+                    })
+                  }
+                >
+                  {save.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              </span>
+            </Tooltip>
           </div>
 
           <CippApiResults apiObject={save} />

@@ -16,6 +16,7 @@ import {
   SvgIcon,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Add, DeleteOutline, ArchiveOutlined } from '@mui/icons-material'
 import ExpandMoreIcon from '@heroicons/react/24/outline/ChevronDownIcon'
@@ -245,9 +246,10 @@ export const PsitBecIncidentPanel = ({
         titleTypographyProps={{ variant: 'h6' }}
         action={
           collapsible ? (
-            <IconButton
-              aria-label={expanded ? 'Replier la fiche BEC' : 'Déplier la fiche BEC'}
-              onClick={() => setExpanded((previous) => !previous)}
+            <Tooltip describeChild title={expanded ? 'Replier la fiche BEC' : 'Déplier la fiche BEC'}>
+              <IconButton
+                aria-label={expanded ? 'Replier la fiche BEC' : 'Déplier la fiche BEC'}
+                onClick={() => setExpanded((previous) => !previous)}
             >
               <SvgIcon
                 fontSize="small"
@@ -255,7 +257,8 @@ export const PsitBecIncidentPanel = ({
               >
                 <ExpandMoreIcon />
               </SvgIcon>
-            </IconButton>
+              </IconButton>
+            </Tooltip>
           ) : null
         }
       />
@@ -311,7 +314,7 @@ export const PsitBecIncidentPanel = ({
               />
               <TextField
                 select
-                label="Marquage de diffusion (TLP)"
+                label="Marquage de diffusion (TLP : qui a le droit de relire ce document)"
                 size="small"
                 fullWidth
                 helperText="Porté par la couverture et par chaque page des deux rapports."
@@ -560,16 +563,19 @@ export const PsitBecIncidentPanel = ({
                           patchRow('ExternalActions', index, { By: event.target.value })
                         }
                       />
-                      <IconButton
-                        aria-label="Supprimer l'action"
-                        onClick={() => removeRow('ExternalActions', index)}
-                      >
-                        <DeleteOutline fontSize="small" />
-                      </IconButton>
+                      <Tooltip describeChild title="Supprimer cette ligne">
+                        <IconButton
+                          aria-label="Supprimer l'action"
+                          onClick={() => removeRow('ExternalActions', index)}
+                        >
+                          <DeleteOutline fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   ))}
                   <Button
                     size="small"
+                    variant="outlined"
                     startIcon={<Add />}
                     onClick={() => addRow('ExternalActions', { Action: '', DoneUtc: '', By: '' })}
                   >
@@ -706,16 +712,19 @@ export const PsitBecIncidentPanel = ({
                           </MenuItem>
                         ))}
                       </TextField>
-                      <IconButton
-                        aria-label="Supprimer le tiers"
-                        onClick={() => removeRow('ThirdPartiesNotified', index)}
-                      >
-                        <DeleteOutline fontSize="small" />
-                      </IconButton>
+                      <Tooltip describeChild title="Supprimer cette ligne">
+                        <IconButton
+                          aria-label="Supprimer le tiers"
+                          onClick={() => removeRow('ThirdPartiesNotified', index)}
+                        >
+                          <DeleteOutline fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   ))}
                   <Button
                     size="small"
+                    variant="outlined"
                     startIcon={<Add />}
                     onClick={() =>
                       addRow('ThirdPartiesNotified', { Name: '', NotifiedUtc: '', Channel: '' })
@@ -793,29 +802,34 @@ export const PsitBecIncidentPanel = ({
                   </>
                 ) : (
                   <Stack direction="row">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="warning"
-                      startIcon={<ArchiveOutlined />}
-                      onClick={() => setClosing(true)}
-                    >
-                      Clore la fiche BEC
-                    </Button>
+                    <Tooltip describeChild title="Clore la fiche BEC : archive la fiche et fige l'attestation de confinement (une note de clôture est demandée avant)">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        startIcon={<ArchiveOutlined />}
+                        onClick={() => setClosing(true)}
+                      >
+                        Clore la fiche BEC
+                      </Button>
+                    </Tooltip>
                   </Stack>
                 )}
               </Stack>
             )}
 
             <Stack direction="row" spacing={2} alignItems="center">
-              <Button
-                variant="contained"
-                color="error"
-                disabled={Object.keys(edits).length === 0 || saveRequest.isPending}
-                onClick={handleSave}
-              >
-                {saveRequest.isPending ? 'Enregistrement...' : 'Enregistrer la fiche'}
-              </Button>
+              <Tooltip describeChild title="Enregistrer la fiche : écrit les champs modifiés et relit le journal CIPP pour l'attestation de confinement">
+                <span>
+                  <Button
+                    variant="contained"
+                    disabled={Object.keys(edits).length === 0 || saveRequest.isPending}
+                    onClick={handleSave}
+                  >
+                    {saveRequest.isPending ? 'Enregistrement...' : 'Enregistrer la fiche'}
+                  </Button>
+                </span>
+              </Tooltip>
               {saveRequest.isSuccess && (
                 <Typography variant="body2" color="success.main">
                   Fiche enregistrée.
@@ -835,9 +849,19 @@ export const PsitBecIncidentPanel = ({
         </CardContent>
       </Collapse>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ px: 2, pb: 2 }}>
-        <Button size="small" color="error" onClick={removeRecord} disabled={removeRequest.isPending}>
-          Supprimer la fiche BEC (super admin)
-        </Button>
+        <Tooltip describeChild title="Supprimer la fiche BEC : suppression définitive de la fiche et de ses qualifications, réservée aux enregistrements de test (une fiche réelle se clôt)">
+          <span>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={removeRecord}
+              disabled={removeRequest.isPending}
+            >
+              Supprimer la fiche BEC (super admin)
+            </Button>
+          </span>
+        </Tooltip>
         <CippApiResults apiObject={removeRequest} />
       </Stack>
 </Card>

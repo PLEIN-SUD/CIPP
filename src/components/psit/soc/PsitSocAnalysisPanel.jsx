@@ -10,6 +10,7 @@ import {
   Stack,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -125,9 +126,18 @@ export const PsitSocAnalysisPanel = ({ socCase, queryKey }) => {
           )}
 
           <div>
-            <Button size="small" variant="contained" disabled={!dirty || write.isPending} onClick={save}>
-              Enregistrer l’analyse
-            </Button>
+            <Tooltip describeChild title="Enregistrer l'analyse : fixe les techniques ATT&CK et la cause racine sur le dossier — les rapports les citent">
+              <span>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={!dirty || write.isPending}
+                  onClick={save}
+                >
+                  Enregistrer l’analyse
+                </Button>
+              </span>
+            </Tooltip>
           </div>
           <CippApiResults apiObject={write} errorsOnly />
         </Stack>

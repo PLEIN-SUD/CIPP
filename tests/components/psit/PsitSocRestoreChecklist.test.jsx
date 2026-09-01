@@ -49,7 +49,7 @@ describe('PsitSocRestoreChecklist', () => {
     ApiPostCall.mockReturnValue({ mutate, isPending: false, isSuccess: false, isError: false })
 
     renderWithProviders(<PsitSocRestoreChecklist socCase={remediatedBenignCase} queryKey="k" />)
-    await userEvent.click(screen.getAllByRole('button', { name: 'Journaliser la restauration' })[0])
+    await userEvent.click(screen.getAllByRole('button', { name: 'Consigner la restauration' })[0])
 
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -76,6 +76,6 @@ describe('PsitSocRestoreChecklist', () => {
     renderWithProviders(<PsitSocRestoreChecklist socCase={restored} queryKey="k" />)
 
     expect(screen.getByText(/Tout a été rendu au titulaire/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Journaliser la restauration' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Consigner la restauration' })).not.toBeInTheDocument()
   })
 })

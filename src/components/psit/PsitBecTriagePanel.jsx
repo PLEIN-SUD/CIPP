@@ -18,6 +18,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import ExpandMoreIcon from '@heroicons/react/24/outline/ChevronDownIcon'
 import { SvgIcon } from '@mui/material'
@@ -146,21 +147,23 @@ export const PsitBecTriagePanel = ({
   return (
     <Card variant="outlined" sx={{ mt: 2 }}>
       <CardHeader
-        title="Qualification avant diffusion"
-        subheader="Les signaux que la donnée ne peut pas trancher seule"
+        title="Qualification des signaux (avant diffusion du rapport)"
+        subheader="Chaque signal relevé se déclare attendu ou inattendu ; c'est distinct du verdict du dossier, qui se pose dans l'onglet Décision"
         action={
           collapsible ? (
-            <IconButton
-              aria-label={expanded ? 'Replier la qualification' : 'Déplier la qualification'}
-              onClick={() => setExpanded((previous) => !previous)}
-            >
+            <Tooltip describeChild title={expanded ? 'Replier la qualification' : 'Déplier la qualification'}>
+              <IconButton
+                aria-label={expanded ? 'Replier la qualification' : 'Déplier la qualification'}
+                onClick={() => setExpanded((previous) => !previous)}
+              >
               <SvgIcon
                 fontSize="small"
                 sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
               >
                 <ExpandMoreIcon />
               </SvgIcon>
-            </IconButton>
+              </IconButton>
+            </Tooltip>
           ) : null
         }
       />

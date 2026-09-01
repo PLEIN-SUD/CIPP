@@ -199,9 +199,11 @@ export const PsitSocMonthlyReportButton = ({ tenant, month, metrics, disabled })
             <Typography variant="h6" component="div">
               Aperçu du rapport mensuel
             </Typography>
-            <IconButton onClick={() => setDialogOpen(false)} size="small">
-              <Close />
-            </IconButton>
+            <Tooltip describeChild title="Fermer l’aperçu">
+              <IconButton aria-label="Fermer l’aperçu" onClick={() => setDialogOpen(false)} size="small">
+                <Close />
+              </IconButton>
+            </Tooltip>
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>

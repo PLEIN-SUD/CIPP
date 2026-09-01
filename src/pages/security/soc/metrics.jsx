@@ -17,6 +17,7 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Grid } from '@mui/system'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
@@ -207,7 +208,7 @@ const Page = () => {
                   <Card variant="outlined">
                     <CardHeader
                       title="Par type de signalement"
-                      subheader="Le taux sans objet est calculé sur les seuls dossiers qualifiés."
+                      subheader="Taux de faux positifs calculé sur les seuls dossiers qualifiés ; « à qualifier » = pas encore de verdict."
                     />
                     <CardContent>
                       <Table size="small">
@@ -215,11 +216,11 @@ const Page = () => {
                           <TableRow>
                             <TableCell>Type</TableCell>
                             <TableCell align="right">Dossiers</TableCell>
-                            <TableCell align="right">VP</TableCell>
+                            <TableCell align="right">Vrais positifs</TableCell>
                             <TableCell align="right">VP bénins</TableCell>
-                            <TableCell align="right">FP</TableCell>
+                            <TableCell align="right">Faux positifs</TableCell>
                             <TableCell align="right">À qualifier</TableCell>
-                            <TableCell align="right">Taux FP</TableCell>
+                            <TableCell align="right">Taux de FP</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -236,7 +237,13 @@ const Page = () => {
                               <TableCell align="right">{entry.falsePositives}</TableCell>
                               <TableCell align="right">{entry.count - entry.qualified}</TableCell>
                               <TableCell align="right">
-                                {entry.fpRatePercent === null ? 'N/D' : `${entry.fpRatePercent} %`}
+                                {entry.fpRatePercent === null ? (
+                                  <Tooltip describeChild title="Aucun dossier encore qualifié dans cette catégorie : pas de taux à afficher (ce n'est pas 0 %)">
+                                    <span>N/D</span>
+                                  </Tooltip>
+                                ) : (
+                                  `${entry.fpRatePercent} %`
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -256,7 +263,7 @@ const Page = () => {
                             <TableCell>Client</TableCell>
                             <TableCell align="right">Dossiers</TableCell>
                             <TableCell align="right">Ouverts</TableCell>
-                            <TableCell align="right">Incidents réels</TableCell>
+                            <TableCell align="right">Vrais positifs</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -283,8 +290,8 @@ const Page = () => {
                           <TableRow>
                             <TableCell>Mois</TableCell>
                             <TableCell align="right">Dossiers</TableCell>
-                            <TableCell align="right">Incidents réels</TableCell>
-                            <TableCell align="right">Sans objet</TableCell>
+                            <TableCell align="right">Vrais positifs</TableCell>
+                            <TableCell align="right">Faux positifs</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>

@@ -313,9 +313,9 @@ describe('psitSocAdminCell', () => {
   })
 
   it('stays empty while nobody has looked, which is not the same as Non', () => {
-    expect(psitSocAdminCell({ Entities: { upn: 'x@y.test' } })).toBe('')
-    expect(psitSocAdminCell({ Evidence: { identity: {} } })).toBe('')
-    expect(psitSocAdminCell(undefined)).toBe('')
+    expect(psitSocAdminCell({ Entities: { upn: 'x@y.test' } })).toBe('Non vérifié')
+    expect(psitSocAdminCell({ Evidence: { identity: {} } })).toBe('Non vérifié')
+    expect(psitSocAdminCell(undefined)).toBe('Non vérifié')
   })
 
   it('still answers without a name when the dossier carries only a user id', () => {

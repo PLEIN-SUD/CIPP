@@ -17,6 +17,7 @@ import {
   Tab,
   Tabs,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Grid } from '@mui/system'
 import { Sync, ArrowBack, Launch, Lock } from '@mui/icons-material'
@@ -57,6 +58,7 @@ import {
   PSIT_SOC_STATUS_CHIP_COLORS,
   psitSocDisplaySeverity,
   psitSocStatusLabel,
+  psitSocEntityLabel,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
 import { PsitSocAnalystCell } from '../../../components/psit/PsitSocAnalystCell'
@@ -97,7 +99,7 @@ const PsitSocNextLockHint = ({ socCase, gating, currentPhase }) => {
   if (remaining.length === 0) return null
   return (
     <Alert severity="info">
-      {`Onglet suivant verrouillé. Reste à traiter (cocher, ou « sans objet ») : ${remaining
+      {`Onglet suivant verrouillé. Reste à traiter (cocher chaque étape, ou la marquer « Sans objet ») : ${remaining
         .slice(0, 4)
         .map((step) => step.label)
         .join(' · ')}${remaining.length > 4 ? '…' : ''}`}
@@ -147,17 +149,21 @@ const Page = () => {
         <Stack spacing={2}>
           <PsitSocWipBanner />
           <Stack direction="row" spacing={2} alignItems="center">
-            <Button
-              component={Link}
-              href="/security/soc/queue"
-              startIcon={
-                <SvgIcon fontSize="small">
-                  <ArrowBack />
-                </SvgIcon>
-              }
-            >
-              File d’attente
-            </Button>
+            <Tooltip describeChild title="File d’attente : revenir à la liste des dossiers">
+              <Button
+                size="small"
+                variant="outlined"
+                component={Link}
+                href="/security/soc/queue"
+                startIcon={
+                  <SvgIcon fontSize="small">
+                    <ArrowBack />
+                  </SvgIcon>
+                }
+              >
+                File d’attente
+              </Button>
+            </Tooltip>
             <Typography variant="h5">{socCase?.Title ?? 'Dossier SOC'}</Typography>
             {/* Gated on what it displays, not on the P level: a dossier ingested with the
                 emitter's wording and no P level of its own showed no severity at all, which is
@@ -176,18 +182,20 @@ const Page = () => {
                 label={psitSocStatusLabel(socCase.Status)}
               />
             )}
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => caseRequest.refetch()}
-              startIcon={
-                <SvgIcon fontSize="small">
-                  <Sync />
-                </SvgIcon>
-              }
-            >
-              Actualiser
-            </Button>
+            <Tooltip describeChild title="Actualiser : recharger le dossier et ses panneaux">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => caseRequest.refetch()}
+                startIcon={
+                  <SvgIcon fontSize="small">
+                    <Sync />
+                  </SvgIcon>
+                }
+              >
+                Actualiser
+              </Button>
+            </Tooltip>
             {/* Whatever the investigation was, it ends the same way: an entry in the
                 ticket. The text is written from the journal, here rather than in a tab,
                 because it is reached for at the end of any of them. */}
@@ -195,21 +203,23 @@ const Page = () => {
             <PsitSocHoldControls socCase={socCase} queryKey={queryKey} />
             <PsitSocTimeEntry socCase={socCase} />
             {socCase?.TicketUrl && (
-              <Button
-                size="small"
-                variant="outlined"
-                component="a"
-                href={socCase.TicketUrl}
-                target="_blank"
-                rel="noreferrer"
-                startIcon={
-                  <SvgIcon fontSize="small">
-                    <Launch />
-                  </SvgIcon>
-                }
-              >
-                Ouvrir dans Autotask
-              </Button>
+              <Tooltip describeChild title="Ouvrir dans Autotask : le ticket lié, dans un nouvel onglet">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  component="a"
+                  href={socCase.TicketUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  startIcon={
+                    <SvgIcon fontSize="small">
+                      <Launch />
+                    </SvgIcon>
+                  }
+                >
+                  Ouvrir dans Autotask
+                </Button>
+              </Tooltip>
             )}
           </Stack>
 
@@ -344,7 +354,7 @@ const Page = () => {
                                 key={kind}
                                 size="small"
                                 variant="outlined"
-                                label={`${kind} : ${value}`}
+                                label={`${psitSocEntityLabel(kind)} : ${value}`}
                               />
                             ))}
                           </Stack>
@@ -355,7 +365,7 @@ const Page = () => {
                   <Grid size={{ xs: 12, md: 5 }}>
                     <Stack spacing={2}>
                       <Card variant="outlined">
-                        <CardHeader title="Suivi" />
+                        <CardHeader title="Suivi du dossier" />
                         <CardContent>
                           <PropertyList>
                             <PropertyListItem
@@ -433,7 +443,12 @@ const Page = () => {
                       {Object.keys(socCase.Entities ?? {}).length > 0 ? (
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                           {Object.entries(socCase.Entities ?? {}).map(([kind, value]) => (
-                            <Chip key={kind} size="small" variant="outlined" label={`${kind} : ${value}`} />
+                            <Chip
+                              key={kind}
+                              size="small"
+                              variant="outlined"
+                              label={`${psitSocEntityLabel(kind)} : ${value}`}
+                            />
                           ))}
                         </Stack>
                       ) : (
@@ -556,7 +571,7 @@ const Page = () => {
                     queryKey={queryKey}
                     evidence={evidence}
                     phase="map"
-                    title="Interpréter"
+                    title="Indices d’interprétation"
                   />
                   <PsitSocNextLockHint socCase={socCase} gating={gating} currentPhase="map" />
                 </Stack>

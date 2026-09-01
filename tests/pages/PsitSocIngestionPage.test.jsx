@@ -51,7 +51,7 @@ describe('SOC ingestion configuration', () => {
     renderWithProviders(<Page />)
 
     expect(screen.queryByText(new RegExp('a'.repeat(64)))).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Afficher' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher le secret' }))
     expect(screen.getByText(new RegExp('a'.repeat(64)))).toBeInTheDocument()
   })
 

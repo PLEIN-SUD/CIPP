@@ -414,11 +414,13 @@ export const PsitSocDownloadReportButton = ({ socCase, read }) => {
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" component="div">
-              Aperçu du rapport d&apos;investigation
+              Aperçu du rapport téléchargements
             </Typography>
-            <IconButton onClick={() => setDialogOpen(false)} size="small">
-              <Close />
-            </IconButton>
+            <Tooltip describeChild title="Fermer l’aperçu">
+              <IconButton aria-label="Fermer l’aperçu" onClick={() => setDialogOpen(false)} size="small">
+                <Close />
+              </IconButton>
+            </Tooltip>
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>

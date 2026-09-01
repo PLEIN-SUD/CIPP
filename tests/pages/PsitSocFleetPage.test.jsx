@@ -86,7 +86,7 @@ describe('fleet health page', () => {
     // antivirus switched off, and one number for both would overstate the second.
     expect(screen.getByText('Signatures obsolètes')).toBeInTheDocument()
     // Two clients have at least one machine to look at.
-    expect(screen.getByText('Tenants concernés')).toBeInTheDocument()
+    expect(screen.getByText('Clients à regarder')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
@@ -131,7 +131,7 @@ describe('fleet health page', () => {
 
     expect(screen.getByText(/relevé quotidien du 2026-08-24/)).toBeInTheDocument()
     // The table only holds what needs attention on that path, and says so in its title.
-    expect(screen.getByText('Machines à regarder')).toBeInTheDocument()
+    expect(screen.getByText('Machines à regarder (relevé de la veille)')).toBeInTheDocument()
   })
 
   it('does not call a live single-tenant read a snapshot', () => {

@@ -11,6 +11,7 @@ import {
   Stack,
   SvgIcon,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Grid } from '@mui/system'
 import { Sync } from '@mui/icons-material'
@@ -104,7 +105,7 @@ const Page = () => {
       note: 'antivirus actif mais définitions en retard',
     },
     {
-      label: 'Tenants concernés',
+      label: 'Clients à regarder',
       value: tenantRows.filter((row) => row.NeedsAttention > 0).length,
       tone: empty ? 'default' : tenantRows.some((row) => row.NeedsAttention > 0) ? 'warning' : 'success',
       note: 'clients avec au moins une machine à regarder',
@@ -119,18 +120,20 @@ const Page = () => {
           <PsitSocWipBanner />
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography variant="h5">Santé du parc</Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => fleetRequest.refetch()}
-              startIcon={
-                <SvgIcon fontSize="small">
-                  <Sync />
-                </SvgIcon>
-              }
-            >
-              Actualiser
-            </Button>
+            <Tooltip describeChild title="Actualiser : relire l’état du parc chez tous les clients">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => fleetRequest.refetch()}
+                startIcon={
+                  <SvgIcon fontSize="small">
+                    <Sync />
+                  </SvgIcon>
+                }
+              >
+                Actualiser
+              </Button>
+            </Tooltip>
           </Stack>
 
           {failed && (
@@ -207,12 +210,17 @@ const Page = () => {
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {tenantRows.map((row) => (
-                    <Chip
+                    <Tooltip
+                      describeChild
                       key={row.Tenant}
-                      size="small"
-                      color={row.NeedsAttention > 0 ? 'error' : 'default'}
-                      label={`${row.Tenant} — ${row.NeedsAttention}/${row.DevicesReported}`}
-                    />
+                      title={`${row.Tenant} : ${row.NeedsAttention} machine(s) à regarder, sur ${row.DevicesReported} rapportée(s) par Intune`}
+                    >
+                      <Chip
+                        size="small"
+                        color={row.NeedsAttention > 0 ? 'error' : 'default'}
+                        label={`${row.Tenant} — ${row.NeedsAttention}/${row.DevicesReported}`}
+                      />
+                    </Tooltip>
                   ))}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
@@ -232,13 +240,18 @@ const Page = () => {
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {daily.map((day) => (
-                    <Chip
+                    <Tooltip
+                      describeChild
                       key={day.Date}
-                      size="small"
-                      variant="outlined"
-                      color={day.NeedsAttention > 0 ? 'error' : 'success'}
-                      label={`${day.Date.slice(5)} — ${day.NeedsAttention}/${day.DevicesReported}`}
-                    />
+                      title={`${day.Date} : ${day.NeedsAttention} machine(s) à regarder, sur ${day.DevicesReported} rapportée(s) ce jour-là`}
+                    >
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        color={day.NeedsAttention > 0 ? 'error' : 'success'}
+                        label={`${day.Date.slice(5)} — ${day.NeedsAttention}/${day.DevicesReported}`}
+                      />
+                    </Tooltip>
                   ))}
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
@@ -257,7 +270,7 @@ const Page = () => {
           )}
 
           <CippDataTable
-            title={live ? 'Machines' : 'Machines à regarder'}
+            title={live ? 'Machines (lecture en direct)' : 'Machines à regarder (relevé de la veille)'}
             data={rows}
             isFetching={fleetRequest.isFetching && !failed}
             simple={false}

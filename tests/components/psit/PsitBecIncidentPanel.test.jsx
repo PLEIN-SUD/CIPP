@@ -231,7 +231,7 @@ describe('PsitBecIncidentPanel', () => {
     render({ becData: compromisedBecData })
 
     // TLP is a document property with the strictest default, not a template constant.
-    expect(screen.getByLabelText('Marquage de diffusion (TLP)')).toHaveTextContent(
+    expect(screen.getByLabelText('Marquage de diffusion (TLP : qui a le droit de relire ce document)')).toHaveTextContent(
       'TLP:AMBER+STRICT'
     )
 

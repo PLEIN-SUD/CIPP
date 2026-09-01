@@ -9,6 +9,8 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
+  Typography,
 } from '@mui/material'
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -55,9 +57,17 @@ export const PsitSocValidateShortcut = ({ socCase, queryKey }) => {
               if (value) setVerdict(value)
             }}
           >
+            {/* No Tooltip around these: ToggleButtonGroup injects selection props into its
+                direct children, and a Tooltip in between swallows them — the definitions live
+                in the caption below instead. */}
             <ToggleButton value="false-positive">Faux positif évident</ToggleButton>
             <ToggleButton value="benign-true-positive">VP bénin évident</ToggleButton>
           </ToggleButtonGroup>
+          <Typography variant="caption" color="text.secondary">
+            Faux positif : la détection s’est trompée, et cela se voit sans investigation.
+            VP (vrai positif) bénin : signalement fondé, comportement réel, sans compromission
+            (usage assumé, shadow IT).
+          </Typography>
           <TextField
             size="small"
             fullWidth
@@ -73,14 +83,18 @@ export const PsitSocValidateShortcut = ({ socCase, queryKey }) => {
             </Alert>
           )}
           <div>
-            <Button
-              size="small"
-              variant="contained"
-              disabled={!verdict || !justification.trim() || write.isPending}
-              onClick={save}
-            >
-              Qualifier maintenant
-            </Button>
+            <Tooltip describeChild title="Qualifier maintenant : pose le verdict choisi sans passer par les autres onglets — la justification tient lieu d'investigation">
+              <span>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={!verdict || !justification.trim() || write.isPending}
+                  onClick={save}
+                >
+                  Qualifier maintenant
+                </Button>
+              </span>
+            </Tooltip>
           </div>
           <CippApiResults apiObject={write} errorsOnly />
         </Stack>

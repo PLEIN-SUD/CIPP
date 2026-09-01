@@ -15,6 +15,7 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -176,13 +177,24 @@ export const PsitSocMailContext = ({ socCase, queryKey, hideActions = false }) =
                 ))}
                 {['Spf', 'Dkim', 'Dmarc'].map((check) =>
                   message[check] ? (
-                    <Chip
+                    <Tooltip
+                      describeChild
                       key={check}
-                      size="small"
-                      variant="outlined"
-                      color={/pass/i.test(message[check]) ? 'success' : 'error'}
-                      label={`${check.toUpperCase()} ${message[check]}`}
-                    />
+                      title={
+                        {
+                          spf: 'SPF : le serveur expéditeur est-il autorisé à envoyer pour ce domaine',
+                          dkim: 'DKIM : la signature du domaine expéditeur est-elle valide',
+                          dmarc: 'DMARC : la politique du domaine expéditeur est-elle respectée',
+                        }[check] ?? check
+                      }
+                    >
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        color={/pass/i.test(message[check]) ? 'success' : 'error'}
+                        label={`${check.toUpperCase()} ${message[check]}`}
+                      />
+                    </Tooltip>
                   ) : null
                 )}
               </Stack>
@@ -206,7 +218,7 @@ export const PsitSocMailContext = ({ socCase, queryKey, hideActions = false }) =
                     <TableCell>Destinataire</TableCell>
                     <TableCell>Remise initiale</TableCell>
                     <TableCell>Où est la copie</TableCell>
-                    <TableCell>Lecture</TableCell>
+                    <TableCell>État</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -252,7 +264,7 @@ export const PsitSocMailContext = ({ socCase, queryKey, hideActions = false }) =
             size="small"
             fullWidth
             disabled={caseless}
-            label="Destinataires à purger (vide = tous)"
+            label="Destinataires concernés (vide = tous)"
             value={recipients}
             onChange={(event) => setRecipients(event.target.value)}
             helperText="Adresses séparées par des virgules"
@@ -267,15 +279,19 @@ export const PsitSocMailContext = ({ socCase, queryKey, hideActions = false }) =
           ) : (
             <>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  disabled={caseless || action.isPending}
-                  onClick={runPurge}
-                >
-                  Supprimer le message (réversible)
-                </Button>
+                <Tooltip describeChild title="Supprimer le message (réversible) : le déplace vers les éléments supprimés des boîtes concernées — destinataires et état de livraison capturés au dossier avant le geste">
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      disabled={caseless || action.isPending}
+                      onClick={runPurge}
+                    >
+                      Supprimer le message (réversible)
+                    </Button>
+                  </span>
+                </Tooltip>
               </Stack>
 
               <Typography variant="body2" color="text.secondary">

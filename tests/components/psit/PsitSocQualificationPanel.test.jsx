@@ -155,7 +155,7 @@ describe('PsitSocQualificationPanel', () => {
 
     expect(screen.getByText(/Vrai positif, b/)).toBeInTheDocument()
     expect(screen.getByText('Verdicts précédents')).toBeInTheDocument()
-    expect(screen.getByText(/false-positive, a/)).toBeInTheDocument()
+    expect(screen.getByText(/Faux positif, a/)).toBeInTheDocument()
   })
 
   it('keeps the save disabled until a verdict is picked', () => {

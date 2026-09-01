@@ -16,6 +16,7 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -200,7 +201,7 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
               {operations.length > 0 && (
                 <div>
                   <Typography variant="subtitle2" gutterBottom>
-                    Type d&rsquo;action
+                    Type d&rsquo;action (cliquer pour filtrer les tables)
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {operations.map((entry) => (
@@ -255,7 +256,7 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
                     </TableBody>
                   </Table>
                   {filteredEvents.length > MAX_ROWS && (
-                    <Button size="small" onClick={() => setShowAll((value) => !value)}>
+                    <Button size="small" variant="outlined" onClick={() => setShowAll((value) => !value)}>
                       {showAll
                         ? `Réduire à ${MAX_ROWS} lignes`
                         : `Afficher les ${filteredEvents.length} événements`}
@@ -290,14 +291,18 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
                   </MenuItem>
                 ))}
               </TextField>
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={launch.isPending || read.running}
-                onClick={relaunch}
-              >
-                Relancer la recherche
-              </Button>
+              <Tooltip describeChild title="Relancer la recherche : nouvelle recherche sur la fenêtre choisie — la recherche précédente reste classée au dossier">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={launch.isPending || read.running}
+                    onClick={relaunch}
+                  >
+                    Relancer la recherche
+                  </Button>
+                </span>
+              </Tooltip>
             </Stack>
             <CippApiResults apiObject={launch} errorsOnly />
           </div>

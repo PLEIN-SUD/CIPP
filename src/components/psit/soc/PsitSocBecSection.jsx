@@ -6,6 +6,7 @@ import {
   CardContent,
   CardHeader,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall } from '../../../api/ApiCall'
 import { usePsitBecCollection } from '../../../hooks/use-psit-bec-collection'
@@ -93,9 +94,11 @@ export const PsitSocBecSection = ({ socCase, queryKey, part, started, onStart })
               La collecte est un traitement orchestré (quelques minutes) : elle se lance quand
               l’investigation identité le justifie, pas à chaque ouverture de dossier.
             </Typography>
-            <Button size="small" variant="contained" onClick={onStart}>
-              Lancer la collecte BEC
-            </Button>
+            <Tooltip describeChild title="Lancer la collecte BEC : traitement orchestré d'une à deux minutes ; la progression s'affiche ici et la fiche BEC s'ouvre ensuite dans l'onglet Décision">
+              <Button size="small" variant="contained" onClick={onStart}>
+                Lancer la collecte BEC
+              </Button>
+            </Tooltip>
           </CardContent>
         </Card>
       )
@@ -115,7 +118,7 @@ export const PsitSocBecSection = ({ socCase, queryKey, part, started, onStart })
   if (!started) {
     return (
       <Alert severity="info">
-        La fiche BEC s’ouvre après la collecte : lancer « Collecte BEC » dans l’onglet Preuves.
+        La fiche BEC s’ouvre après la collecte : lancer « Lancer la collecte BEC » dans l’onglet « 3. Preuves ».
       </Alert>
     )
   }

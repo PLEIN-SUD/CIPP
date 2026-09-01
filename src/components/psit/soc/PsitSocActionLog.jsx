@@ -12,6 +12,7 @@ import {
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import CippInfoTooltip from '../../CippComponents/CippInfoTooltip'
+import { psitSocActionLabel } from '../../../utils/psit-soc-queue'
 
 /**
  * The case's action log: everything that happened, newest first - system entries (created,
@@ -111,8 +112,8 @@ export const PsitSocActionLog = ({ socCase, queryKey }) => {
           {entries.map((entry, index) => (
             <Stack key={index}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {entry.Action}
-                {entry.Detail ? `: ${entry.Detail}` : ''}
+                {psitSocActionLabel(entry.Action)}
+                {entry.Detail ? ` : ${entry.Detail}` : ''}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {entry.OccurredUtc

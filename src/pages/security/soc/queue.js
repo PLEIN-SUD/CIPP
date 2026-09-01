@@ -8,6 +8,7 @@ import { ApiGetCall } from '../../../api/ApiCall'
 import { useSettings } from '../../../hooks/use-settings'
 import {
   psitSocAdminCell,
+  psitSocEntityLabel,
   psitSocAge,
   psitSocDisplaySeverity,
   psitSocGuideProgress,
@@ -117,9 +118,9 @@ const Page = () => {
         'Mot de l’émetteur': row?.SeverityTag ?? '',
         Origine: PSIT_SOC_SOURCES[row?.Source] ?? row?.Source ?? '',
         'Entités': Object.entries(row?.Entities ?? {})
-          .map(([kind, value]) => `${kind} : ${value}`)
+          .map(([kind, value]) => `${psitSocEntityLabel(kind)} : ${value}`)
           .join(', '),
-        Attente: psitSocHoldAge(row)?.label ?? '',
+        'En attente depuis': psitSocHoldAge(row)?.label ?? '',
         'Créé le': row?.CreatedUtc ?? '',
         'Créé par': row?.CreatedBy ?? '',
         'Mis à jour le': row?.UpdatedUtc ?? '',
@@ -241,7 +242,7 @@ const Page = () => {
     {
       // The detection was right, the behaviour is real, there is no compromise. Forcing this
       // into FP taught the external SOC to stop flagging the pattern.
-      label: 'Qualifier VP bénin',
+      label: 'Qualifier vrai positif bénin',
       type: 'POST',
       icon: <VerifiedUser />,
       url: '/api/PSITExecSocCase',
@@ -356,7 +357,7 @@ const Page = () => {
         {
           type: 'textField',
           name: 'SeverityTag',
-          label: 'Mot affiché (facultatif, ex. High Priority — vide : inchangé)',
+          label: 'Mot affiché (facultatif — vide : le mot actuel reste)',
         },
       ],
       confirmText:
@@ -394,7 +395,7 @@ const Page = () => {
       'Entités',
       'Ticket Autotask',
       'Lien',
-      'Attente',
+      'En attente depuis',
       'Créé le',
       'Créé par',
       'Mis à jour le',

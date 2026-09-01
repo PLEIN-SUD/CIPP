@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Divider } from '@mui/material'
+import { Button, Divider, Tooltip } from '@mui/material'
 import { Grid } from '@mui/system'
 import { useForm, useFormState, useWatch } from 'react-hook-form'
 import { PlaylistAdd } from '@mui/icons-material'
@@ -108,9 +108,11 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau dossier', relatedQuery
 
   return (
     <>
-      <Button variant="contained" onClick={() => setDrawerVisible(true)} startIcon={<PlaylistAdd />}>
-        {buttonText}
-      </Button>
+      <Tooltip describeChild title="Nouveau dossier : saisir à la main un signalement reçu hors chaîne (téléphone, mail direct) — jamais dédoublonné automatiquement">
+        <Button variant="contained" onClick={() => setDrawerVisible(true)} startIcon={<PlaylistAdd />}>
+          {buttonText}
+        </Button>
+      </Tooltip>
 
       <CippOffCanvas
         title="Nouveau dossier SOC"
@@ -214,7 +216,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau dossier', relatedQuery
                 name="networkMessageId"
                 label="Identifiant de message"
                 formControl={formControl}
-                helperText="networkMessageId, tel que l’alerte le donne"
+                helperText="Identifiant du message (champ networkMessageId de l’alerte, à recopier tel quel)"
               />
             </Grid>
           )}
@@ -223,7 +225,7 @@ export const PsitSocCaseDrawer = ({ buttonText = 'Nouveau dossier', relatedQuery
             <CippFormComponent
               type="autoComplete"
               name="severity"
-              label={`Criticité${catalogueEntry ? ` (défaut ${catalogueEntry.severity})` : ''}`}
+              label={`Sévérité${catalogueEntry ? ` (défaut ${catalogueEntry.severity})` : ''}`}
               formControl={formControl}
               multiple={false}
               creatable={false}

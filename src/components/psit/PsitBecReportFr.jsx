@@ -1318,10 +1318,10 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
   const collection = getCollectionStatus(becData)
   if (collection.blocksReport) {
     return (
-      <Tooltip title="Rapport FR indisponible : la collecte doit être relancée avant de produire un document">
+      <Tooltip title="Rapport d’incident (français) indisponible : la collecte doit être relancée avant de produire un document">
         <span>
           <Button variant="contained" startIcon={<PictureAsPdf />} disabled>
-            Rapport FR
+            Rapport d’incident (FR)
           </Button>
         </span>
       </Tooltip>
@@ -1355,14 +1355,14 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
       {/* The tooltip title becomes the button's accessible name, so it has to start with the
           visible label: an accessible name that does not contain the visible text breaks
           WCAG 2.5.3 (Label in Name) and voice control. */}
-      <Tooltip title="Rapport FR : générer le rapport d'investigation en français">
+      <Tooltip title="Rapport d’incident (français) : générer le rapport d’investigation à transmettre au client">
         <Button
           variant="contained"
           startIcon={<PictureAsPdf />}
           onClick={() => setDialogOpen(true)}
           color="primary"
         >
-          Rapport FR
+          Rapport d’incident (FR)
         </Button>
       </Tooltip>
 
@@ -1381,7 +1381,7 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Box>
               <Typography variant="h6" component="div">
-                Aperçu du rapport d'investigation
+                Aperçu du rapport d’incident BEC
               </Typography>
               {/* Avertit sans bloquer : un rapport « à qualifier » assumé vaut mieux qu'un niveau
                   de risque que personne ne peut défendre. */}
@@ -1390,13 +1390,15 @@ export const PsitBecReportFrButton = ({ userData, becData, tenantName, triage })
                   {`${cardinal(
                     openQuestions,
                     'question'
-                  )} sans réponse : le rapport ne conclura pas sur un niveau de risque. Qualifiez-la dans le panneau « Qualification avant diffusion ».`}
+                  )} sans réponse : le rapport ne conclura pas sur un niveau de risque. Qualifiez-la dans le panneau « Qualification des signaux ».`}
                 </Typography>
               )}
             </Box>
-            <IconButton onClick={() => setDialogOpen(false)} size="small">
-              <Close />
-            </IconButton>
+            <Tooltip describeChild title="Fermer l’aperçu">
+              <IconButton aria-label="Fermer l’aperçu" onClick={() => setDialogOpen(false)} size="small">
+                <Close />
+              </IconButton>
+            </Tooltip>
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>

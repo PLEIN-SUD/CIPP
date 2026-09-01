@@ -84,7 +84,7 @@ describe('PsitSocBecSection', () => {
       <PsitSocBecSection socCase={socCase} queryKey="k" part="decision" started={false} onStart={vi.fn()} />
     )
 
-    expect(screen.getByText(/lancer « Collecte BEC » dans l’onglet Preuves/)).toBeInTheDocument()
+    expect(screen.getByText(/dans l’onglet « 3. Preuves »/)).toBeInTheDocument()
   })
 
   it('clicking the button is the start gesture', async () => {

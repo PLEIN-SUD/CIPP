@@ -10,6 +10,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import { ApiPostCall } from '../../../api/ApiCall'
@@ -61,6 +62,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, s
   const stepState = (stepId) => socCase?.GuideProgress?.[stepId]
 
   const EVIDENCE_COLOUR = { good: 'success.main', bad: 'error.main', unknown: 'text.secondary' }
+  const STATE_WORDS = { done: 'faite', skipped: 'sans objet', pending: 'à faire' }
 
   const writeStep = (step, state) => {
     progressWrite.mutate({
@@ -94,14 +96,24 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, s
                 secondaryAction={
                   // 'Sans objet' is work, not evasion: stating that a step does not apply to
                   // this dossier is a recorded judgement (who, when), and it unlocks like done.
-                  <Button
-                    size="small"
-                    color="inherit"
-                    sx={{ color: 'text.secondary', textTransform: 'none' }}
-                    onClick={() => writeStep(step, skipped ? 'pending' : 'skipped')}
+                  <Tooltip
+                    describeChild
+                    title={
+                      skipped
+                        ? 'Réactiver : remettre cette étape à faire'
+                        : 'Sans objet : déclarer que cette étape ne s’applique pas à ce dossier. Jugement journalisé à votre nom, et l’étape compte comme faite pour déverrouiller l’onglet suivant.'
+                    }
                   >
-                    {skipped ? 'réactiver' : 'sans objet'}
-                  </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="inherit"
+                      sx={{ color: 'text.secondary', borderColor: 'divider', textTransform: 'none' }}
+                      onClick={() => writeStep(step, skipped ? 'pending' : 'skipped')}
+                    >
+                      {skipped ? 'Réactiver' : 'Sans objet'}
+                    </Button>
+                  </Tooltip>
                 }
               >
                 <ListItemButton onClick={() => toggleStep(step)} dense>
@@ -133,7 +145,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, s
                             touched, or one that was un-ticked, has nothing to attest. */}
                         {state?.By && state.State !== 'pending' && (
                           <Typography component="span" variant="caption" display="block">
-                            {`${state.State}, ${state.By} (${state.Utc})`}
+                            {`${STATE_WORDS[state.State] ?? state.State}, ${state.By} (${state.Utc})`}
                           </Typography>
                         )}
                       </>
@@ -150,7 +162,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, s
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="success.main" gutterBottom>
-              Se lit comme une activité attendue
+              Se lit comme une activité attendue (penche vers un faux positif)
             </Typography>
             {catalogueEntry.fpClues.map((clue, index) => (
               <Typography key={index} variant="body2" color="text.secondary">
@@ -160,7 +172,7 @@ export const PsitSocGuidePanel = ({ socCase, queryKey, evidence, phase, title, s
           </Grid>
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" color="error.main" gutterBottom>
-              Se lit comme une compromission
+              Se lit comme une compromission (penche vers un vrai positif)
             </Typography>
             {catalogueEntry.tpClues.map((clue, index) => (
               <Typography key={index} variant="body2" color="text.secondary">

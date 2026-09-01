@@ -18,6 +18,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -170,7 +171,7 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
                   <TableCell align="right">Réussies</TableCell>
                   <TableCell align="right">Échecs</TableCell>
                   <TableCell>Applications</TableCell>
-                  <TableCell>Lecture</TableCell>
+                  <TableCell>Indices</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -190,19 +191,37 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
                   return (
                     <TableRow key={group.ip}>
                       <TableCell sx={{ color: colour }}>{group.ip}</TableCell>
-                      <TableCell sx={{ color: colour }}>{group.country || 'N/D'}</TableCell>
+                      <TableCell sx={{ color: colour }}>
+                        {group.country || (
+                          <Tooltip describeChild title="Pays non renseigné dans le journal de connexion">
+                            <span>N/D</span>
+                          </Tooltip>
+                        )}
+                      </TableCell>
                       <TableCell align="right">{group.successes}</TableCell>
                       <TableCell align="right">{group.failures}</TableCell>
                       <TableCell>{group.apps.slice(0, 3).join(', ')}</TableCell>
                       <TableCell>
                         {flags.map((flag) => (
-                          <Chip
+                          <Tooltip
+                            describeChild
                             key={flag}
+                            title={
+                              {
+                                'succès hors zone': 'Connexion réussie depuis un pays hors de la zone déclarée du compte',
+                                'succès après rafale': 'Une réussite précédée d’une rafale d’échecs : le motif d’un mot de passe deviné ou pulvérisé',
+                                'client hérité': 'Protocole hérité (IMAP, POP, SMTP authentifié) : le MFA ne s’y applique pas',
+                                local: 'Connexions cohérentes avec la zone déclarée du compte',
+                              }[flag] ?? flag
+                            }
+                          >
+                          <Chip
                             size="small"
                             sx={{ mr: 0.5 }}
                             color={flag === 'local' ? 'success' : 'error'}
                             label={flag}
                           />
+                          </Tooltip>
                         ))}
                       </TableCell>
                     </TableRow>
@@ -258,15 +277,19 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
                 geste laisse sa trace au journal.
               </Typography>
             )}
-            <Button
-              size="small"
-              variant="contained"
-              color="error"
-              disabled={caseless || !effectiveUserId || !upn || action.isPending}
-              onClick={() => setConfirmOpen(true)}
-            >
-              Remédier le compte (CIPP)
-            </Button>
+            <Tooltip describeChild title="Remédier le compte (CIPP) : les six gestes intégrés (mot de passe, blocage, sessions, MFA, règles de boîte, partage OneDrive) — une confirmation les liste avant d'agir">
+              <span>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="error"
+                  disabled={caseless || !effectiveUserId || !upn || action.isPending}
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  Remédier le compte (CIPP)
+                </Button>
+              </span>
+            </Tooltip>
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="sm" fullWidth>
               <DialogTitle>{`Remédier ${upn} ?`}</DialogTitle>
               <DialogContent>
@@ -291,7 +314,7 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
               <DialogActions>
                 <Button onClick={() => setConfirmOpen(false)}>Annuler</Button>
                 <Button variant="contained" color="error" onClick={runRemediation}>
-                  Remédier
+                  Exécuter les six gestes
                 </Button>
               </DialogActions>
             </Dialog>

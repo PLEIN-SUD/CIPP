@@ -9,6 +9,7 @@ import {
   Stack,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { PauseCircleOutline, PlayCircleOutline, MoveUp } from '@mui/icons-material'
 import { ApiPostCall } from '../../../api/ApiCall'
@@ -84,35 +85,47 @@ export const PsitSocHoldControls = ({ socCase, queryKey }) => {
   return (
     <>
       {onHold ? (
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<PlayCircleOutline />}
-          disabled={write.isPending}
-          onClick={resume}
-        >
-          Reprendre
-        </Button>
+        <Tooltip describeChild title="Reprendre le dossier : sortir de l'attente et remettre le dossier en investigation">
+          <span>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<PlayCircleOutline />}
+              disabled={write.isPending}
+              onClick={resume}
+            >
+              Reprendre le dossier
+            </Button>
+          </span>
+        </Tooltip>
       ) : (
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<PauseCircleOutline />}
-          disabled={write.isPending}
-          onClick={() => setHoldOpen(true)}
-        >
-          Mettre en attente
-        </Button>
+        <Tooltip describeChild title="Mettre en attente : le dossier attend un retour (SOC externe, client) — motif obligatoire, âge d'attente visible dans la file">
+          <span>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<PauseCircleOutline />}
+              disabled={write.isPending}
+              onClick={() => setHoldOpen(true)}
+            >
+              Mettre en attente
+            </Button>
+          </span>
+        </Tooltip>
       )}
-      <Button
-        size="small"
-        variant="outlined"
-        startIcon={<MoveUp />}
-        disabled={escalate.isPending}
-        onClick={() => setEscalateOpen(true)}
-      >
-        Escalader
-      </Button>
+      <Tooltip describeChild title="Escalader : réattribue le dossier à la personne choisie et lui envoie un mail avec le lien — motif obligatoire, journalisé">
+        <span>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<MoveUp />}
+            disabled={escalate.isPending}
+            onClick={() => setEscalateOpen(true)}
+          >
+            Escalader
+          </Button>
+        </span>
+      </Tooltip>
 
       <Dialog open={holdOpen} onClose={() => setHoldOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Mettre le dossier en attente</DialogTitle>

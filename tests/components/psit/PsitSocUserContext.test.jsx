@@ -95,7 +95,7 @@ describe('PsitSocUserContext', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Remédier le compte (CIPP)' }))
     // The six gestures are named before anything runs: this is not a button to discover.
     expect(screen.getByText(/six gestes suivants/)).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Remédier' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Exécuter les six gestes' }))
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2))
     // First the tenant action...

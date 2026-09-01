@@ -6,6 +6,7 @@ import {
   CardHeader,
   Stack,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { CheckCircle, RadioButtonUnchecked } from '@mui/icons-material'
 import { ApiPostCall } from '../../../api/ApiCall'
@@ -69,9 +70,18 @@ export const PsitSocRestoreChecklist = ({ socCase, queryKey }) => {
                 {item.sentence}
               </Typography>
               {!item.done && (
-                <Button size="small" disabled={journal.isPending} onClick={() => markRestored(item)}>
-                  Journaliser la restauration
-                </Button>
+                <Tooltip describeChild title="Consigner la restauration : inscrit au journal que cet accès a été rendu — le geste lui-même se fait dans l'écran concerné (fiche du compte, panneau machine)">
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      disabled={journal.isPending}
+                      onClick={() => markRestored(item)}
+                    >
+                      Consigner la restauration
+                    </Button>
+                  </span>
+                </Tooltip>
               )}
             </Stack>
           ))}

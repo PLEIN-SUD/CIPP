@@ -103,9 +103,9 @@ describe('PsitBecDecisionPanel', () => {
     // No level while a question is open, and the panel says what that implies.
     expect(screen.getAllByText(/À qualifier/).length).toBeGreaterThan(0)
     expect(screen.getByText(/n'affichent aucun niveau de risque/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Rapport FR/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Rapport d’incident/ })).toBeInTheDocument()
     // Both panels are rendered inside it, so the whole decision is in one place.
-    expect(screen.getByText('Qualification avant diffusion')).toBeInTheDocument()
+    expect(screen.getByText('Qualification des signaux (avant diffusion du rapport)')).toBeInTheDocument()
     expect(screen.getByText('Fiche BEC')).toBeInTheDocument()
   })
 
@@ -146,7 +146,7 @@ describe('PsitBecDecisionPanel', () => {
 
     // Questions pending: the analyst is answering them, so the case file starts folded. Folded,
     // not unmounted - collapsing must not throw away what was typed.
-    expect(screen.getByText(/Les signaux que la donnée ne peut pas trancher seule/)).toBeVisible()
+    expect(screen.getByText(/distinct du verdict du dossier/)).toBeVisible()
     expect(screen.getByLabelText('Ticket Autotask')).not.toBeVisible()
 
     await userEvent.click(screen.getByRole('button', { name: 'Déplier la fiche BEC' }))

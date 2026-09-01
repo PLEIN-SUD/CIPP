@@ -426,11 +426,13 @@ export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEven
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" component="div">
-              Aperçu du rapport d&apos;investigation
+              Aperçu du rapport application
             </Typography>
-            <IconButton onClick={() => setDialogOpen(false)} size="small">
-              <Close />
-            </IconButton>
+            <Tooltip describeChild title="Fermer l’aperçu">
+              <IconButton aria-label="Fermer l’aperçu" onClick={() => setDialogOpen(false)} size="small">
+                <Close />
+              </IconButton>
+            </Tooltip>
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>

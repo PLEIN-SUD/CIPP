@@ -8,6 +8,7 @@ import {
   Divider,
   Stack,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -142,15 +143,18 @@ export const PsitSocAppContext = ({ socCase, queryKey, hideActions = false }) =>
         subheader={principal?.displayName ?? appId}
         action={
           principal?.id ? (
-            <Button
-              size="small"
-              component="a"
-              target="_blank"
-              rel="noreferrer"
-              href={`https://entra.microsoft.com/${tenant}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/${principal.id}/appId/${appId}`}
-            >
-              Ouvrir dans Entra
-            </Button>
+            <Tooltip describeChild title="Ouvrir dans Entra : la fiche de l'application dans le portail Entra du client, dans un nouvel onglet">
+              <Button
+                size="small"
+                variant="outlined"
+                component="a"
+                target="_blank"
+                rel="noreferrer"
+                href={`https://entra.microsoft.com/${tenant}/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/${principal.id}/appId/${appId}`}
+              >
+                Ouvrir dans Entra
+              </Button>
+            </Tooltip>
           ) : null
         }
       />
@@ -305,15 +309,19 @@ export const PsitSocAppContext = ({ socCase, queryKey, hideActions = false }) =>
               </Typography>
             )}
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                disabled={caseless || action.isPending}
-                onClick={revoke}
-              >
-                Révoquer le consentement
-              </Button>
+              <Tooltip describeChild title="Révoquer le consentement : retire à l'application ses accès sur le tenant — les permissions révoquées sont capturées au dossier avant le geste">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    disabled={caseless || action.isPending}
+                    onClick={revoke}
+                  >
+                    Révoquer le consentement
+                  </Button>
+                </span>
+              </Tooltip>
               {/* The report reads the evidence this panel already gathered, so generating it
                   costs no extra call. It waits for a qualification: a client document that
                   concludes nothing is a document nobody should send. */}

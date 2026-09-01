@@ -11,6 +11,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiPostCall } from '../../../api/ApiCall'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
@@ -153,7 +154,9 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
               <Typography variant="subtitle2">Verdicts précédents</Typography>
               {qualification.PreviousVerdicts.map((previous, index) => (
                 <Typography key={index} variant="body2" color="text.secondary">
-                  {previous.Verdict}, {previous.Analyst} ({previous.DecidedUtc})
+                  {VERDICT_CHOICES.find((choice) => choice.value === previous.Verdict)?.label ??
+                    previous.Verdict}
+                  , {previous.Analyst} ({previous.DecidedUtc})
                   {previous.Justification ? `: ${previous.Justification}` : ''}
                 </Typography>
               ))}
@@ -198,13 +201,17 @@ export const PsitSocQualificationPanel = ({ socCase, queryKey }) => {
           />
 
           <Stack direction="row" spacing={2} alignItems="center">
-            <Button
-              variant="contained"
-              disabled={!verdict || caseWrite.isPending}
-              onClick={handleSave}
-            >
-              {caseWrite.isPending ? 'Enregistrement...' : 'Enregistrer la qualification'}
-            </Button>
+            <Tooltip describeChild title="Enregistrer la qualification : pose le verdict au dossier (horodaté à votre nom) ; un dossier adopté depuis Defender pousse aussi la qualification vers Defender">
+              <span>
+                <Button
+                  variant="contained"
+                  disabled={!verdict || caseWrite.isPending}
+                  onClick={handleSave}
+                >
+                  {caseWrite.isPending ? 'Enregistrement...' : 'Enregistrer la qualification'}
+                </Button>
+              </span>
+            </Tooltip>
             {writeBackPlanned && (
               <Typography variant="body2" color="text.secondary">
                 Mettra aussi à jour {socCase?.Source === 'mdo' ? 'l’alerte' : 'l’incident'} Defender.

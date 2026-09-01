@@ -9,6 +9,7 @@ import {
   Stack,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Reply, ContentCopy } from '@mui/icons-material'
 import {
@@ -68,9 +69,11 @@ export const PsitSocResponseBlock = ({ socCase }) => {
 
   return (
     <>
-      <Button size="small" variant="outlined" startIcon={<Reply />} onClick={openDialog}>
-        Réponse SOC externe
-      </Button>
+      <Tooltip describeChild title="Réponse SOC externe : ouvre un brouillon généré depuis le verdict, à relire puis copier dans le ticket — rien n'est envoyé d'ici">
+        <Button size="small" variant="outlined" startIcon={<Reply />} onClick={openDialog}>
+          Réponse SOC externe
+        </Button>
+      </Tooltip>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Réponse au SOC externe</DialogTitle>
@@ -97,7 +100,7 @@ export const PsitSocResponseBlock = ({ socCase }) => {
                 <TextField
                   select
                   size="small"
-                  label="Variante"
+                  label="Variante de la réponse"
                   value={variant ?? ''}
                   onChange={(event) => {
                     setVariant(event.target.value)

@@ -8,6 +8,7 @@ import {
   Divider,
   Stack,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
 import { psitSocAge } from '../../../utils/psit-soc-queue'
@@ -120,7 +121,15 @@ export const PsitSocDeviceContext = ({ socCase, queryKey, hideActions = false })
                 <Chip
                   size="small"
                   color={compliant ? 'success' : 'error'}
-                  label={compliant ? 'conforme' : `conformité : ${device.complianceState || 'inconnue'}`}
+                  label={
+                    compliant
+                      ? 'conforme'
+                      : `conformité : ${
+                          { noncompliant: 'non conforme', inGracePeriod: 'en période de grâce', unknown: 'inconnue' }[
+                            device.complianceState
+                          ] ?? (device.complianceState || 'inconnue')
+                        }`
+                  }
                 />
                 {defenderState && (
                   <Chip
@@ -165,7 +174,10 @@ export const PsitSocDeviceContext = ({ socCase, queryKey, hideActions = false })
                 />
                 <PropertyListItem
                   label="Propriété"
-                  value={device.managedDeviceOwnerType || 'non renseignée'}
+                  value={
+                    { company: 'entreprise', personal: 'personnelle' }[device.managedDeviceOwnerType] ??
+                    (device.managedDeviceOwnerType || 'non renseignée')
+                  }
                 />
                 <PropertyListItem
                   label="Identifiant Entra"
@@ -188,7 +200,7 @@ export const PsitSocDeviceContext = ({ socCase, queryKey, hideActions = false })
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              Actions graduées
+              Actions sur la machine (de la moins à la plus intrusive)
             </Typography>
             {caseless && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -197,65 +209,81 @@ export const PsitSocDeviceContext = ({ socCase, queryKey, hideActions = false })
               </Typography>
             )}
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={caseless || !device?.id || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/ExecDeviceAction', data: { GUID: device.id, Action: 'windowsDefenderScan', quickScan: false } },
-                    { Action: 'defender-scan', Detail: `Analyse complète lancée sur ${device?.deviceName}` }
-                  )
-                }
-              >
-                Lancer une analyse complète
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={caseless || !device?.id || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/ExecDeviceAction', data: { GUID: device.id, Action: 'rebootNow' } },
-                    { Action: 'device-reboot', Detail: `Redémarrage demandé sur ${device?.deviceName}` }
-                  )
-                }
-              >
-                Redémarrer
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                disabled={caseless || !aadDeviceId || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: {
-                        AzureADDeviceId: aadDeviceId,
-                        Comment: `Dossier ${socCase.CaseId}`,
-                        // Named so the server files the machine as Defender described it
-                        // before the cut: isolating changes what a later read returns.
-                        CaseId: socCase.CaseId,
-                      } },
-                    { Action: 'mde-isolate', Detail: `Isolation réseau demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
-                  )
-                }
-              >
-                Isoler du réseau
-              </Button>
-              <Button
-                size="small"
-                variant="text"
-                disabled={caseless || !aadDeviceId || action.isPending}
-                onClick={() =>
-                  runAction(
-                    { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Release: true, Comment: `Dossier ${socCase.CaseId}` } },
-                    { Action: 'mde-unisolate', Detail: `Levée d’isolation demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
-                  )
-                }
-              >
-                Lever l’isolation
-              </Button>
+              <Tooltip describeChild title="Lancer une analyse complète : analyse antivirus Defender sur le poste, sans impact pour la personne qui l'utilise">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={caseless || !device?.id || action.isPending}
+                    onClick={() =>
+                      runAction(
+                        { url: '/api/ExecDeviceAction', data: { GUID: device.id, Action: 'windowsDefenderScan', quickScan: false } },
+                        { Action: 'defender-scan', Detail: `Analyse complète lancée sur ${device?.deviceName}` }
+                      )
+                    }
+                  >
+                    Lancer une analyse complète
+                  </Button>
+                </span>
+              </Tooltip>
+              <Tooltip describeChild title="Redémarrer : redémarre la machine du client immédiatement, sans préavis pour la personne qui l'utilise">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={caseless || !device?.id || action.isPending}
+                    onClick={() =>
+                      runAction(
+                        { url: '/api/ExecDeviceAction', data: { GUID: device.id, Action: 'rebootNow' } },
+                        { Action: 'device-reboot', Detail: `Redémarrage demandé sur ${device?.deviceName}` }
+                      )
+                    }
+                  >
+                    Redémarrer
+                  </Button>
+                </span>
+              </Tooltip>
+              <Tooltip describeChild title="Isoler du réseau : coupe la machine de tout le réseau via Defender (seule la console MDE reste jointe) — l'état du poste est capturé au dossier avant la coupure">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    disabled={caseless || !aadDeviceId || action.isPending}
+                    onClick={() =>
+                      runAction(
+                        { url: '/api/PSITExecMdeIsolation', data: {
+                            AzureADDeviceId: aadDeviceId,
+                            Comment: `Dossier ${socCase.CaseId}`,
+                            // Named so the server files the machine as Defender described it
+                            // before the cut: isolating changes what a later read returns.
+                            CaseId: socCase.CaseId,
+                          } },
+                        { Action: 'mde-isolate', Detail: `Isolation réseau demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
+                      )
+                    }
+                  >
+                    Isoler du réseau
+                  </Button>
+                </span>
+              </Tooltip>
+              <Tooltip describeChild title="Lever l'isolation : rend le réseau à la machine — geste journalisé, comme l'isolation qu'il annule">
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={caseless || !aadDeviceId || action.isPending}
+                    onClick={() =>
+                      runAction(
+                        { url: '/api/PSITExecMdeIsolation', data: { AzureADDeviceId: aadDeviceId, Release: true, Comment: `Dossier ${socCase.CaseId}` } },
+                        { Action: 'mde-unisolate', Detail: `Levée d’isolation demandée sur ${device?.deviceName ?? socCase?.Entities?.deviceName}` }
+                      )
+                    }
+                  >
+                    Lever l’isolation
+                  </Button>
+                </span>
+              </Tooltip>
             </Stack>
             {!device?.azureADDeviceId && device && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>

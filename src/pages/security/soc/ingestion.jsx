@@ -10,6 +10,7 @@ import {
   Divider,
   Stack,
   Typography,
+  Tooltip,
 } from '@mui/material'
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
 import { PsitSocWipBanner } from '../../../components/psit/soc/PsitSocWipBanner'
@@ -84,17 +85,28 @@ const Page = () => {
                   </Alert>
                 )}
 
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color={configured ? 'warning' : 'primary'}
-                  disabled={rotate.isPending}
-                  onClick={() =>
-                    rotate.mutate({ url: '/api/PSITExecSocWebhookSecret', data: { rotate: true } })
+                <Tooltip
+                  describeChild
+                  title={
+                    configured
+                      ? 'Régénérer le secret : invalide l’adresse actuelle immédiatement — reporter la nouvelle dans le workflow d’ingestion dans la foulée, sinon les alertes suivantes seront refusées'
+                      : 'Générer le secret : crée l’adresse d’ingestion que le workflow appellera'
                   }
                 >
-                  {configured ? 'Régénérer le secret' : 'Générer le secret'}
-                </Button>
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color={configured ? 'warning' : 'primary'}
+                      disabled={rotate.isPending}
+                      onClick={() =>
+                        rotate.mutate({ url: '/api/PSITExecSocWebhookSecret', data: { rotate: true } })
+                      }
+                    >
+                      {configured ? 'Régénérer le secret' : 'Générer le secret'}
+                    </Button>
+                  </span>
+                </Tooltip>
 
                 {configured && (
                   <Typography variant="body2" color="text.secondary">
@@ -117,9 +129,22 @@ const Page = () => {
                     <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
                       {revealed ? url : masked}
                     </Typography>
-                    <Button size="small" onClick={() => setRevealed((value) => !value)}>
-                      {revealed ? 'Masquer' : 'Afficher'}
-                    </Button>
+                    <Tooltip
+                      describeChild
+                      title={
+                        revealed
+                          ? 'Masquer le secret : réaffiche l’adresse partiellement voilée'
+                          : 'Afficher le secret : montre l’adresse complète, secret inclus — à l’écran seulement'
+                      }
+                    >
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setRevealed((value) => !value)}
+                      >
+                        {revealed ? 'Masquer le secret' : 'Afficher le secret'}
+                      </Button>
+                    </Tooltip>
                     <CippCopyToClipBoard text={url} type="button" />
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
@@ -159,19 +184,23 @@ const Page = () => {
 
                 <Typography variant="subtitle2">Réponses</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  <strong>Ingested vrai</strong> : le dossier existe, son identifiant est dans la
+                  <strong><code>Ingested</code> à vrai</strong> : le dossier existe, son identifiant est dans la
                   réponse. L’adresse à mettre dans le ticket et dans la notification est{' '}
                   <code>/security/soc/case?caseId=…&amp;tenantFilter=…</code>.
                   <br />
-                  <strong>Ingested faux, Reason unknown-tenant</strong> : aucun client Microsoft
+                  <strong><code>Ingested</code> à faux, <code>Reason: unknown-tenant</code></strong> : aucun client Microsoft
                   géré ne porte ce nom, aucun dossier n’est ouvert. C’est la réponse attendue pour un
                   client hébergé ailleurs : ce portail n’a aucun écran capable d’instruire son
                   alerte, et ouvrir un dossier vide à chaque fois apprendrait à l’analyste à ignorer
                   des lignes. Le refus est journalisé avec le nom reçu, pour qu’une faute de frappe
                   sur un client géré se voie au lieu de disparaître.
                   <br />
-                  <strong>Ingested faux, Reason out-of-scope</strong> : l’alerte porte sur un
+                  <strong><code>Ingested</code> à faux, <code>Reason: out-of-scope</code></strong> : l’alerte porte sur un
                   produit que ce portail ne couvre pas. Même raisonnement, autre cause.
+                  <br />
+                  <strong><code>Reattached</code> à vrai</strong> : le signal doublonnait un dossier
+                  déjà ouvert (même catégorie, même entité, moins de 48 h) et y a été rattaché au
+                  lieu d’ouvrir un jumeau — l’identifiant renvoyé est celui du dossier existant.
                 </Typography>
 
                 <Alert severity="info">

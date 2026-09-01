@@ -12,9 +12,6 @@ import CippDevOptions from "../../components/CippComponents/CippDevOptions";
 import { CippOffboardingDefaultSettings } from "../../components/CippComponents/CippOffboardingDefaultSettings";
 import { ApiGetCall } from "../../api/ApiCall";
 import { getCippFormatting } from "../../utils/get-cipp-formatting";
-/* PSIT-CUSTOM-BEGIN: portal colour theme picker */
-import { PsitThemePicker } from "../../components/psit/PsitThemePicker";
-/* PSIT-CUSTOM-END */
 import { useEffect, useState } from "react";
 
 const Page = () => {
@@ -344,12 +341,6 @@ const Page = () => {
                             />
                           ),
                         },
-                        /* PSIT-CUSTOM-BEGIN: portal colour theme picker (applies on change, browser-side) */
-                        {
-                          label: "Portal colour theme",
-                          value: <PsitThemePicker />,
-                        },
-                        /* PSIT-CUSTOM-END */
                         {
                           label: "Save last used table filter",
                           value: (

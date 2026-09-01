@@ -257,9 +257,7 @@ const App = (props) => {
                 {(settings) => {
                   // Create theme even while initializing to avoid blank screen
                   const theme = createTheme({
-                    // PSIT-CUSTOM-BEGIN: colour theme picked in Preferences, upstream orange by default
-                    colorPreset: settings.colorPreset || 'orange',
-                    // PSIT-CUSTOM-END
+                    colorPreset: 'orange',
                     direction: settings.direction || 'ltr',
                     paletteMode:
                       settings.currentTheme?.value !== 'browser'

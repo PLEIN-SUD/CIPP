@@ -2,9 +2,6 @@ import { common } from '@mui/material/colors';
 import { alpha } from '@mui/material/styles';
 import { error, info, neutral, success, warning } from '../colors';
 import { getPrimary } from '../utils';
-/* PSIT-CUSTOM-BEGIN: Plein Sud colour themes */
-import { psitGetPrimary } from '../psit-presets';
-/* PSIT-CUSTOM-END */
 
 export const createPalette = (config) => {
   const { colorPreset, contrast } = config;
@@ -27,9 +24,7 @@ export const createPalette = (config) => {
     info,
     mode: 'light',
     neutral,
-    /* PSIT-CUSTOM-BEGIN: Plein Sud colour themes - null for non-psit presets, upstream decides */
-    primary: psitGetPrimary(colorPreset, 'light') ?? getPrimary(colorPreset),
-    /* PSIT-CUSTOM-END */
+    primary: getPrimary(colorPreset),
     success,
     text: {
       primary: neutral[900],

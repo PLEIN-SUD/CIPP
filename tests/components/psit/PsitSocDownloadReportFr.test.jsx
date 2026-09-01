@@ -201,8 +201,18 @@ describe('PsitSocDownloadReportButton', () => {
     expect(screen.getByRole('button', { name: /Rapport téléchargements/ })).toBeDisabled()
   })
 
-  it('offers the report once a verdict exists', () => {
-    renderWithProviders(<PsitSocDownloadReportButton socCase={socCase} read={undefined} />)
+  it('locks an uncontained true positive: a report sent mid-containment describes a fire while it burns', () => {
+    renderWithProviders(
+      <PsitSocDownloadReportButton socCase={{ ...socCase, Status: 'qualified-tp' }} read={undefined} />
+    )
+
+    expect(screen.getByRole('button', { name: /Rapport téléchargements/ })).toBeDisabled()
+  })
+
+  it('offers the report once the true positive is contained', () => {
+    renderWithProviders(
+      <PsitSocDownloadReportButton socCase={{ ...socCase, Status: 'contained' }} read={undefined} />
+    )
 
     expect(screen.getByRole('button', { name: /Rapport téléchargements/ })).toBeEnabled()
   })

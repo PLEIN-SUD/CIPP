@@ -34,6 +34,8 @@ import {
   buildDownloadReportModel,
 } from '../../utils/psit-soc-download-report'
 import { psitDownloadOperationLabel } from '../../utils/psit-soc-download'
+import { psitSocReportLock } from '../../utils/psit-soc-report-lock'
+import { ApiPostCall } from '../../api/ApiCall'
 import { PsitReportContributors, PsitReportPhotoLoaders } from './soc/PsitReportContributors'
 import { usePsitReportContributors } from '../../hooks/use-psit-report-contributors'
 
@@ -331,6 +333,24 @@ export const PsitSocDownloadReportFrDocument = ({
 
 export const PsitSocDownloadReportButton = ({ socCase, read }) => {
   const [dialogOpen, setDialogOpen] = useState(false)
+  // A generated report is an act of the dossier: the download is journaled with its source, so
+  // 'which numbers did the client get' stays answerable.
+  const journal = ApiPostCall({})
+  const journalGeneration = () => {
+    journal.mutate({
+      url: '/api/PSITExecSocCase',
+      data: {
+        tenantFilter: socCase.Tenant,
+        CaseId: socCase.CaseId,
+        LogAction: {
+          Action: 'report-generated',
+          Detail: `Rapport téléchargements généré (source : ${
+            read?.started && !read.running ? `recherche ${read.searchId}` : 'résumé conservé au dossier'
+          })`,
+        },
+      },
+    })
+  }
   const brandingSettings = useBrandingSettings()
   const variables = useReportVariables()
   // Gathered here, not in the document: react-pdf builds outside the React tree, where nothing
@@ -342,9 +362,10 @@ export const PsitSocDownloadReportButton = ({ socCase, read }) => {
 
   if (!socCase?.CaseId) return null
 
-  if (!socCase?.Qualification?.Verdict) {
+  const lock = psitSocReportLock(socCase)
+  if (lock.locked) {
     return (
-      <Tooltip title="Rapport téléchargements indisponible : qualifiez le dossier avant de produire un document">
+      <Tooltip title={`Rapport téléchargements indisponible : ${lock.reason}`}>
         <span>
           <Button size="small" variant="outlined" startIcon={<PictureAsPdf />} disabled>
             Rapport téléchargements
@@ -413,6 +434,7 @@ export const PsitSocDownloadReportButton = ({ socCase, read }) => {
               new Date().toISOString().split('T')[0]
             }.pdf`}
             style={{ textDecoration: 'none' }}
+            onClick={journalGeneration}
           >
             {({ loading }) => (
               <Button

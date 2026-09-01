@@ -29,6 +29,8 @@ import {
   Section,
 } from '../CippPdf'
 import { APP_CONCLUSION, buildAppReportModel } from '../../utils/psit-soc-app-report'
+import { psitSocReportLock } from '../../utils/psit-soc-report-lock'
+import { ApiPostCall } from '../../api/ApiCall'
 import {
   PsitReportContributors,
   PsitReportPhotoLoaders,
@@ -337,6 +339,23 @@ export const PsitSocAppReportFrDocument = ({
 
 export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEvents, scopes }) => {
   const [dialogOpen, setDialogOpen] = useState(false)
+  // A generated report is an act of the dossier: the download is journaled with its source.
+  const journal = ApiPostCall({})
+  const journalGeneration = () => {
+    journal.mutate({
+      url: '/api/PSITExecSocCase',
+      data: {
+        tenantFilter: socCase.Tenant,
+        CaseId: socCase.CaseId,
+        LogAction: {
+          Action: 'report-generated',
+          Detail: `Rapport application généré (${
+            socCase?.Evidence?.app ? 'consentements capturés à la révocation' : 'lecture live du tenant'
+          })`,
+        },
+      },
+    })
+  }
   const brandingSettings = useBrandingSettings()
   const variables = useReportVariables()
   // Gathered here, not in the document: react-pdf builds outside the React tree, where nothing
@@ -350,9 +369,10 @@ export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEven
   // a free consultation does not have.
   if (!socCase?.CaseId) return null
 
-  if (!socCase?.Qualification?.Verdict) {
+  const lock = psitSocReportLock(socCase)
+  if (lock.locked) {
     return (
-      <Tooltip title="Rapport application indisponible : qualifiez le dossier en vrai ou faux positif avant de produire un document">
+      <Tooltip title={`Rapport application indisponible : ${lock.reason}`}>
         <span>
           <Button size="small" variant="outlined" startIcon={<PictureAsPdf />} disabled>
             Rapport application
@@ -426,6 +446,7 @@ export const PsitSocAppReportButton = ({ socCase, principal, consents, auditEven
               new Date().toISOString().split('T')[0]
             }.pdf`}
             style={{ textDecoration: 'none' }}
+            onClick={journalGeneration}
           >
             {({ loading }) => (
               <Button

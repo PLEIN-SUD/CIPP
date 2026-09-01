@@ -1,9 +1,6 @@
 import { common } from '@mui/material/colors';
 import { alpha } from '@mui/material/styles';
 import { error, info, neutral, success, warning } from '../colors';
-/* PSIT-CUSTOM-BEGIN: Plein Sud night shade */
-import { psitBlueNight } from '../colors';
-/* PSIT-CUSTOM-END */
 import { getPrimary } from '../utils';
 
 export const createPalette = (config) => {
@@ -27,9 +24,7 @@ export const createPalette = (config) => {
     info,
     mode: 'dark',
     neutral,
-    /* PSIT-CUSTOM-BEGIN: Plein Sud night shade - the day main drowns on a dark ground */
-    primary: colorPreset === 'psit' ? psitBlueNight : getPrimary(colorPreset),
-    /* PSIT-CUSTOM-END */
+    primary: getPrimary(colorPreset),
     success,
     text: {
       primary: common.white,

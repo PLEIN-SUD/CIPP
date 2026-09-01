@@ -68,6 +68,10 @@ const UPSTREAM_FILES = [
   'src/layouts/config.js',
   'src/utils/get-cipp-formatting.js',
   'src/components/CippTable/CIPPTableToptoolbar.js',
+  'src/theme/colors.js',
+  'src/theme/utils.js',
+  'src/theme/dark/create-palette.js',
+  'src/pages/_app.js',
 ]
 
 // Strings that legitimately contain what a rule bans, with the reason. Versioned beside the script,

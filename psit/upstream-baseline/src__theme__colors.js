@@ -52,24 +52,6 @@ export const purple = withAlphas({
   contrastText: "#FFFFFF",
 });
 
-/* PSIT-CUSTOM-BEGIN: Plein Sud primary - the logo's cloud blue. Day wears the darker step so
-   white button text holds; night wears the sky step with near-black text, because the darker
-   blue drowns on a dark ground. */
-export const psitBlue = withAlphas({
-  light: "#4FB3E8",
-  main: "#1E88C7",
-  dark: "#14679C",
-  contrastText: "#FFFFFF",
-});
-
-export const psitBlueNight = withAlphas({
-  light: "#7CC8EF",
-  main: "#4FB3E8",
-  dark: "#1E88C7",
-  contrastText: "#0B1220",
-});
-/* PSIT-CUSTOM-END */
-
 export const success = withAlphas({
   light: "#3FC79A",
   main: "#10B981",

@@ -257,9 +257,7 @@ const App = (props) => {
                 {(settings) => {
                   // Create theme even while initializing to avoid blank screen
                   const theme = createTheme({
-                    // PSIT-CUSTOM-BEGIN: the portal wears Plein Sud blue
-                    colorPreset: 'psit',
-                    // PSIT-CUSTOM-END
+                    colorPreset: 'orange',
                     direction: settings.direction || 'ltr',
                     paletteMode:
                       settings.currentTheme?.value !== 'browser'

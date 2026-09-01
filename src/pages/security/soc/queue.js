@@ -16,7 +16,9 @@ import {
   psitSocQueueOrder,
   psitSocQueueSummary,
   psitSocStatusLabel,
+  psitSocMailPreview,
   psitSocTicketCell,
+  psitSocTitleCell,
   psitSocTypeLabel,
 } from '../../../utils/psit-soc-queue'
 import { PSIT_SOC_SOURCES, PSIT_SOC_TYPE_OPTIONS } from '../../../utils/psit-soc-types'
@@ -95,7 +97,11 @@ const Page = () => {
         'Sévérité': psitSocDisplaySeverity(row),
         // Number and address in one cell: the icon opens the ticket from beside the number it
         // belongs to, and what is exported is the number.
-        'Ticket Autotask': psitSocTicketCell(row?.TicketRef || row?.ExternalRef, row?.TicketUrl),
+        'Ticket Autotask': psitSocTicketCell(
+          row?.TicketRef || row?.ExternalRef,
+          row?.TicketUrl,
+          psitSocMailPreview(row)
+        ),
         // The address on its own, hidden by default: the drawer shows it, and the export carries
         // a real address rather than an icon.
         Lien: row?.TicketUrl ?? '',
@@ -109,8 +115,8 @@ const Page = () => {
         // 'Admin' alone left the reader guessing whose privilege it was. 'Non' means the roles
         // were read and came back empty; an empty cell means nobody has looked yet. Those two
         // must not collapse: one is an answer, the other is the absence of one.
-        'Compte admin': psitSocAdminCell(row),
-        Titre: row?.Title ?? '',
+        'Compte admin impliqué ?': psitSocAdminCell(row),
+        Titre: psitSocTitleCell(row?.Title, row?.SourceSubject),
         'Catégorie': psitSocTypeLabel(row?.TypeId),
         Guide: psitSocGuideProgress(row)?.label ?? '',
         // Below: hidden by default, shown in the drawer and carried by the export.
@@ -413,7 +419,7 @@ const Page = () => {
     'Statut',
     'Âge',
     'Assigné à',
-    'Compte admin',
+    'Compte admin impliqué ?',
     'Titre',
     'Catégorie',
     'Guide',

@@ -193,17 +193,48 @@ export const psitSocQueueSummary = (cases, now = Date.now()) => {
  */
 export const PSIT_SOC_TICKET_SEPARATOR = String.fromCharCode(31)
 
-export const psitSocTicketCell = (ticket, url) => {
+export const psitSocTicketCell = (ticket, url, mail) => {
   const number = String(ticket ?? '').trim()
   const href = String(url ?? '').trim()
+  const preview = String(mail ?? '').trim()
   if (!number) return ''
-  return href ? `${number}${PSIT_SOC_TICKET_SEPARATOR}${href}` : number
+  if (!href && !preview) return number
+  return [number, href, preview].join(PSIT_SOC_TICKET_SEPARATOR)
 }
 
-/** The two halves back, for a renderer. An absent address is absent, never an empty link. */
+/** The halves back, for a renderer. An absent address or mail is absent, never an empty one. */
 export const psitSocTicketParts = (value) => {
-  const [label = '', href = ''] = String(value ?? '').split(PSIT_SOC_TICKET_SEPARATOR)
-  return { label, href: href || null }
+  const [label = '', href = '', mail = ''] = String(value ?? '').split(PSIT_SOC_TICKET_SEPARATOR)
+  return { label, href: href || null, mail: mail || null }
+}
+
+/**
+ * The dossier title with the emitter's raw subject packed behind it: the queue shows the title,
+ * and the original wording answers on hover. Same one-string discipline as the ticket cell -
+ * export, sort and search see the title alone.
+ */
+export const psitSocTitleCell = (title, subject) => {
+  const label = String(title ?? '').trim()
+  const raw = String(subject ?? '').trim()
+  if (!label) return ''
+  // The subject IS the title on old dossiers ingested before it was stored, and repeating the
+  // title as its own tooltip would say nothing.
+  if (!raw || raw === label) return label
+  return `${label}${PSIT_SOC_TICKET_SEPARATOR}${raw}`
+}
+
+export const psitSocTitleParts = (value) => {
+  const [label = '', subject = ''] = String(value ?? '').split(PSIT_SOC_TICKET_SEPARATOR)
+  return { label, subject: subject || null }
+}
+
+/** The hover preview of the emitter's mail: subject line, then the stored excerpt, capped. */
+export const psitSocMailPreview = (row) => {
+  const subject = String(row?.SourceSubject ?? '').trim()
+  const body = String(row?.SourceMail ?? '').trim()
+  if (!subject && !body) return ''
+  const excerpt = body.length > 600 ? `${body.slice(0, 600)}…` : body
+  return [subject ? `Sujet : ${subject}` : null, excerpt || null].filter(Boolean).join('\n\n')
 }
 
 /**

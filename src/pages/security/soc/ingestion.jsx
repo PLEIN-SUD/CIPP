@@ -181,6 +181,11 @@ const Page = () => {
                   <strong>TenantName</strong>, <strong>TypeId</strong>, <strong>Title</strong>,{' '}
                   <strong>Severity</strong>, <strong>Entities</strong> : facultatifs, et
                   prioritaires sur ce que dit le sujet quand l’émetteur en sait plus.
+                  <br />
+                  <strong>MailBody</strong> : facultatif, un extrait du corps du mail d’alerte
+                  (conservé à 2 000 caractères). La file l’affiche au survol de l’icône du
+                  ticket ; le sujet brut, lui, est toujours conservé et répond au survol du
+                  titre.
                 </Typography>
 
                 <Divider />

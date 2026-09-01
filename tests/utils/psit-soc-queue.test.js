@@ -3,7 +3,10 @@ import {
   psitSocAdminCell,
   psitSocHoldAge,
   psitSocTicketCell,
+  psitSocMailPreview,
   psitSocTicketParts,
+  psitSocTitleCell,
+  psitSocTitleParts,
   psitSocStatusLabel,
   psitSocDisplaySeverity,
   psitSocAge,
@@ -229,6 +232,7 @@ describe('the ticket cell', () => {
     expect(psitSocTicketParts(value)).toEqual({
       label: 'T20260828.0008',
       href: 'https://autotask.test/t/236173',
+      mail: null,
     })
   })
 
@@ -321,5 +325,38 @@ describe('psitSocAdminCell', () => {
   it('still answers without a name when the dossier carries only a user id', () => {
     const row = { Evidence: { identity: { isAdmin: true, readUtc: '2026-08-28T15:30:00Z' } } }
     expect(psitSocAdminCell(row)).toBe('Oui')
+  })
+})
+
+
+describe('psitSocTitleCell', () => {
+  it('packs the raw subject behind the title; export, sort and search see the title alone', () => {
+    const value = psitSocTitleCell('Connexion et activité dans deux pays', '[SOC x Client] Impossible travel - p.martin')
+    expect(psitSocTitleParts(value)).toEqual({
+      label: 'Connexion et activité dans deux pays',
+      subject: '[SOC x Client] Impossible travel - p.martin',
+    })
+    expect(typeof value).toBe('string')
+  })
+
+  it('stays a plain title when no subject was stored, or when the subject IS the title', () => {
+    expect(psitSocTitleCell('Titre', '')).toBe('Titre')
+    expect(psitSocTitleParts(psitSocTitleCell('Titre', 'Titre')).subject).toBeNull()
+  })
+})
+
+describe('psitSocMailPreview', () => {
+  it('composes the subject line and the capped excerpt for the hover', () => {
+    const preview = psitSocMailPreview({
+      SourceSubject: '[SOC] Alerte',
+      SourceMail: 'B'.repeat(700),
+    })
+    expect(preview.startsWith('Sujet : [SOC] Alerte')).toBe(true)
+    expect(preview.length).toBeLessThan(650)
+    expect(preview.endsWith('…')).toBe(true)
+  })
+
+  it('answers empty when the dossier stored nothing: no tooltip, not an empty one', () => {
+    expect(psitSocMailPreview({})).toBe('')
   })
 })

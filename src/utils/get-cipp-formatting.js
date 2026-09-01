@@ -18,7 +18,8 @@ import { CippCopyToClipBoard } from '../components/CippComponents/CippCopyToClip
 // PSIT-CUSTOM-BEGIN: icon for the ticket link, and the analyst cell of the SOC queue.
 import { Launch } from '@mui/icons-material'
 import { PsitSocAnalystCell } from '../components/psit/PsitSocAnalystCell'
-import { PSIT_SOC_STATUS_CHIP_COLORS, psitSocTicketParts } from './psit-soc-queue'
+import { InfoOutlined } from '@mui/icons-material'
+import { PSIT_SOC_STATUS_CHIP_COLORS, psitSocTicketParts, psitSocTitleParts } from './psit-soc-queue'
 // PSIT-CUSTOM-END
 import { getCippLicenseTranslation } from './get-cipp-license-translation'
 import CippDataTableButton from '../components/CippTable/CippDataTableButton'
@@ -158,32 +159,63 @@ export const getCippFormatting = (
   // The ticket number, and its door beside it. The value arrives as one string carrying both,
   // because an object cell is recursed into sub-columns and a separate column put the icon a
   // column away from the number it opens. Export, sort and search see the number alone.
+  if (cellName === 'Titre') {
+    // The dossier title, with the emitter's raw subject answering on hover. One packed string
+    // underneath (an object cell is recursed into sub-columns); export, sort and search see
+    // the title alone. No stored subject: plain text, no icon.
+    const title = psitSocTitleParts(data)
+    if (isText) return title.label
+    if (!title.subject) return title.label
+    return (
+      <Tooltip describeChild title={`Sujet du mail d'origine : ${title.subject}`}>
+        <span>
+          <InfoOutlined
+            fontSize="inherit"
+            style={{ marginRight: 4, verticalAlign: 'middle', opacity: 0.6 }}
+          />
+          {title.label}
+        </span>
+      </Tooltip>
+    )
+  }
   if (cellName === 'Ticket Autotask') {
     const ticket = psitSocTicketParts(data)
     if (isText) return ticket.label
     if (!ticket.label) return ''
+    const door = ticket.href ? (
+      <Link
+        href={ticket.href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Ouvrir le ticket dans Autotask"
+        style={{ marginLeft: 6, verticalAlign: 'middle' }}
+      >
+        <Launch fontSize="inherit" />
+      </Link>
+    ) : null
+    // The emitter's mail answers on hover of the door, when the ingestion stored it.
     return (
       <>
         {ticket.label}
-        {ticket.href ? (
-          <Link
-            href={ticket.href}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Ouvrir le ticket dans Autotask"
-            style={{ marginLeft: 6, verticalAlign: 'middle' }}
+        {door && ticket.mail ? (
+          <Tooltip
+            describeChild
+            title={ticket.mail}
+            slotProps={{ tooltip: { sx: { whiteSpace: 'pre-line', maxWidth: 480 } } }}
           >
-            <Launch fontSize="inherit" />
-          </Link>
-        ) : null}
+            {door}
+          </Tooltip>
+        ) : (
+          door
+        )}
       </>
     )
   }
-  // 'Compte admin' answers the triage question - does this alert touch an admin account - with
+  // 'Compte admin impliqué ?' answers the triage question - does this alert touch an admin account - with
   // the account's name beside the verdict. The chip carries the weight ('Oui' in red, 'Éligible'
   // in orange, 'Non' plain), the name stays text. One composed string underneath, because an
   // object cell is recursed into dotted sub-columns; export, sort and search see the words.
-  if (cellName === 'Compte admin') {
+  if (cellName === 'Compte admin impliqué ?') {
     const text = String(data ?? '')
     if (isText) return text
     if (!text) return ''

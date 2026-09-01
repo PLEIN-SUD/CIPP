@@ -34,6 +34,7 @@ import { PsitSocBecSection } from '../../../components/psit/soc/PsitSocBecSectio
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PsitSocDownloadContext } from '../../../components/psit/soc/PsitSocDownloadContext'
+import { PsitSocAuditContext } from '../../../components/psit/soc/PsitSocAuditContext'
 import { PsitSocCaseTimeline } from '../../../components/psit/soc/PsitSocCaseTimeline'
 import { PsitSocAnalysisPanel } from '../../../components/psit/soc/PsitSocAnalysisPanel'
 import { PsitSocValidateShortcut } from '../../../components/psit/soc/PsitSocValidateShortcut'
@@ -45,6 +46,7 @@ import { PsitSocMailContext } from '../../../components/psit/soc/PsitSocMailCont
 import { PsitSocAppContext } from '../../../components/psit/soc/PsitSocAppContext'
 import { PSIT_SOC_SOURCES, psitSocTypeById } from '../../../utils/psit-soc-types'
 import { psitSocIsDownloadCase } from '../../../utils/psit-soc-download'
+import { psitSocIsAuditCase } from '../../../utils/psit-soc-case-audit'
 import {
   PSIT_SOC_PHASES,
   psitSocPhaseGatingActive,
@@ -520,6 +522,9 @@ const Page = () => {
                   )}
                   {psitSocIsDownloadCase(socCase) && (
                     <PsitSocDownloadContext socCase={socCase} queryKey={queryKey} />
+                  )}
+                  {psitSocIsAuditCase(socCase) && (
+                    <PsitSocAuditContext socCase={socCase} queryKey={queryKey} />
                   )}
                   {socCase.Entities?.appId && (
                     <PsitSocAppContext socCase={socCase} queryKey={queryKey} hideActions />

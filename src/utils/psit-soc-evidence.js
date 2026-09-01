@@ -2,6 +2,7 @@ import { groupSignInsByIp } from './psit-bec-signals'
 import { adaptGraphSignIns, readSignInGroup } from './psit-soc-signin-adapter'
 import { readAppScopes } from './psit-soc-app-scopes'
 import { psitDownloadHeadline, psitDownloadOriginLine } from './psit-soc-download'
+import { psitAuditHeadline } from './psit-soc-case-audit'
 
 // The answers the guide steps carry.
 //
@@ -146,6 +147,12 @@ const RESOLVERS = {
   'download.origin': (evidence) => {
     if (evidence?.download === undefined) return unknown('recherche non lue')
     return psitDownloadOriginLine(evidence.download)
+  },
+
+  /** What the typed audit search found: how many events, which operation, by whom. */
+  'audit.events': (evidence) => {
+    if (evidence?.audit === undefined) return unknown('recherche non lue')
+    return psitAuditHeadline(evidence.audit)
   },
 
   /** Intune's verdict on the machine. */

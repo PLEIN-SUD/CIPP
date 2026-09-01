@@ -128,7 +128,7 @@ export const PSIT_SOC_TYPES = [
     description:
       'Ajout d’un rôle sensible sur un compte',
     guide: [
-      { id: 'audit', phase: 'validate', label: 'Lire l’audit RoleManagement : acteur, IP source, rôle, heure' },
+      { id: 'audit', phase: 'validate', label: 'Lire l’audit RoleManagement : acteur, IP source, rôle, heure', evidence: 'audit.events' },
       { id: 'actor', phase: 'map', label: 'Qualifier l’acteur : PIM, admin MSP (GDAP), ou compte utilisateur ?' },
       { id: 'target', phase: 'scope', label: 'Vérifier les rôles actuels du bénéficiaire' },
       { id: 'crosscase', phase: 'scope', label: 'Croiser avec les dossiers ouverts sur l’acteur et le bénéficiaire' },
@@ -159,7 +159,7 @@ export const PSIT_SOC_TYPES = [
     guide: [
       { id: 'rules', phase: 'validate', label: 'Lister les règles de la boîte, règles masquées incluses', evidence: 'user.rules' },
       { id: 'targets', phase: 'collect', label: 'Qualifier chaque règle : destinataire externe ? suppression ? dossier de dissimulation ?', evidence: 'user.rules' },
-      { id: 'origin', phase: 'reconstruct', label: 'Retrouver la création dans l’audit : IP, heure, hors zone ?' },
+      { id: 'origin', phase: 'reconstruct', label: 'Retrouver la création dans l’audit : IP, heure, hors zone ?', evidence: 'audit.events' },
       { id: 'forward', phase: 'collect', label: 'Vérifier le forward niveau boîte (ForwardingSmtpAddress)' },
     ],
     fpClues: [
@@ -214,7 +214,7 @@ export const PSIT_SOC_TYPES = [
     description:
       'Ajout de compte utilisateur ou octroi d’accès à une boîte partagée, hors heures ouvrées',
     guide: [
-      { id: 'audit', phase: 'validate', label: 'Retrouver la création dans l’audit : acteur, heure' },
+      { id: 'audit', phase: 'validate', label: 'Retrouver la création dans l’audit : acteur, heure', evidence: 'audit.events' },
       { id: 'actor', phase: 'map', label: 'Qualifier l’acteur : provisioning RH, admin MSP, ou compte utilisateur ?' },
       { id: 'perms', phase: 'scope', label: 'Vérifier les délégations posées sur des BAL, surtout de direction' },
     ],

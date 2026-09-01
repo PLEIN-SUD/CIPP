@@ -1,6 +1,7 @@
 import { ApiGetCall } from '../api/ApiCall'
 import { readConsentAudit } from '../utils/psit-soc-consent'
 import { psitReadDownloadAudit, psitSocIsDownloadCase } from '../utils/psit-soc-download'
+import { psitReadCaseAudit, psitSocIsAuditCase } from '../utils/psit-soc-case-audit'
 
 /**
  * The case's evidence, gathered once for the guide and the panels.
@@ -79,6 +80,17 @@ export const usePsitSocEvidence = (socCase) => {
     refetchInterval: (query) => (query?.state?.data?.Running === true ? 8000 : false),
   })
 
+  // --- typed audit search (types 4/5/7) --------------------------------------------------------
+  // Same doctrine as the download read above: read-only, same key and url as PsitSocAuditContext,
+  // same polling rule.
+  const caseAudit = ApiGetCall({
+    url: `/api/PSITExecCaseAuditSearch?tenantFilter=${tenant}&CaseId=${socCase?.CaseId}`,
+    queryKey: `PSITSocCaseAudit-${tenant}-${socCase?.CaseId}`,
+    waiting: Boolean(tenant && socCase?.CaseId && psitSocIsAuditCase(socCase)),
+    staleTime: 0,
+    refetchInterval: (query) => (query?.state?.data?.Running === true ? 8000 : false),
+  })
+
   // --- device --------------------------------------------------------------------------------
   const device = ApiGetCall({
     url: deviceId
@@ -118,6 +130,7 @@ export const usePsitSocEvidence = (socCase) => {
         : undefined,
     },
     download: download.isSuccess ? psitReadDownloadAudit(download.data) : undefined,
+    audit: caseAudit.isSuccess ? psitReadCaseAudit(caseAudit.data) : undefined,
     device: {
       device: deviceData,
       defenderState: Array.isArray(defender.data)

@@ -35,6 +35,10 @@ import { PsitSocBecSection } from '../../../components/psit/soc/PsitSocBecSectio
 import { PsitSocActionLog } from '../../../components/psit/soc/PsitSocActionLog'
 import { PsitSocUserContext } from '../../../components/psit/soc/PsitSocUserContext'
 import { PsitSocDownloadContext } from '../../../components/psit/soc/PsitSocDownloadContext'
+import {
+  PsitSocCaseReportButton,
+  PsitSocInterimReportButton,
+} from '../../../components/psit/PsitSocCaseReportFr'
 import { PsitSocAuditContext } from '../../../components/psit/soc/PsitSocAuditContext'
 import { PsitSocCaseTimeline } from '../../../components/psit/soc/PsitSocCaseTimeline'
 import { PsitSocAnalysisPanel } from '../../../components/psit/soc/PsitSocAnalysisPanel'
@@ -63,6 +67,7 @@ import {
 } from '../../../utils/psit-soc-queue'
 import { PsitSocAnalystCell } from '../../../components/psit/PsitSocAnalystCell'
 import { PsitSocTimeEntry } from '../../../components/psit/soc/PsitSocTimeEntry'
+import { PsitSocAutotaskNote } from '../../../components/psit/soc/PsitSocAutotaskNote'
 import { usePsitSocEvidence } from '../../../hooks/use-psit-soc-evidence'
 
 // Timestamps land as UTC ISO strings; the analyst reads them in his own clock. An unreadable or
@@ -206,6 +211,7 @@ const Page = () => {
             <PsitSocEmergencyContainment socCase={socCase} queryKey={queryKey} />
             <PsitSocHoldControls socCase={socCase} queryKey={queryKey} />
             <PsitSocTimeEntry socCase={socCase} />
+            <PsitSocAutotaskNote socCase={socCase} />
             {socCase?.TicketUrl && (
               <Tooltip describeChild title="Ouvrir dans Autotask : le ticket lié, dans un nouvel onglet">
                 <Button
@@ -369,7 +375,10 @@ const Page = () => {
                   <Grid size={{ xs: 12, md: 5 }}>
                     <Stack spacing={2}>
                       <Card variant="outlined">
-                        <CardHeader title="Suivi du dossier" />
+                        <CardHeader
+                          title="Suivi du dossier"
+                          action={<PsitSocInterimReportButton socCase={socCase} />}
+                        />
                         <CardContent>
                           <PropertyList>
                             <PropertyListItem
@@ -585,9 +594,10 @@ const Page = () => {
                 <Stack spacing={2}>
                   <PsitSocQualificationPanel socCase={socCase} queryKey={queryKey} />
                   <PsitSocRestoreChecklist socCase={socCase} queryKey={queryKey} />
-                  <div>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <PsitSocCaseReportButton socCase={socCase} />
                     <PsitSocResponseBlock socCase={socCase} />
-                  </div>
+                  </Stack>
                   {(socCase.Entities?.upn || socCase.Entities?.userId) && (
                     <PsitSocBecSection
                       socCase={socCase}

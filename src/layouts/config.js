@@ -51,6 +51,11 @@ export const nativeMenuItems = [
         path: '/security/soc/ingestion',
         permissions: ['Security.Incident.ReadWrite'],
       },
+      {
+        title: 'Pilotage',
+        path: '/security/soc/metrics',
+        permissions: ['Security.Incident.*'],
+      },
     ],
   },
   // PSIT-CUSTOM-END

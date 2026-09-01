@@ -21,6 +21,8 @@ import {
   Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
+import { PsitIpChip } from './PsitIpChip'
+import { usePsitIpReputation } from '../../../hooks/use-psit-ip-reputation'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { groupSignInsByIp } from '../../../utils/psit-bec-signals'
 import { adaptGraphSignIns, readSignInGroup } from '../../../utils/psit-soc-signin-adapter'
@@ -73,6 +75,7 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
     () => groupSignInsByIp(adaptGraphSignIns(signInsRequest.data, usageLocation)),
     [signInsRequest.data, usageLocation]
   )
+  const ipReputation = usePsitIpReputation(groups.map((group) => group.ip))
 
   const loading = [userLookup, signInsRequest].some((request) => request.isFetching && !request.isFetched)
 
@@ -177,6 +180,7 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
               <TableBody>
                 {groups.map((group) => {
                   const clue = readSignInGroup(group)
+                  const reputation = ipReputation.map[group.ip]
                   const colour = clue.foreignSuccess
                     ? 'error.main'
                     : clue.onlySuccessfulLocal
@@ -190,7 +194,10 @@ export const PsitSocUserContext = ({ socCase, queryKey, hideActions = false }) =
                   ].filter(Boolean)
                   return (
                     <TableRow key={group.ip}>
-                      <TableCell sx={{ color: colour }}>{group.ip}</TableCell>
+                      <TableCell sx={{ color: colour }}>
+                        {group.ip}
+                        <PsitIpChip ip={group.ip} reputation={reputation} />
+                      </TableCell>
                       <TableCell sx={{ color: colour }}>
                         {group.country || (
                           <Tooltip describeChild title="Pays non renseigné dans le journal de connexion">

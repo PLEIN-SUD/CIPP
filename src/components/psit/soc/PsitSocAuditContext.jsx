@@ -19,6 +19,8 @@ import {
   Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
+import { PsitIpChip } from './PsitIpChip'
+import { usePsitIpReputation } from '../../../hooks/use-psit-ip-reputation'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { PsitSocLoading } from './PsitSocLoading'
 import {
@@ -113,6 +115,10 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
     })
   }
   const rows = showAll ? filteredEvents : filteredEvents.slice(0, MAX_ROWS)
+  const ipReputation = usePsitIpReputation([
+    ...read.events.map((event) => event?.Ip),
+    ...(read.summary?.addresses ?? []),
+  ])
   const loading = (audit.isFetching && !audit.isFetched) || launch.isPending
   const title = read.window?.kind
     ? `Journal d’audit — ${psitAuditKindLabel(read.window.kind)}`
@@ -246,7 +252,10 @@ export const PsitSocAuditContext = ({ socCase, queryKey }) => {
                           <TableCell>{event.Operation}</TableCell>
                           <TableCell>{event.Actor}</TableCell>
                           <TableCell>{event.Target}</TableCell>
-                          <TableCell>{event.Ip}</TableCell>
+                          <TableCell>
+                            {event.Ip}
+                            <PsitIpChip ip={event.Ip} reputation={ipReputation.map[event.Ip]} />
+                          </TableCell>
                           {/* The rule's conditions or the rights granted: the substance, compact. */}
                           <TableCell sx={{ maxWidth: 320, overflowWrap: 'anywhere' }}>
                             <Typography variant="caption">{event.Detail}</Typography>

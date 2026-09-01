@@ -19,6 +19,8 @@ import {
   Tooltip,
 } from '@mui/material'
 import { ApiGetCall, ApiPostCall } from '../../../api/ApiCall'
+import { PsitIpChip } from './PsitIpChip'
+import { usePsitIpReputation } from '../../../hooks/use-psit-ip-reputation'
 import { CippApiResults } from '../../CippComponents/CippApiResults'
 import { PsitSocLoading } from './PsitSocLoading'
 import { PsitAdminBadge } from './PsitAdminBadge'
@@ -129,6 +131,10 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
   const bySite = useMemo(() => psitDownloadBySite({ files: filteredFiles }), [filteredFiles])
   const span = psitDownloadSpanMinutes(read)
   const rows = showAll ? filteredFiles : filteredFiles.slice(0, MAX_ROWS)
+  const ipReputation = usePsitIpReputation([
+    ...read.files.map((file) => file?.Ip),
+    ...(read.summary?.addresses ?? []),
+  ])
   const loading = (audit.isFetching && !audit.isFetched) || launch.isPending
 
   if (!caseId) {
@@ -328,7 +334,10 @@ export const PsitSocDownloadContext = ({ socCase, queryKey }) => {
                           <TableCell>{file.Name}</TableCell>
                           <TableCell>{psitDownloadOperationLabel(file.Operation)}</TableCell>
                           <TableCell>{file.WhenUtc}</TableCell>
-                          <TableCell>{file.Ip}</TableCell>
+                          <TableCell>
+                            {file.Ip}
+                            <PsitIpChip ip={file.Ip} reputation={ipReputation.map[file.Ip]} />
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

@@ -19,7 +19,12 @@ import { CippCopyToClipBoard } from '../components/CippComponents/CippCopyToClip
 import { Launch } from '@mui/icons-material'
 import { PsitSocAnalystCell } from '../components/psit/PsitSocAnalystCell'
 import { InfoOutlined } from '@mui/icons-material'
-import { PSIT_SOC_STATUS_CHIP_COLORS, psitSocTicketParts, psitSocTitleParts } from './psit-soc-queue'
+import {
+  PSIT_SOC_STATUS_CHIP_COLORS,
+  psitSocEntityCellParts,
+  psitSocTicketParts,
+  psitSocTitleParts,
+} from './psit-soc-queue'
 // PSIT-CUSTOM-END
 import { getCippLicenseTranslation } from './get-cipp-license-translation'
 import CippDataTableButton from '../components/CippTable/CippDataTableButton'
@@ -215,6 +220,30 @@ export const getCippFormatting = (
   // the account's name beside the verdict. The chip carries the weight ('Oui' in red, 'Éligible'
   // in orange, 'Non' plain), the name stays text. One composed string underneath, because an
   // object cell is recursed into dotted sub-columns; export, sort and search see the words.
+  // The entity the alert is about, wearing the admin badge when it is an account. One packed
+  // string underneath; export, sort and search see the entity alone. No badge for a verified
+  // non-admin or an unchecked one - the row drawer keeps the full verdict.
+  if (cellName === 'Entité concernée') {
+    const parts = psitSocEntityCellParts(data)
+    if (isText) return parts.entity
+    if (!parts.entity) return ''
+    const badge =
+      parts.verdict === 'Oui' ? (
+        <Tooltip title="Compte administrateur (rôles actifs relevés à l’ingestion)">
+          <Chip size="small" color="error" label="admin" style={{ marginLeft: 6 }} />
+        </Tooltip>
+      ) : parts.verdict === 'Éligible' ? (
+        <Tooltip title="Compte éligible à des rôles d’administration (PIM)">
+          <Chip size="small" color="warning" variant="outlined" label="admin éligible" style={{ marginLeft: 6 }} />
+        </Tooltip>
+      ) : null
+    return (
+      <>
+        {parts.entity}
+        {badge}
+      </>
+    )
+  }
   if (cellName === 'Compte admin impliqué ?') {
     const text = String(data ?? '')
     if (isText) return text

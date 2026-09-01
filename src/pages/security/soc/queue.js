@@ -16,6 +16,7 @@ import {
   psitSocQueueOrder,
   psitSocQueueSummary,
   psitSocStatusLabel,
+  psitSocEntityCell,
   psitSocMailPreview,
   psitSocTicketCell,
   psitSocTitleCell,
@@ -115,6 +116,7 @@ const Page = () => {
         // 'Admin' alone left the reader guessing whose privilege it was. 'Non' means the roles
         // were read and came back empty; an empty cell means nobody has looked yet. Those two
         // must not collapse: one is an answer, the other is the absence of one.
+        'Entité concernée': psitSocEntityCell(row),
         'Compte admin impliqué ?': psitSocAdminCell(row),
         Titre: psitSocTitleCell(row?.Title, row?.SourceSubject),
         'Catégorie': psitSocTypeLabel(row?.TypeId),
@@ -397,6 +399,7 @@ const Page = () => {
       'Mot de l’émetteur',
       'Statut',
       'Assigné à',
+      'Compte admin impliqué ?',
       'Titre',
       'Entités',
       'Ticket Autotask',
@@ -419,7 +422,7 @@ const Page = () => {
     'Statut',
     'Âge',
     'Assigné à',
-    'Compte admin impliqué ?',
+    'Entité concernée',
     'Titre',
     'Catégorie',
     'Guide',

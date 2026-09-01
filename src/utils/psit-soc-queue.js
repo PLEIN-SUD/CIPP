@@ -213,6 +213,29 @@ export const psitSocTicketParts = (value) => {
  * and the original wording answers on hover. Same one-string discipline as the ticket cell -
  * export, sort and search see the title alone.
  */
+/**
+ * The entity the alert is about - the account's UPN, else the machine, the application or the
+ * message - with the admin verdict packed behind it so the cell can wear the badge. Export,
+ * sort and search see the entity alone; the full verdict (including 'Non vérifié') stays
+ * readable in the row drawer.
+ */
+export const psitSocEntityCell = (row) => {
+  const entity =
+    String(row?.Entities?.upn ?? '').trim() ||
+    String(row?.Entities?.deviceName ?? '').trim() ||
+    String(row?.Entities?.appId ?? '').trim() ||
+    String(row?.Entities?.networkMessageId ?? '').trim()
+  if (!entity) return ''
+  // The badge only makes sense for an account; the verdict word is the admin cell's first half.
+  const verdict = row?.Entities?.upn ? psitSocAdminCell(row).split(' — ')[0] : ''
+  return verdict ? `${entity}${PSIT_SOC_TICKET_SEPARATOR}${verdict}` : entity
+}
+
+export const psitSocEntityCellParts = (value) => {
+  const [entity = '', verdict = ''] = String(value ?? '').split(PSIT_SOC_TICKET_SEPARATOR)
+  return { entity, verdict: verdict || null }
+}
+
 export const psitSocTitleCell = (title, subject) => {
   const label = String(title ?? '').trim()
   const raw = String(subject ?? '').trim()

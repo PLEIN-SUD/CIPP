@@ -3,6 +3,8 @@ import {
   psitSocAdminCell,
   psitSocHoldAge,
   psitSocTicketCell,
+  psitSocEntityCell,
+  psitSocEntityCellParts,
   psitSocMailPreview,
   psitSocTicketParts,
   psitSocTitleCell,
@@ -358,5 +360,29 @@ describe('psitSocMailPreview', () => {
 
   it('answers empty when the dossier stored nothing: no tooltip, not an empty one', () => {
     expect(psitSocMailPreview({})).toBe('')
+  })
+})
+
+
+describe('psitSocEntityCell', () => {
+  const row = (entities, identity) => ({
+    Entities: entities,
+    Evidence: identity ? { identity } : {},
+  })
+
+  it('names the account first, and packs the admin verdict behind it for the badge', () => {
+    const value = psitSocEntityCell(
+      row({ upn: 'p.martin@contoso.test' }, { isAdmin: true, readUtc: '2026-09-02T08:00:00Z' })
+    )
+    expect(psitSocEntityCellParts(value)).toEqual({
+      entity: 'p.martin@contoso.test',
+      verdict: 'Oui',
+    })
+  })
+
+  it('falls back to the machine, then the application, then the message - badge-less', () => {
+    expect(psitSocEntityCellParts(psitSocEntityCell(row({ deviceName: 'PC-042' }))).entity).toBe('PC-042')
+    expect(psitSocEntityCellParts(psitSocEntityCell(row({ appId: 'app-1' }))).verdict).toBeNull()
+    expect(psitSocEntityCell(row({}))).toBe('')
   })
 })

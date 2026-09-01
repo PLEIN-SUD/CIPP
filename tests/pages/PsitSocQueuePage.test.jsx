@@ -78,6 +78,30 @@ describe('SOC triage queue', () => {
     expect(screen.getByText(/Aucun dossier en attente de prise en charge/)).toBeInTheDocument()
   })
 
+  it('opens on the dossiers that are not closed, without dropping them from the data', async () => {
+    wire([
+      ...cases,
+      {
+        CaseId: 'PSIT-SOC-DONE',
+        Tenant: 'contoso.test',
+        TypeId: 2,
+        Severity: 'P4',
+        Status: 'closed',
+        Title: 'Campagne terminée le mois dernier',
+        CreatedUtc: new Date(Date.now() - 40 * 24 * 3600 * 1000).toISOString(),
+        ClosedUtc: new Date(Date.now() - 35 * 24 * 3600 * 1000).toISOString(),
+        ExternalRef: '99500',
+      },
+    ])
+    renderWithProviders(<Page />)
+
+    // JSDOM renders no virtualized cells, so the row count carries the assertion, as in the
+    // CippDataTable tests: three dossiers arrive, the closed one is filtered - not dropped,
+    // the 'Clos' preset and the filter reset can still bring it back.
+    expect(await screen.findByText('1-2 of 2')).toBeInTheDocument()
+    expect(screen.queryByText('1-3 of 3')).not.toBeInTheDocument()
+  })
+
   it('shows a failed read as a failure, never as a quiet queue', () => {
     wire(undefined, { isError: true, isSuccess: false })
     renderWithProviders(<Page />)

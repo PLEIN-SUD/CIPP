@@ -878,11 +878,7 @@ export const CIPPTableToptoolbar = React.memo(
     }, [presetList?.isSuccess, presetList?.data, simpleColumns])
 
     const graphPresetItems = filterList?.filter((f) => f.type === 'graph') ?? []
-    /* PSIT-CUSTOM-BEGIN: a filters entry without a filterName is a mount-time default
-       ({ id, value }, applied by CippDataTable), not a preset - the menu skips it */
-    const tablePresetItems =
-      filterList?.filter((f) => f.type !== 'graph' && f.filterName) ?? []
-    /* PSIT-CUSTOM-END */
+    const tablePresetItems = filterList?.filter((f) => f.type !== 'graph') ?? []
     const showFilterSections =
       graphPresetItems.length > 0 && tablePresetItems.length > 0
     const activeSlotCount =

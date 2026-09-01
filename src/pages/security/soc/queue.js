@@ -107,6 +107,9 @@ const Page = () => {
         // a real address rather than an icon.
         Lien: row?.TicketUrl ?? '',
         Statut: psitSocStatusLabel(row?.Status),
+        // Hidden helper the default filter reads: the queue opens on the dossiers that
+        // still need someone, and this is the one scalar that says which side a row is on.
+        'Clôturé': psitSocStatusLabel(row?.Status) === 'Clos' ? 'Oui' : 'Non',
         'Âge': psitSocAge(row?.CreatedUtc)?.label ?? '',
         // The address the dossier is assigned to; the cell resolves the face and the name from it.
         'Assigné à': row?.AssignedTo ?? '',
@@ -415,21 +418,34 @@ const Page = () => {
     actions: actions,
   }
 
+  // Ordered by the questions triage asks, left to right: how serious and where the dossier
+  // stands, then which client and which account or machine, then what the alert says, and the
+  // follow-up (who holds it, guide progress, ticket) on the right where it is consulted, not read.
   const simpleColumns = [
-    'Tenant',
     'Sévérité',
-    'Ticket Autotask',
     'Statut',
     'Âge',
-    'Assigné à',
+    'Tenant',
     'Entité concernée',
-    'Titre',
     'Catégorie',
+    'Titre',
+    'Assigné à',
     'Guide',
+    'Ticket Autotask',
   ]
 
   // The presets filter on the displayed column, so their values are the displayed words.
+  // The first entry has no filterName: CippDataTable applies it at mount, so the queue opens
+  // on the dossiers that are not closed. Any preset click replaces it; the funnel icon's
+  // reset shows everything again.
   const filterList = [
+    { id: 'Clôturé', value: 'Non' },
+
+    {
+      filterName: 'Non clôturés',
+      value: [{ id: 'Clôturé', value: 'Non' }],
+      type: 'column',
+    },
     { filterName: 'Nouveaux', value: [{ id: 'Statut', value: 'Nouveau' }], type: 'column' },
     { filterName: 'En cours', value: [{ id: 'Statut', value: 'En cours' }], type: 'column' },
     {

@@ -51,9 +51,6 @@ function normalizeConfigForBackend(config) {
     capitalizeWords: Boolean(config.capitalizeWords),
     appendNumber: Boolean(config.appendNumber),
     appendSpecialChar: Boolean(config.appendSpecialChar),
-    /* PSIT-CUSTOM-BEGIN: passphrase language */
-    passphraseLanguage: config.passphraseLanguage === "french" ? "french" : "english",
-    /* PSIT-CUSTOM-END */
   };
 }
 
@@ -71,9 +68,6 @@ const DEFAULT_CONFIG = {
   capitalizeWords: false,
   appendNumber: false,
   appendSpecialChar: false,
-  /* PSIT-CUSTOM-BEGIN: passphrase language */
-  passphraseLanguage: "english",
-  /* PSIT-CUSTOM-END */
 };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -109,9 +103,6 @@ const Page = () => {
         capitalizeWords: toBool(r.capitalizeWords, DEFAULT_CONFIG.capitalizeWords),
         appendNumber: toBool(r.appendNumber, DEFAULT_CONFIG.appendNumber),
         appendSpecialChar: toBool(r.appendSpecialChar, DEFAULT_CONFIG.appendSpecialChar),
-        /* PSIT-CUSTOM-BEGIN: passphrase language */
-        passphraseLanguage: r.passphraseLanguage === "french" ? "french" : DEFAULT_CONFIG.passphraseLanguage,
-        /* PSIT-CUSTOM-END */
       });
     }
   }, [passwordSetting.isSuccess, passwordSetting.data]);
@@ -290,24 +281,6 @@ const Page = () => {
                           Allowed: single space, empty, or !@#$%^&*()-_=+/
                         </Typography>
                       </Stack>
-                      {/* PSIT-CUSTOM-BEGIN: passphrase language */}
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2">Language</Typography>
-                        <ToggleButtonGroup
-                          value={config.passphraseLanguage === "french" ? "french" : "english"}
-                          exclusive
-                          onChange={(e, v) => v && set("passphraseLanguage", v)}
-                          size="small"
-                          color="primary"
-                        >
-                          <ToggleButton value="english">English</ToggleButton>
-                          <ToggleButton value="french">French</ToggleButton>
-                        </ToggleButtonGroup>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                          French words are accent-free.
-                        </Typography>
-                      </Stack>
-                      {/* PSIT-CUSTOM-END */}
                       <Grid container spacing={0}>
                         <Grid size={{ sm: 6, xs: 12 }}>
                           <FormControlLabel

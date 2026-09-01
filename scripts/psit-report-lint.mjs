@@ -72,6 +72,7 @@ const UPSTREAM_FILES = [
   'src/theme/dark/create-palette.js',
   'src/pages/_app.js',
   'src/pages/cipp/preferences.js',
+  'src/pages/cipp/settings/password-config/index.js',
 ]
 
 // Strings that legitimately contain what a rule bans, with the reason. Versioned beside the script,
